@@ -18,14 +18,14 @@ Java Selenium Serenity BDD Test Framework
 This fraction of whole test framework shows below:
 The combination of java selenium and serenity bdd
 The structure of common bdd framework that consist of 
-    - feature file
-    - steps file
-    - page file
-    - hooks 
-    - test import to xray
-    - default report by serenity
-    - pre and post hooks in test execution
-    - usage of serenity bdd context.
+- feature file
+- steps file
+- page file
+- hooks 
+- test import to xray
+- default report by serenity
+- pre and post hooks in test execution
+- usage of serenity bdd context.
 
 Major involve: Java, Selenium, Serenity, xray, HTTP Request
 
