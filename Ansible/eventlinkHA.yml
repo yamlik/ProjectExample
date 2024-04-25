@@ -1,0 +1,829 @@
+---
+- name: Prepare playbook for all nodes
+  hosts: vdu-db:vdu-cgf:vdu-ui:vdu-processingOFF:vdu-processingON:vdu-oam:vdu-crdb
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - include: tasks/common/generic_tasks.yml
+    - include: tasks/common/set_jdbc_parameters.yml
+    - include: tasks/common/relate_fqdn_to_floating_ip.yml
+  roles:
+    - { role: user-and-access-management }
+    - { role: ntp }
+    - { role: dns }
+    - { role: configure-logrotate }
+    - { role: bootstrap-servers }
+
+- name: Add UI FQDN to hosts files for processing hosts
+  hosts: vdu-cgf:vdu-processingOFF:vdu-processingON
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  tasks:
+    - include: tasks/common/update_etc_hosts.yml
+
+    - name: Remove keycloak cert
+      shell: keytool -delete -alias keycloak -keystore /etc/pki/java/cacerts -storepass changeit
+      ignore_errors: yes
+
+- name: Main play for vdu-oam nodes
+  hosts: vdu-oam
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+    - vars/oam_var.yml
+    - vars/alarm_var.yml
+  vars:
+    ha_master: "{{ groups['vdu-oam'][0] }}"
+    reconfigure: False
+  gather_facts: "{{ vnf_gather_facts }}"
+  post_tasks:
+    - name: Start keepalived to enable HA
+      systemd:
+        name: keepalived
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+  roles:
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: oam-httpd }
+    - { role: upload-custom-scripts }
+    - { role: oam-ha, hookFunction: deploy, preserve_data: True }
+
+- name: Main play for vdu-db nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+    - vars/db_var.yml
+    - vars/alarm_var.yml
+  vars:
+    # ha_master is initially the 'server1' with cinder volume
+    ha_master: "{{ groups['vdu-db'][0] }}"
+    reconfigure: False
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - include: tasks/db/postgre_pretasks.yml
+    - include: tasks/db/write_cmdb_disk_info.yml
+
+    - name: Start postgresql to remove old hosts in version info
+      systemd:
+        name: "{{ postgresql_daemon }}"
+        state: started
+        daemon_reload: yes
+
+    - name: Remove old hosts in version info
+      shell: "psql -p 5432 -d ccpvi_db ccpvi -c 'TRUNCATE host, host_components;'"
+
+  post_tasks:
+    - name: Start keepalived on ha_master
+      systemd:
+        name: keepalived
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+      when: inventory_hostname == ha_master
+
+    - name: Wait for DB to be up on the ha_master
+      shell: PGPASSWORD='{{ db_el_password }}' psql -p 5432 -h {{ db_oam_vip }} -U elink -d TEST -c 'select host from el_hosts;'
+      register: psql_result
+      retries: 15
+      delay: 6
+      until: psql_result.rc == 0
+      no_log: "{{ hide_sensitive_debug_info }}"
+      ignore_errors: true
+      when: inventory_hostname != ha_master
+
+    - name: Wait few more seconds to make sure we're not stealing the Master role during notify_master run
+      pause:
+        seconds: 15
+
+    - name: Start keepalived on secondary host
+      systemd:
+        name: keepalived
+        state: started
+        enabled: yes
+        daemon_reload: yes
+      when: inventory_hostname != ha_master
+  roles:
+    - { role: db-gluster-ha, hookFunction: deploy, preserve_data: True }
+    - { role: el-db-create-database }
+    - { role: el-node-exporter }
+
+- name: Main play for vdu-cgf nodes
+  hosts: vdu-cgf
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/optional_volumes.yml
+    - vars/cgf_optional_volumes.yml
+    - vars/cgf_var.yml
+    - vars/alarm_var.yml
+  vars:
+    first_node: "{{ groups['vdu-cgf'][0] }}"
+    reconfigure: False
+    # all instances are ha_masters
+    ha_master: "{{ inventory_hostname }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - name: Include timesten volume mount if used
+      set_fact:
+        cinder_volumes: "{{ cinder_volumes + timesten_volume }}"
+      when: (vnf_context_data.stack_params.cbam.extensions.volume_size_cgf_timesten > 1) and (vnf_context_data.stack_params.cbam.extensions.cgf_enable_timesten == true)
+
+    - name: Verify that TEST is stopped
+      systemd:
+        name: el-node-manager
+        enabled: yes
+        state: stopped
+      become: true
+      become_method: sudo
+
+    - name: Make sure postgres is up
+      wait_for: host={{ db_oam_vip }} state=started port={{ postgresql_server_port }} delay=5 timeout=420 connect_timeout=10
+  post_tasks:
+    - include: tasks/processing/cgf_post_tasks.yml
+
+    - name: Start keepalived to enable HA
+      systemd:
+        name: keepalived
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+
+  roles:
+    - { role: ha, hookFunction: deploy }
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: false }
+    - { role: el-ha, hookFunction: deploy, preserve_data: True }
+    - { role: el-db }
+    - { role: el-db-create-schema, when: inventory_hostname == first_node }
+    - { role: el-node-manager }
+    - { role: el-xml-audit-plugin }
+    - { role: el-node-exporter }
+    - { role: el-fluentd, when: operation == "instantiate" }
+    - { role: docker-engine-install }
+    - { role: el-processing-state }
+
+- name: Main play for all vdu-processingOFF ha pairs
+  hosts: vdu-processingOFF
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars:
+    group_name: "{{ group_names | difference(['vdu-processingOFF']) | first }}"
+    group_index: "{{ group_name.split('-')[-1] }}"
+    ha_master: "{{ groups[group_name][0] }}"
+    first_node: "{{ groups['vdu-processingOFF'][0] }}"
+    reconfigure: False
+  vars_files:
+    - vars/global_var.yml
+    - vars/alarm_var.yml
+    - vars/processing_offline_var.yml
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - name: Make sure postgres is up
+      wait_for: host={{ db_oam_vip }} state=started port={{ postgresql_server_port }} delay=5 timeout=420 connect_timeout=10
+
+    - name: Find old host from DB
+      run_once: true
+      shell: PGPASSWORD='{{ db_el_password }}' psql -p {{ postgresql_server_port }} -h {{ db_oam_vip }} -U elink -d TEST -c 'select host from el_hosts;' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b"
+      register: psql_query_output
+      ignore_errors: true
+      become: yes
+      become_method: sudo
+
+    - name: Verify that TEST is stopped
+      systemd:
+        name: el-node-manager
+        enabled: no
+        state: stopped
+      become: true
+      become_method: sudo
+
+  post_tasks:
+    - include: tasks/processing/offline_post_tasks.yml
+
+    - name: Register active
+      shell: "ha role"
+      register: ha_result
+
+    - name: Verify that TEST is started on ACTIVE node
+      systemd:
+        name: el-node-manager
+        daemon_reload: yes
+        enabled: no
+        state: restarted
+      ignore_errors: True
+      become: true
+      become_method: sudo
+      when: ha_result.stdout|trim == 'ACTIVE'
+
+    - name: Start keepalived to enable HA
+      systemd:
+        name: keepalived
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+  roles:
+    - { role: el-db }
+    - { role: el-db-create-schema, when: inventory_hostname == first_node }
+    - { role: el-node-manager }
+    - { role: ha, hookFunction: deploy }
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: el-ha, hookFunction: deploy, preserve_data: True }     # Mounts glusterfs volumes installs el keepalived plugin
+    - { role: el-xml-audit-plugin }
+    - { role: el-remove-host, instance_host_name: "{{ psql_query_output.stdout|string }}", when: psql_query_output.rc == 0 }
+    - { role: docker-engine-install }
+    - { role: el-node-exporter }
+    - { role: el-fluentd, when: operation == "instantiate" }
+    - { role: el-processing-state }
+
+- name: Main play for vdu-processingON nodes
+  hosts: vdu-processingON
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/optional_volumes.yml
+    - vars/processing_online_var.yml
+    - vars/alarm_var.yml
+  vars:
+    first_node: "{{ groups['vdu-processingON'][0] }}"
+    reconfigure: False
+    # all instances are ha_masters
+    ha_master: "{{ inventory_hostname }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - name: Include GTPc volume mount if used
+      set_fact:
+        cinder_volumes: "{{ cinder_volumes + gtpc_volume }}"
+      when: (vnf_context_data.stack_params.cbam.extensions.volume_size_online_gtpc > 1) and (vnf_context_data.stack_params.cbam.extensions.install_gtp_collector == true)
+
+    - name: Verify that TEST is stopped
+      systemd:
+        name: el-node-manager
+        enabled: yes
+        state: stopped
+      become: true
+      become_method: sudo
+
+    - name: Make sure postgres is up
+      wait_for: host={{ db_oam_vip }} state=started port={{ postgresql_server_port }} delay=5 timeout=420 connect_timeout=10
+  post_tasks:
+    - name: Verify that TEST is started
+      systemd:
+        name: el-node-manager
+        daemon_reload: yes
+        enabled: yes
+        state: restarted
+      become: true
+      become_method: sudo
+
+    - name: Open ports for the Diameter Rf
+      firewalld:
+        zone: public
+        port: "{{ item.port }}/{{ item.protocol }}"
+        permanent: true
+        immediate: true
+        state: enabled
+      with_items:
+       - { port: 3868, protocol: tcp }
+       - { port: 3868, protocol: sctp }
+  roles:
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: el-db }
+    - { role: el-db-create-schema, when: inventory_hostname == first_node }
+    - { role: el-node-manager }
+    - { role: el-xml-audit-plugin }
+    - { role: gtpc-prime-config, when: vnf_context_data.stack_params.cbam.extensions.install_gtp_collector == true }
+    - { role: docker-engine-install }
+    - { role: el-node-exporter }
+    - { role: el-fluentd, when: operation == "instantiate" }
+    - { role: el-processing-state }
+
+- name: Parallel play for vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: 5
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+  vars:
+    ha_master: "{{ groups['vdu-ui'][0] }}"
+    reconfigure: False
+  tasks:
+    - name: Remove keycloak cert
+      shell: keytool -delete -alias keycloak -keystore /etc/pki/java/cacerts -storepass changeit
+      ignore_errors: yes
+
+    - name: Remove keycloak FQDN related files
+      file: name={{ item }} state=absent
+      with_items:
+       - /opt/TEST/TEST/TEST-ui/trusted-certs.jks
+       - /opt/TEST/TEST/TEST-ui/el-keystore.jks
+       - /opt/TEST/devtool-backend/devtool-backend.jks
+       - /opt/TEST/devtool-backend/trusted-certs.jks
+       - /opt/TEST/reports/trusted-certs.jks
+       - /opt/TEST/reports/reports-keystore.jks
+       - /opt/TEST/devtool/devtool-ui.jks
+       - /opt/TEST/devtool/trusted-certs.jks
+       - /opt/TEST/admintools/trusted-certs.jks
+       - /opt/TEST/admintools/admintools-keystore.jks
+       - /opt/TEST/tomcat/TEST/conf/keycloak.json
+       - /opt/TEST/tomcat/devtool-backend/conf/dt-backend-keycloak.json
+       - /opt/TEST/tomcat/reports/conf/keycloak.json
+       - /opt/TEST/tomcat/devtool/conf/dt-ui-keycloak.json
+       - /opt/TEST/tomcat/admintools/webapps/admintools/WEB-INF/keycloak.json
+       - /opt/keycloak/keycloak-certificate.pem
+       - /opt/keycloak/keycloak-certificate.der
+       - /opt/keycloak/security/ssl/keycloak-keystore.jks
+       - /opt/keycloak/standalone/configuration/application.keystore
+
+    - name: Comment out pretask for the keycloak service
+      lineinfile:
+        backrefs: yes
+        path: /usr/lib/systemd/system/keycloak.service
+        line: "#ExecStartPre=/opt/keycloak/csf/ckeyadm  refresh"
+        regexp: "ExecStartPre=/opt/keycloak/csf/ckeyadm  refresh"
+        state: present
+      become: yes
+      become_method: sudo
+
+    - name: Reload and stop keycloak
+      systemd:
+        name: keycloak
+        daemon_reload: yes
+        enabled: yes
+        state: stopped
+      become: true
+      become_method: sudo
+
+- name: Main play for vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+    - vars/alarm_var.yml
+  vars:
+    dr_server_lists: ""
+    dr_proc_server_lists: ""
+    ha_master: "{{ groups['vdu-ui'][0] }}"
+    reconfigure: False
+    sync_target_host: ""
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - name: Verify TEST is stopped
+      systemd:
+        name: tomcat@el-ui
+        state: stopped
+
+    - include: tasks/system-monitoring/sys_monitoring_tasks.yml
+
+    - name: Update /etc/hosts with ui_fqdn
+      lineinfile:
+        path: "/etc/hosts"
+        state: present
+        line: "{{ item }}"
+        insertafter: EOF
+      with_items:
+       - "::1 {{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+       - "127.0.0.1 {{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+       - "{{ db_oam_vip }} {{ db_oam_hostname }}"
+      when:
+        - vnf_context_data.stack_params.cbam.extensions.ui_fqdn |lower != "floating"
+        - vnf_context_data.stack_params.cbam.extensions.ui_fqdn != ui_oam_vip
+
+    - name: Reserve ports for EL services
+      shell: echo 45080-45081,49078-49089,55000-55080,59088-59089 > /proc/sys/net/ipv4/ip_local_reserved_ports
+
+    - name: Add floating ip to loopback to avoid contacting secondary node
+      shell: ip address add {{ ui_floating_ip }} dev lo
+      when: vnf_context_data.stack_params.cbam.extensions.use_floating_ip == 1
+
+    - name: Add ui_oam_vip to loopback when it's same as ui_fqdn
+      shell: /usr/sbin/ip address add {{ ui_oam_vip }}/32 dev lo
+      when: (ui_oam_vip not in (hostvars[inventory_hostname].ansible_all_ipv4_addresses)) and (ui_oam_vip == vnf_context_data.stack_params.cbam.extensions.ui_fqdn)
+
+    - name: Ensure and create directory
+      file:
+        path: /opt/TEST/registry_backup
+        state: directory
+        owner: TEST
+        group: TEST
+
+    - name: Backup docker registry
+      shell: cp -r "{{ docker_registry_path }}/docker" /opt/TEST/registry_backup/
+
+    - name: Get host2 IP for active host
+      set_fact:
+        sync_target_host: "{{ ui_intnet_1 }}"
+      become: true
+      become_method: sudo
+      when: inventory_hostname == ha_master
+
+    - name: Get host1 IP for standby host
+      set_fact:
+        sync_target_host: "{{ ui_intnet_0 }}"
+      become: true
+      become_method: sudo
+      when: inventory_hostname != ha_master
+
+  post_tasks:
+    - name: Persist ui certs into cinder volume
+      shell: cp {{ item.src }} {{ item.dest }}
+      with_items:
+       - src: "{{ kc_keystore_file }}"
+         dest: "{{ persistent_mount }}/{{ kc_keystore_name }}"
+       - src: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+         dest: "{{ persistent_mount }}/{{ kc_certificate_name }}.pem"
+       - src: "{{ admintools_keystore_file }}"
+         dest: "{{ persistent_mount }}/{{ admintools_keystore_name }}"
+
+    - name: Restore docker registry to cinder
+      shell: cp -r /opt/TEST/registry_backup/docker "{{ docker_registry_path }}"
+  roles:
+    - { role: ha, hookFunction: deploy }
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: false }
+    - { role: el-ha, hookFunction: deploy, preserve_data: True }
+    - { role: el-db }
+    - { role: el-crypto, update_db_password: true,  when: activate_crypto }
+    - { role: keycloak-postgresql }
+    - { role: keycloak-configure }
+    - { role: audittrail }
+    - { role: solution-config }
+    - { role: admin-tools-finalize }
+    - { role: TEST-ui }
+    - { role: TEST-httpd }
+    - { role: el-systemtools }
+    - { role: reports }
+    - { role: reports-configure }
+    - { role: keycloak-create-user, kc_TEST_ui_client_id: "admintools", role_set: ["module.settings"] }
+    - { role: keycloak-create-user, kc_TEST_ui_client_id: "reports", role_set: ["reports.read"] }
+    - { role: docker-registry-install }
+    - { role: docker-engine-install }
+    - { role: el-node-exporter }
+    - { role: fm-pm-sync }
+    - { role: cpro-server }
+    - { role: cpro-grafana }
+    - { role: cpro-gen3gppxml, when: audit_3gppxml_enabled }
+
+- name: Parallel post-play for vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: 5
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+  vars:
+    ha_master: "{{ groups['vdu-ui'][0] }}"
+    reconfigure: False
+  roles:
+    - { role: ssh-pair-setup }
+  tasks:
+    # Note: Assuming el-ha is setup correctly, all services and mount points in both UI hosts will be running after this
+    - name: Restart keycloak to apply all changes
+      systemd:
+        name: keycloak
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+    # Note: For unknown reason we need this to be triggered 2x for it to start running
+    - name: Start keepalived to enable HA
+      systemd:
+        name: keepalived
+        state: restarted
+        enabled: yes
+
+    - name: Wait for UI roles to stabilize
+      pause:
+        seconds: 120
+
+
+- name: Finalization playbooks I for vdu-processing nodes
+  hosts: vdu-processingON:vdu-processingOFF:vdu-cgf
+  serial: "{{ vnf_serial }}"
+  vars_files:
+    - vars/global_var.yml
+  roles:
+    - { role: el-crypto, when: activate_crypto }
+
+- name: Finalization playbooks for vdu-processingOFF nodes
+  hosts: vdu-processingOFF
+  serial: 1
+  vars:
+    group_name: "{{ group_names | difference(['vdu-processingOFF']) | first }}"
+    group_index: "{{ group_name.split('-')[-1] }}"
+    ha_master: "{{ groups[group_name][0] }}"
+    first_node: "{{ groups['vdu-processingOFF'][0] }}"
+    reconfigure: False
+  vars_files:
+    - vars/global_var.yml
+    - vars/processing_offline_var.yml
+  roles:
+    - { role: lookup-server-mdsrc }
+    - {
+        role: lookup-server-add-server,
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name }}-OFF-{{ group_index }}",
+        lookup_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_port }}",
+        lookup_server_host: "{{ hostvars[inventory_hostname].fqdn_host }}",
+        lookup_server_ip: "{{ processingoff_oam_vip_list[group_index|int].ip }}",
+        when: vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name != ""
+      }
+
+- name: Finalization playbooks for vdu-processingON nodes
+  hosts: vdu-processingON
+  serial: 2
+  vars_files:
+    - vars/global_var.yml
+    - vars/processing_online_var.yml
+  vars:
+    first_node: "{{ groups['vdu-processingON'][0] }}"
+    reconfigure: False
+  roles:
+    - { role: lookup-server-mdsrc }
+    - {
+        role: lookup-server-add-server,
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.online_lookup_server_name }}-ON-{{ groups['vdu-processingON'].index(inventory_hostname) }}",
+        lookup_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.online_lookup_server_port }}",
+        when: vnf_context_data.stack_params.cbam.extensions.online_lookup_server_name != ""
+      }
+
+- name: Finalization playbooks for vdu-cgf nodes
+  hosts: vdu-cgf
+  serial: 1
+  vars:
+    group_name: "{{ group_names | difference(['vdu-cgf']) | first }}"
+    group_index: "{{ group_name.split('-')[-1] }}"
+    ha_master: "{{ groups[group_name][0] }}"
+    first_node: "{{ groups['vdu-cgf'][0] }}"
+    reconfigure: False
+  vars_files:
+    - vars/global_var.yml
+    - vars/cgf_var.yml
+  roles:
+    - { role: lookup-server-mdsrc }
+    - {
+        role: lookup-server-add-server,
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_name }}-CGF-{{ group_index }}",
+        lookup_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_port }}",
+        lookup_server_host: "{{ hostvars[inventory_hostname].fqdn_host }}",
+        lookup_server_ip: "{{ cgf_oam_vip_list[group_index|int].ip }}",
+        when: vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_name != ""
+      }
+- name: Finalization playbook for UI
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+  vars:
+    ha_master: "{{ groups['vdu-ui'][0] }}"
+    reconfigure: False
+  post_tasks:
+    - name: Remove floating ip to loopback to avoid contacting secondary node
+      shell: ip address del {{ ui_floating_ip }} dev lo
+      when: vnf_context_data.stack_params.cbam.extensions.use_floating_ip == 1
+
+    - name: Del ui_oam_vip from loopback when it's same as ui_fqdn
+      shell: /usr/sbin/ip address del {{ ui_oam_vip }}/32 dev lo
+      when: (ui_oam_vip in (hostvars[inventory_hostname].ansible_all_ipv4_addresses)) and (ui_oam_vip == vnf_context_data.stack_params.cbam.extensions.ui_fqdn)
+  roles:
+    - { role: devtool-ui-configure }
+    - { role: devtool-backend }
+    - { role: version-info, host_fqdn: "{{ fqdn_host }}" }
+    - { role: keycloak-create-user, kc_TEST_ui_client_id: "devtool", role_set: ["devtool.read", "devtool.write", "devtool.workspace.read", "devtool.workspace.write"] }
+    - { role: create-lookup-company-permissions }
+
+- name: Finalization playbooks II for vdu-processing nodes
+  hosts: vdu-processingON:vdu-processingOFF:vdu-cgf
+  serial: 1
+  vars_files:
+    - vars/global_var.yml
+  roles:
+    - { role: version-info, host_fqdn: "{{ fqdn_host }}", admintools_protocol: "https", admintools_port: "45081" }
+    - { role: el-systemtools }
+
+- include: run_cpro_tls.yml
+
+- name: Main play for CRDB
+  hosts: vdu-crdb
+  serial: 3
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/crdb_var.yml
+    - vars/alarm_var.yml
+  roles:
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: crdb-server}
+
+- name: Configure MariaDB in vdu-db nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+    - vars/db_var.yml
+    - vars/alarm_var.yml
+  vars:
+    reconfigure: False
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - include: tasks/alarm/mariadb_pre_tasks.yml
+      when: alarm_version == '2'
+
+  roles:
+    - { role: el-ha, hookFunction: cmdb-mount-volumes, preserve_data: False, when: alarm_version == '2' }
+    - { role: cmdb, when: alarm_version == '2' }
+
+- name: Configure MariaDB replication configurations in vdu-db active nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    setup_cmdb_replication: True
+    server_id: 1
+    gtid_domain_id: 1
+    auto_increment_offset: 1
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    active_node: "{{ groups['vdu-db'][0] }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: (alarm_version == '2') and (inventory_hostname == active_node) }
+
+- name: Configure MariaDB replication configurations in vdu-db standby nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    setup_cmdb_replication: True
+    server_id: 2
+    gtid_domain_id: 2
+    auto_increment_offset: 2
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    active_node: "{{ groups['vdu-db'][0] }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: (alarm_version == '2') and (inventory_hostname != active_node) }
+
+- name: Configure MariaDB replication HA status in vdu-db standby node
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    update_replication_status: True
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    active_node: "{{ groups['vdu-db'][0] }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: (alarm_version == '2') and (inventory_hostname != active_node) }
+
+- name: Configure MariaDB replication HA status in vdu-db active node
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    update_replication_status: True
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    active_node: "{{ groups['vdu-db'][0] }}"
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: (alarm_version == '2') and (inventory_hostname == active_node) }
+
+- name: Stop MariaDB HA replication in vdu-db nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    stop_replication_slave: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: alarm_version == '2' }
+
+- name: Start MariaDB HA replication in vdu-db nodes
+  hosts: vdu-db
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/alarm_var.yml
+    - vars/global_var.yml
+  vars:
+    start_replication_slave: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cmdb_ha, when: alarm_version == '2' }
+
+- name: Configure Alarm-management roles into vdu-ui node
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+    - vars/alarm_var.yml
+    - vars/ui_var.yml
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - include: tasks/alarm/alarm_tasks.yml
+      when: alarm_version == '2'
+
+    - name: Make sure Mariadb is up
+      wait_for: host={{ db_oam_vip }} state=started port=3306 delay=5 timeout=180 connect_timeout=10
+      when: alarm_version == '2'
+
+  post_tasks:
+    - include: cert_cleanup.yaml
+
+  roles:
+    - { role: crmq, operation: "instantiate", when: alarm_version == '2' }
+    - { role: calm, when: alarm_version == '2' }
+    - { role: cnot, when: (alarm_version == '2' ) and sms_email_enabled }
+    - { role: el-fluentd, operation: "instantiate", when: alarm_version == '2' }
+    - { role: cpro-webhook, when: alarm_version == '2' }
+    - { role: cpro-alert-manager, when: alarm_version == '2' }
+
+- name: Update td-agent with amq plugin in vdu-processing nodes
+  hosts: vdu-processingON:vdu-processingOFF:vdu-cgf
+  serial: "{{ vnf_serial }}"
+  vars_files:
+    - vars/global_var.yml
+    - vars/alarm_var.yml
+  vars:
+    host_type: "el"
+  post_tasks:
+    - include: cert_cleanup.yaml
+  roles:
+    - { role: el-fluentd, operation: "instantiate", when: alarm_version == '2' }
+
+- name: Change http to https for UI
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: 5
+  #become: true
+  #become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+  vars:
+    ha_master: "{{ groups['vdu-ui'][0] }}"
+    reconfigure: False
+  roles:
+    - { role: TEST-httpd-ssl }
+    - { role: TEST-ui-ssl }
+    - { role: devtool-ui-ssl }
+    - { role: reports-configure-ssl }
+    - { role: admin-tools-configure-ssl }
+
+- name: Change http to https for processing hosts
+  hosts: vdu-cgf:vdu-processingOFF:vdu-processingON
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  tasks:
+    - name: Update tools.pl to https
+      shell: sed -i s/http:/https:/g /opt/TEST/TEST/.mds.rc
+
+
+- include: run_cpro_tls.yml

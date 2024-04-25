@@ -1,0 +1,138 @@
+#!/bin/bash
+
+DOCUMENTATION="
+module: create-postgresql-database
+short_description: Creates a database with given options to PostgreSQL server
+description:
+  - Creates a database with a name, owner, locale, encoding and tablespace.
+  - Owner must be an existing PostgreSQL user.
+author: TEST Corporation
+options:
+  login_host:
+    description:
+      - Hostname of the PostgreSQL database
+    required: true
+  port:
+    description:
+      - Port of the PostgreSQL database
+    default: 5432
+  login_user:
+    description:
+      - Username of a PostgreSQL user with CREATEDB permissions
+    required: true
+  login_password:
+    description:
+      - Password for the PostgreSQL user
+    required: true
+  name:
+    description:
+      - Database name to create
+    required: true
+  owner:
+    description:
+      - Username of a PostgreSQL user, who should own the database
+    required: true
+  encoding:
+    description:
+      - Character encoding used in the database
+  lc_collate:
+    description:
+      - String sort order of the database
+  lc_ctype:
+    description:
+      - Character classification for the database
+  tablespace:
+    description:
+      - Tablespace where database should be located (on the filesystem)
+notes:
+  - By default 'encoding', 'lc_collate', 'lc_ctype' and 'tablespace' are not defined in which case server defaults are used.
+"
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "ERROR: ${variable_name} is not defined"
+  done
+}
+
+function log {
+  line=$(tr -d '"' <<<$*)
+  log_lines="${log_lines}${line}\n"
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'"
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "$1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+  exit 1
+}
+
+# validate <extended grep pattern> <variable name>...
+# Example: validate "^[0-9]{4,5}$" tcp_port udp_port
+function validate {
+  local valid=true
+  local extended_grep_pattern="$1"; shift
+  local variable_name
+  for variable_name in "$@"
+  do
+    grep --quiet --extended-regexp "${extended_grep_pattern}" <<< "${!variable_name}" ||
+        { log "ERROR: ${variable_name} ('${!variable_name}') does not conform to '${extended_grep_pattern}'"; valid=false; }
+  done
+  ${valid} || fail
+}
+
+log_lines=""
+failed=true
+changed=false
+
+# Default parameter values
+login_host=
+port=5432
+login_user=
+login_password=
+name=
+owner=
+encoding=
+lc_collate=
+lc_ctype=
+tablespace=
+
+# Source parameters (possibly overwriting defaults)
+source "$1"
+log_variables login_host port login_user name owner encoding lc_collate lc_ctype tablespace
+check_variables login_host port login_user name owner
+
+# Common psql parameters
+database_params="--host ${login_host} --port ${port} --username ${login_user} --dbname postgres --no-password"
+formatting_params="--no-align --tuples-only --field-separator='|'"
+
+query="SELECT 1 FROM pg_database WHERE datname='${name}'"
+log "Checking if the database already exists... (${query})"
+output=$(PGPASSWORD="${login_password}" psql $database_params $formatting_params --command "${query}") ||
+    fail "ERROR: failed to execute query: '${query}' (${output})"
+
+if [ "${output}" = "1" ]
+then
+    log "Database '${name}' already exists"
+    failed=false
+else
+    query="CREATE DATABASE \"${name}\" OWNER \"${owner}\"${encoding:+ ENCODING $encoding}${lc_collate:+ LC_COLLATE $lc_collate}${lc_cctype:+ LC_CTYPE $lc_ctype}${tablespace:+ TABLESPACE \"$tablespace\"}"
+    log "Creating database '${name}': '${query}'"
+    output=$(PGPASSWORD="${login_password}" psql $database_params $formatting_params --command "${query}" 2>&1) ||
+        fail "ERROR: failed to execute query: '${query}' (${output})"
+    changed=true
+    failed=false
+fi
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+exit 0

@@ -1,0 +1,215 @@
+# Password for 'TEST' user
+unix_user_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_unix_user | default(vnf_context_data.vnf_attributes.extensions.passwd_unix_user) }}"
+unix_root_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_unix_root_user | default(vnf_context_data.vnf_attributes.extensions.passwd_unix_root_user) }}"
+
+# Whether anyone is able to login to DR VMs using console
+disable_console_access: vnf_context_data.stack_params.cbam.extensions.disable_console_access
+
+
+# SSH configurations
+password_authentication: "no"
+challenge_response_authentication: "no"
+authorized_keys_file:  ".ssh/authorized_keys"
+allow_root_login: "no"
+authorized_key: "{{ vnf_context_data.vnf_attributes.extensions.authorized_key }}"
+
+vnf_gather_facts: True
+vnf_fail_ratio: 0
+vnf_serial: 5
+
+TEST_home: /opt/TEST/TEST/base
+
+el_ui_cloud_cluster_base_url: ""
+
+record_dir: "/opt/TEST/TEST/data/buffer"
+control_dir: "/opt/TEST/TEST/control"
+offline_dir: "/opt/TEST/TEST/offline"
+storage_dir: "/opt/TEST/TEST/storage"
+
+timezone: "{{ vnf_context_data.stack_params.cbam.extensions.time_zone }}"
+
+postgresql_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.postgresql_server_port }}"
+db_el_user: "elink"
+db_el_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_user | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user) }}"
+
+vi_db_user: "ccpvi"
+vi_db_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_user | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user) }}"
+vi_db_port: "{{ vnf_context_data.stack_params.cbam.extensions.postgresql_server_port }}"
+vi_db_name: ccpvi_db
+
+at_db_user: "ccpat"
+at_db_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_user | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user) }}"
+
+db_admin_user: "pgadmin"
+db_admin_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_admin) }}"
+
+ui_floating_ip: "{{ vnf_context_data['resource_model']['resources']['ui_static']['resources']['floating_ip_group']['resources']['0']['attributes']['floating_ip_address'] | default('Null') }}"
+
+pass_crdb: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_crdb_user | default(vnf_context_data.vnf_attributes.extensions.passwd_crdb_user) }}"
+
+jmx_user: "TEST"
+jmx_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_jmx_user | default(vnf_context_data.vnf_attributes.extensions.passwd_jmx_user) }}"
+
+# Admin Tools
+vi_db_host: "{{ db_oam_vip }}"
+
+# Admin Tools Keycloak
+admintools_keystore_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+admintools_truststore_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+admintools_certificate_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+
+# Keycloak Variables
+kc_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+kc_keystore_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+kc_certificate_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+kc_db_host: "{{ db_oam_vip }}"
+kc_db_user: "keycloak"
+kc_db_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_user | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user) }}"
+
+kc_admin_user: "admin"
+kc_admin_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin)}}"
+kc_realm_admin_user: "realmadmin"
+kc_realm_admin_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keycloak_admin | default(vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin) }}"
+kc_preferred_ip_version: "{{vnf_context_data.stack_params.cbam.extensions.ip_protocol_version.split('v')[1] }}"
+# Audit Trail
+at_db_name: "ccpat_db"
+at_db_host: "{{db_oam_vip }}"
+at_db_port: "{{ vnf_context_data.stack_params.cbam.extensions.postgresql_server_port }}"
+# Solution Config
+solution_name: "Security Solution"
+product_name: "Data Refinery"
+copyright_text: "TEST Corporation"
+
+# EL UI
+kc_user_username: "{{ vnf_context_data.stack_params.cbam.extensions.username_TEST_gui }}"
+kc_user_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_TEST_gui | default(vnf_context_data.vnf_attributes.extensions.passwd_TEST_gui) }}"
+kc_user_firstname: "TEST"
+kc_user_lastname: "Corporation"
+kc_user_email: "administrator@TEST.com"
+
+# Reporter
+reports_port: "56080"
+protocol: "http"
+reports_start_wait_timeout: "120"
+reports_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+
+# Reporter configure
+elui_db_user: "elink"
+elui_db_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_postgresql_user | default(vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user) }}"
+reports_deploy_solution_config: "true"
+
+# System Monitoring
+smr_start_wait_timeout: "180"
+smr_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+gmetad_fqdn: "{{ ansible_hostname }}"
+
+# Devtool vars
+devtool_ui_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+devtool_backend_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+#[all:vars]
+
+# Required by multiple roles
+
+activate_crypto: "true"
+
+vi_crud_wait_timeout: "120"
+
+db_el_host: "{{ db_oam_vip }}"
+db_el_name: "TEST"
+db_el_port: "{{ vnf_context_data.stack_params.cbam.extensions.postgresql_server_port }}"
+db_el_tablespace: "ctl"
+db_el_tablespace_index: "ctlidx"
+
+# Required by DB creation roles
+db_login_host: "{{ db_oam_vip }}"
+postgresql_config_path: "/var/lib/pgsql/data"
+postgresql_daemon: "postgresql"
+postgresql_data_dir: "/var/lib/pgsql/data"
+# Trusted host based authentication network address to be added to the pg_hba.conf
+hba_network_address: "{{ db_oam_vip }}"
+hba_netmask: 24
+postgresql_hba_entries:
+  - { type: local, database: all, user: postgres, auth_method: peer }
+  - { type: local, database: all, user: all, auth_method: trust }
+  - { type: host, database: all, user: all, address: '127.0.0.1/32', auth_method: trust }
+  - { type: host, database: all, user: all, address: '::1/128', auth_method: trust }
+  - { type: host, database: all, user: all, address: '{{ hba_network_address }}/{{ hba_netmask }}', auth_method: md5 }
+
+# Required by version-info role
+admintools_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+
+# EL SystemTools
+el_ui_URL: "http://{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}:55080/TEST"
+
+# EL nodes
+
+# System Monitoring
+ganglia_user: "ganglia"
+ganglia_primary_hosts_group: "vdu-ui"
+gmond_fqdn: "{{ ansible_hostname }}"
+el_ui_fqdn: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+nm_node_heartbeat: 120
+
+
+# Generate 3gppxml report
+audit_3gppxml_enabled: "{{ vnf_context_data.stack_params.cbam.extensions.audit_3gppxml_enabled }}"
+
+# gen3gppxml
+gen3gppxml_sftp_user: "{{ vnf_context_data.stack_params.cbam.extensions.gen3gppxml_sftp_user }}"
+gen3gppxml_sftp_password: "{{ vnf_context_data.stack_params.cbam.extensions.gen3gppxml_sftp_password | default(vnf_context_data.vnf_attributes.extensions.gen3gppxml_sftp_password) }}"
+
+# system monitoring - grafana
+grafana_security_admin_user: "admin"
+grafana_security_admin_password: "admin"
+grafana_security_admin_secret_key: "SW2YcwTIb9zpOOhoPsMm"
+
+grafana_server_host: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+
+ui_oam_0: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[0].ip }}"
+ui_oam_1: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[1].ip }}"
+ui_oam_vip: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_OAM_IPv4_virtual_ECP.addresses[0].ip }}"
+
+oam_oam_0: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[0].ip }}"
+oam_oam_1: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[1].ip }}"
+oam_oam_vip: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.OAM_IPv4_virtual_ECP.addresses[0].ip }}"
+
+db_oam_0: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[0].ip }}"
+db_oam_1: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[1].ip }}"
+db_oam_vip: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.DB_OAM_IPv4_virtual_ECP.addresses[0].ip }}"
+db_oam_hostname: "db-vhostname.local"
+
+processingon_oam_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_oam_ecp.addresses }}"
+processingon_charg_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_charging_ecp.addresses }}"
+processingon_bill_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_billing_ecp.addresses }}"
+
+processingoff_oam_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_oam_ecp.addresses }}"
+processingoff_oam_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_OAM_IPv4_virtual_ECP.addresses }}"
+processingoff_charg_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_charging_ecp.addresses }}"
+processingoff_charg_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_charg_IPv4_virtual_ECP.addresses }}"
+processingoff_bill_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_billing_ecp.addresses }}"
+processingoff_bill_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_bill_IPv4_virtual_ECP.addresses }}"
+
+cgf_oam_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses }}"
+cgf_oam_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_OAM_IPv4_virtual_ECP.addresses }}"
+cgf_charg_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_charging_ecp.addresses }}"
+cgf_charg_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_charg_IPv4_virtual_ECP.addresses }}"
+cgf_bill_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_billing_ecp.addresses }}"
+cgf_bill_vip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_bill_IPv4_virtual_ECP.addresses }}"
+
+ui_intnet_0: "{{ vnf_context_data['resource_model']['resources']['ui_aspect_group']['resources']['0']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+ui_intnet_1: "{{ vnf_context_data['resource_model']['resources']['ui_aspect_group']['resources']['1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+
+crdb_oam_ip_list: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses }}"
+crdb_oam_0: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[0].ip }}"
+crdb_oam_1: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[1].ip }}"
+crdb_oam_2: "{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[2].ip }}"
+crdb_ssl: "{{ vnf_context_data.vnf_attributes.extensions.crdb_ssl }}"
+
+hide_sensitive_debug_info: "{{ vnf_context_data.stack_params.cbam.extensions.hide_sensitive_debug_info }}"
+#gen3gppxml_enable_https: "{{ vnf_context_data.stack_params.cbam.extensions.gen3gppxml_enable_https }}"
+gen3gppxml_enable_https: false
+max_diagnostic_messages: "{{ vnf_context_data.stack_params.cbam.extensions.max_diagnostic_messages }}"
+max_diagnostic_files: "{{ vnf_context_data.stack_params.cbam.extensions.max_diagnostic_files }}"
+
+global_keystore_password: "{{ vnf_context_data.stack_params.cbam.extensions.passwd_keystore | default(vnf_context_data.vnf_attributes.extensions.passwd_keystore) }}"
+fluentd_cert_dir: /etc/td-agent/ssl

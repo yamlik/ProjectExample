@@ -1,0 +1,27 @@
+---
+- name: Copy logrotate main configuration
+  template:
+    src: logrotate.conf.j2
+    dest: "{{ logrotate_config_main }}"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: true
+    
+- name: Copy logrotate configuration for syslog
+  template:
+    src: syslog.j2
+    dest: "{{ logrotate_config_dir }}/syslog"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: true
+
+- name: Copy logrotate configuration for td-agent
+  template:
+    src: td-agent.j2
+    dest: "{{ logrotate_config_dir }}/td-agent"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: true

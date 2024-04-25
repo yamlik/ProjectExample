@@ -1,0 +1,5 @@
+{% if vnf_context_data.stack_params.cbam.extensions.dns_domain is defined and vnf_context_data.stack_params.cbam.extensions.dns_domain != '' %}domain {{ vnf_context_data.stack_params.cbam.extensions.dns_domain }}{% endif %}
+
+{% for item in vnf_context_data.stack_params.cbam.extensions.dns_servers %}
+nameserver {{ item }}
+{% endfor %}

@@ -1,0 +1,14 @@
+clouds:
+  ipv4:
+    auth:
+      auth_url: https://10.15.160.228:13000/v3
+      password: ChangeMe.RightCorner.012f
+      project_name: v11639_DI_DR
+      username: v11639_vornanen
+      user_domain_name: "Default"
+      project_domain_name: "default"
+      project_id: 9a2a6a3385744084afe07ac288250df4
+    regionName: regionOne
+    verify: false
+    os_api_version: 3
+    os_interface: public

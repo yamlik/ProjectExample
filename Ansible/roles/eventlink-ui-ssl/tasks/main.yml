@@ -1,0 +1,83 @@
+---
+- name: Generate SSL certificate
+  shell: openssl genrsa -out {{product_install_dir_TEST_ui}}/TEST.key 2048
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+
+- name: Generate SSL certificate
+  shell: echo -e '\n\n\nTEST\n\n\n\n\n\n' | openssl req -new -key {{product_install_dir_TEST_ui}}/TEST.key -out {{product_install_dir_TEST_ui}}/TEST.csr
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+
+- name: Generate SSL certificate
+  shell: openssl x509 -req -days 3650 -in {{product_install_dir_TEST_ui}}/TEST.csr -signkey {{product_install_dir_TEST_ui}}/TEST.key -out {{product_install_dir_TEST_ui}}/TEST.crt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+
+- name: Generate SSL certificate
+  shell: openssl pkcs12 -export -in TEST.crt -inkey TEST.key -out TEST.p12 -name TEST -CAfile ca.crt -caname root -password pass:changeit
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  
+- name: Create and import into keystore
+  shell: keytool -importkeystore -deststorepass changeit -destkeypass changeit -destkeystore TEST.keystore -srckeystore TEST.p12 -srcstoretype PKCS12 -srcstorepass changeit -alias TEST -noprompt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  
+# tasks file for TEST-ui
+- name: "Replace tomcat server.xml."
+  template:
+    src: el-ui-server.xml.j2
+    dest: "{{ server_xml_file_location }}"
+    owner: "{{ el_ui_user }}"
+    group: "{{ el_ui_group }}"
+    mode: 0644
+  notify: "Restart ELUI service"
+
+- name: Update solution-config.json to use https
+  shell: sed -i s/http:/https:/g /opt/TEST/solution-config/solution-config.json
+
+- name: Obtain auth token for admin cli
+  shell: expect -c "set echo \"-noecho\"; set timeout 20s; spawn -noecho /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8665/auth --realm master --user admin --password {{ kc_admin_password }}; expect timeout { exit 1 } eof { exit 0 }"
+  retries: 3
+  delay: 1
+  register: result
+  until: result.rc == 0
+  become: true
+  become_method: sudo
+
+
+- name: Get 'TEST_ui' client id from Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh get clients -r TEST -q clientId=TEST_ui -c --format csv --noquotes -F id
+  become: true
+  become_method: sudo
+  register: client_id
+  failed_when: client_id.stdout == ""
+
+
+- name: Export 'TEST_ui' client info from Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh get clients/{{ client_id.stdout }} -r TEST > /tmp/TEST_ui_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Change 'http' to 'https'
+  shell: sed -i s/http:/https:/g /tmp/TEST_ui_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Update 'TEST_ui' client info in Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh update clients/{{ client_id.stdout }} -r TEST -f /tmp/TEST_ui_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Remove the auth token
+  shell: rm /root/.keycloak/kcadm.config
+  become: true
+  become_method: sudo
+
+
+- name: Update tools.pl to https
+  shell: sed -i s/http:/https:/g /opt/TEST/TEST/.mds.rc

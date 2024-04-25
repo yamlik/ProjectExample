@@ -1,0 +1,12 @@
+{
+  "TC-58876": {
+    "createARule1": {"RuleDetail":"<NewDataSet><Rules><Rules_Code>58876</Rules_Code><Rules_Description><![CDATA[Automation test for 58876]]></Rules_Description><Fraud_Score>10</Fraud_Score><Matches_Minimum>1</Matches_Minimum><Matches_Maximum>999</Matches_Maximum><ApplicationsAge_From>9999</ApplicationsAge_From><ApplicationsAge_To>9999</ApplicationsAge_To><Apply_Exclusions>0</Apply_Exclusions><Active_Flag>1</Active_Flag><Database_To_Apply>A</Database_To_Apply><MatchToItself_Flag>0</MatchToItself_Flag><NearMatching_Flag>False</NearMatching_Flag><Comments><![CDATA[]]></Comments><Rule_Group></Rule_Group><Rule_Admin_Group_Code>&#160;</Rule_Admin_Group_Code><Rules_UserId></Rules_UserId><Action></Action></Rules><RuleDefinition><Sequence_Number>1</Sequence_Number><ApplicationCategory_Number>2</ApplicationCategory_Number><ApplicationCategory_Label>Applicant</ApplicationCategory_Label><ApplicationField_Number>6</ApplicationField_Number><ApplicationField_Label>First Name</ApplicationField_Label><ApplicationField_Type>Text(150)</ApplicationField_Type><Operator_Type><![CDATA[=]]></Operator_Type><Field_Flag>1</Field_Flag><Value_Flag>0</Value_Flag><DatabaseCategory_Number>2</DatabaseCategory_Number><DatabaseCategory_Label>Applicant</DatabaseCategory_Label><DatabaseField_Number>6</DatabaseField_Number><DatabaseField_Label>First Name</DatabaseField_Label><DatabaseField_Type>Text(150)</DatabaseField_Type><Assignment_Value></Assignment_Value><Mandatory_Flag>1</Mandatory_Flag><Left_Bracket></Left_Bracket><Right_Bracket></Right_Bracket><Record_Id>0</Record_Id><Logical_Operator></Logical_Operator><Variable_Flag>0</Variable_Flag><Reference_Table_Query></Reference_Table_Query></RuleDefinition></NewDataSet>","ActionCode":"A"},
+    "deleteARule" : [{
+      "ruleCode": "58876",
+      "description": "Automation test for 58876"
+    }],
+    "searchForRule": {
+      "Rule": "58876"
+    }
+  }
+}

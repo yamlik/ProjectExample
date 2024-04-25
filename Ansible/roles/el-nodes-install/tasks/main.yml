@@ -1,0 +1,150 @@
+---
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+ - name: fail when variable not defined
+   fail: msg="Variable '{{ item }}' is not defined"
+   when: item not in vars
+   with_items:
+     - import_stream
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+ - name: fail when variable is empty
+   fail: msg="Variable '{{ item.name }}' should not be empty"
+   when: ( item.value is none ) or ( item.value == "" )
+   with_items:
+     - { name: "import_stream", value: "{{ import_stream }}" }
+
+# Get list of mcp_lib_javanode packages in node_package_directory
+ - name: get mcp_lib_javanode packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "MCP_LIB_JAVANODE*.el"
+   register: mcp_lib_javanode_el
+
+# Get list of el_lib_trs packages in node_package_directory
+ - name: get el_lib_trs packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_TRS*.el"
+   register: el_lib_trs_el
+
+# Get list of el_lib_duplicate_checker packages in node_package_directory
+ - name: get el_lib_duplicate_checker packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_DUPLICATE_CHECKER*.el"
+   register: el_lib__duplicate_checker_el
+   
+# Get list of el_lib_lookup packages in node_package_directory
+ - name: get el_lib_lookup packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_LOOKUP*.el"
+   register: el_lib_lookup_el
+
+# Get list of el_lib_couchbase packages in node_package_directory
+ - name: get el_lib_couchbase packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_COUCHBASE-*.el"
+   register: el_lib_couchbase_el
+
+# Get list of el_lib_couchbase_aggregation packages in node_package_directory
+ - name: get el_lib_couchbase_aggregation packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_COUCHBASE_AGGREGATION-*.el"
+   register: el_lib_couchbase_aggregation_el
+   
+# Get list of mcp_lib packages in node_package_directory
+ - name: get mcp_lib packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "MCP_LIB_*.el"
+   register: mcp_lib_el
+                                 
+# Get list of lib packages in node_package_directory
+ - name: get el_lib packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_LIB_*.el"
+   register: lib_el
+                                
+# Get list of app packages in node_package_directory
+ - name: get el_app packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_APP_*.el"
+   register: app_el
+
+# Get list of cfg packages in node_package_directory
+ - name: get el_cfg packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_CFG_*.el"
+   register: cfg_el
+
+# Get list of txe node in node_package_directory
+ - name: get txe node packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "mcp-tx-engine-node*.el"
+   register: txe_node_el
+
+# Get list of txe stream in node_package_directory
+ - name: get txe stream packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "mcp-tx-engine-stream*.el"
+   register: txe_stream_el
+   
+# Get list of cleanup stream in node_package_directory
+ - name: get cleanup stream packages
+   find:
+      paths: "{{ node_package_dir }}"
+      patterns: "EL_STREAM_CLEANUP*.el"
+   register: cleanup_stream_el
+
+
+ - name: "wait for TEST UI Service"
+   when: restart_webapp is not defined or restart_webapp
+   wait_for:
+     host: "{{ system_tools_hostname }}" 
+     port: "{{ el_ui_http_port }}"
+     state: started
+     timeout: "{{ um_crud_wait_timeout }}"
+   register: start_elui
+   ignore_errors: true
+
+# run tools.pl to import packages
+ - name: import node packages
+   shell: "tools.pl {{ nodes_import_mode }} -c import {{ item.path }}"
+   when: start_elui | success 
+   with_items:
+       - "{{ mcp_lib_javanode_el.files }}"
+       - "{{ el_lib_trs_el.files }}"
+       - "{{ el_lib__duplicate_checker_el.files }}"
+       - "{{ el_lib_lookup_el.files }}"
+       - "{{ el_lib_couchbase_el.files }}"
+       - "{{ el_lib_couchbase_aggregation_el.files }}"
+       - "{{ lib_el.files }}"
+       - "{{ app_el.files }}"
+       - "{{ cfg_el.files }}"
+       - "{{ txe_node_el.files }}"
+   loop_control:
+    label: "Imported package {{ item.path | basename }}"
+   become: "{{ user }}"
+
+ - name: import stream packages
+   shell: "tools.pl {{ nodes_import_mode }} -c import {{ item.path }} -H {{ stream_host }}"
+   when: (import_stream) and (start_elui | success)
+   with_items:
+       - "{{ txe_stream_el.files }}"
+       - "{{ cleanup_stream_el.files }}"
+   loop_control:
+    label: "Imported stream {{ item.path | basename }}"
+   become: "{{ user }}"
+
+...

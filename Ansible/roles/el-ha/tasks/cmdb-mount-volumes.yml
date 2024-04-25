@@ -1,0 +1,116 @@
+---
+- name: Check if directory in mount point has any artifacts
+  find:
+    paths: "{{ item.mount_point }}"
+    patterns: "*"
+    recurse: False
+    hidden: True
+    file_type: any
+  register: artifacts
+  when:
+   - preserve_data == True
+   - item.name == 'cmdb-data'
+  with_items: "{{ cinder_volumes }}"
+
+- name: Create temporary directory for artifacts
+  file:
+    path: "/root/{{ item.item.name }}"
+    state: directory
+    mode: "u=rwx"
+  when:
+   - preserve_data == True
+   - item.item.name == 'cmdb-data'
+   - item.matched is defined
+   - item.matched|int > 0
+  with_items: "{{ artifacts.results }}"
+
+- name: "Copy artifacts from {{ item.item.mount_point }} to a temporary folder/root/{{  item.item.name }}"
+  shell: "cp --preserve=all -r {{ item.item.mount_point }}/* /root/{{ item.item.name }}/."
+  when:
+   - preserve_data == True
+   - item.item.name == 'cmdb-data'
+   - item.matched|int > 0
+  with_items: "{{ artifacts.results }}"
+
+- name: Remove obsolete data in the mount points
+  shell: rm -rdf "{{ item.mount_point }}"/*
+  with_items: "{{ cinder_volumes }}"
+  when: item.name == 'cmdb-data'
+
+- name: Make sure all /dev/disk/by-id symlinks are present
+  command: udevadm trigger
+  become: true
+
+- name: Ensure mount point exists
+  file:
+    path: "{{ item.mount_point }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ cinder_volumes }}"
+  when: item.name == 'cmdb-data'
+  tags:
+    - mount
+
+- name: Create filesystem for Cinder volumes
+  filesystem:
+    force: yes
+    dev: "{{ item.device }}"
+    fstype: "{{ item.filesystem }}"
+    opts: "{{ item.opts }}"
+  with_items: "{{ cinder_volumes }}"
+  ignore_errors: yes
+  when:
+   - ((reconfigure is not defined) or (reconfigure != True))
+   - item.name == 'cmdb-data'
+
+- name: Template mount unit files for cinder volumes
+  template:
+    src: "cinder.mount.j2"
+    owner: root
+    group: root
+    dest: "/etc/systemd/system/{{ item.mount_point_dash }}.mount"
+    mode: 0644
+  with_items: "{{ cinder_volumes }}"
+  when: item.name == 'cmdb-data'
+
+- name: Enable and Start systemd mount unit files to mount cinder volumes
+  systemd:
+    name: "{{ item.mount_point }}"
+    state: started
+    daemon_reload: yes
+    enabled: yes
+  with_items: "{{ cinder_volumes }}"
+  when: item.name == 'cmdb-data'
+
+- name: Assign ownership to mount_point
+  file:
+    path: "{{ item.mount_point }}"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ cinder_volumes }}"
+  when: item.name == 'cmdb-data'
+  tags:
+    - mount
+
+- name: Copy artifacts from temp location to "{{ item.item.mount_point }}"
+  shell: "cp --preserve=all -r /root/{{ item.item.name }}/* {{ item.item.mount_point }}/."
+  when:
+   - preserve_data == True
+   - item.item.name == 'cmdb-data'
+   - item.matched is defined
+   - item.matched|int > 0
+  with_items: "{{ artifacts.results }}"
+  ignore_errors: True
+
+- name: Remove temporary folder that was created for artifacts
+  file:
+    path: "/root/{{ item.item.name }}"
+    state: absent
+  when:
+   - preserve_data == True
+   - item.item.name == 'cmdb-data'
+   - item.matched is defined
+   - item.matched|int > 0
+  with_items: "{{ artifacts.results }}"

@@ -1,0 +1,183 @@
+{
+  "TSNT-5032": {
+    "createAResultTable1": {
+      "TableId": "24",
+      "TableName": "Automation_users",
+      "TableType": "JSON",
+      "TablePath": "$.data"
+    },
+    "createResultTableFields1": {
+      "FieldName": "id",
+      "Description": "id",
+      "ValueType": "int",
+      "Length": "",
+      "FieldPath": "id",
+      "Active": true,
+      "TableName": "Automation_users",
+      "TableId": 24,
+      "FieldId": 0
+    },
+    "createResultTableFields2": {
+      "FieldName": "email",
+      "Description": "email",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "email",
+      "Active": true,
+      "TableName": "Automation_users",
+      "TableId": 24,
+      "FieldId": 0
+    },
+    "createResultTableFields3": {
+      "FieldName": "first_name",
+      "Description": "first name",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "first_name",
+      "Active": true,
+      "TableName": "Automation_users",
+      "TableId": 24,
+      "FieldId": 0
+    },
+    "createResultTableFields4": {
+      "FieldName": "last_name",
+      "Description":"last name",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "last_name",
+      "Active": true,
+      "TableName": "Automation_users",
+      "TableId": 24,
+      "FieldId": 0
+    },
+    "createResultTableFields5": {
+      "FieldName": "avatar",
+      "Description": "avatar",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "avatar",
+      "Active": true,
+      "TableName": "Automation_users",
+      "TableId": 24,
+      "FieldId": 0
+    },
+    "createAWorkflow1": {
+     "Definition":"{\"workflowId\":\"automation_resulttable\",\"workflowActions\":[{\"workflowActionId\":\"RandomNumber8\",\"workflowActionType\":9,\"workflowActionName\":\"Random Number\",\"workflowActionCustomType\":\"RandomNumber\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Random_Number_Title\",\"workflowItemImage\":\"ic_RandomNumber.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"RESTCall1\",\"workflowActionType\":5,\"workflowActionName\":\"REST Call\",\"configuration\":{\"method\":\"1\",\"uri\":\"https://reqres.in/api/users/2\",\"timeout\":\"\",\"credential\":\"\",\"parameters\":[],\"body\":\"\"},\"results\":[],\"resultTables\":[{\"value\":\"24\"}],\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Rest_Title\",\"workflowItemImage\":\"ic_rest_api.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"RulesChecking8\",\"workflowActionType\":9,\"workflowActionName\":\"Rules Checking\",\"workflowActionCustomType\":\"FraudRules\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Rules_Title\",\"workflowItemImage\":\"ic_rules.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"ScorecardScoring8\",\"workflowActionType\":9,\"workflowActionName\":\"Scorecard Scoring\",\"workflowActionCustomType\":\"FraudScoring\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Scoring_Title\",\"workflowItemImage\":\"ic_Scorecards.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"CriteriaFields7\",\"workflowActionType\":9,\"workflowActionName\":\"Criteria Fields\",\"workflowActionCustomType\":\"CriteriaFields\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Criteria_Field_Title\",\"workflowItemImage\":\"ic_CriteriaFields.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"CalculatedFields7\",\"workflowActionType\":9,\"workflowActionName\":\"Calculated Fields\",\"workflowActionCustomType\":\"CalculatedFields\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Calculated_Field_Title\",\"workflowItemImage\":\"ic_CalculatedFields.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"AutoAction4\",\"workflowActionType\":9,\"workflowActionName\":\"Auto Action\",\"workflowActionCustomType\":\"AutoAction\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Auto_Action_Title\",\"workflowItemImage\":\"ic_auto_action.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"AlertAssignment6\",\"workflowActionType\":9,\"workflowActionName\":\"Alert Assignment\",\"workflowActionCustomType\":\"FraudAlertAssignment\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Alert_Title\",\"workflowItemImage\":\"ic_AlertAssignment.svg\"},\"inputs\":[],\"outputs\":[]}],\"workflowDescription\":\"automation_resulttable\",\"workflowIcon\":\"\",\"adapterId\":\"\",\"workflowTested\":false,\"workflowVariables\":[]}"},
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation5032",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "Janet"
+    },
+    "createARule1":{"RuleDetail":"<NewDataSet><Rules><Rules_Code>Rt0001</Rules_Code><Rules_Description><![CDATA[first name equals result table users first name]]></Rules_Description><Fraud_Score>30</Fraud_Score><Matches_Minimum>1</Matches_Minimum><Matches_Maximum>999</Matches_Maximum><ApplicationsAge_From>0</ApplicationsAge_From><ApplicationsAge_To>0</ApplicationsAge_To><Apply_Exclusions>0</Apply_Exclusions><Active_Flag>1</Active_Flag><Database_To_Apply>A</Database_To_Apply><MatchToItself_Flag>1</MatchToItself_Flag><NearMatching_Flag>False</NearMatching_Flag><Comments><![CDATA[]]></Comments><Rule_Group></Rule_Group><Rule_Admin_Group_Code>&#160;</Rule_Admin_Group_Code><Rules_UserId></Rules_UserId><Action></Action></Rules><RuleDefinition><Sequence_Number>1</Sequence_Number><ApplicationCategory_Number>2</ApplicationCategory_Number><ApplicationCategory_Label>Applicant</ApplicationCategory_Label><ApplicationField_Number>6</ApplicationField_Number><ApplicationField_Label>First Name</ApplicationField_Label><ApplicationField_Type>Text(150)</ApplicationField_Type><Operator_Type><![CDATA[=]]></Operator_Type><Field_Flag>1</Field_Flag><Value_Flag>0</Value_Flag><DatabaseCategory_Number>224</DatabaseCategory_Number><DatabaseCategory_Label>Automation_users</DatabaseCategory_Label><DatabaseField_Number>{{DatabaseFieldNumber}}</DatabaseField_Number><DatabaseField_Label>first name</DatabaseField_Label><DatabaseField_Type>Text</DatabaseField_Type><Assignment_Value></Assignment_Value><Mandatory_Flag>1</Mandatory_Flag><Left_Bracket></Left_Bracket><Right_Bracket></Right_Bracket><Record_Id>0</Record_Id><Logical_Operator></Logical_Operator><Variable_Flag>0</Variable_Flag><Reference_Table_Query></Reference_Table_Query></RuleDefinition></NewDataSet>","ActionCode":"A"},
+    "valueMatchesTab": {
+      "leftColumn1": "Applicant.First Name",
+      "rightColumn1": "JANET = Automation_users.first name Janet",
+      "ruleDetails1": "Rt0001 - first name equals result table users first name"
+    },
+    "verifyRow1": {
+      "#": "1",
+      "id": "2",
+      "email": "janet.weaver@reqres.in",
+      "first name": "Janet",
+      "last name": "Weaver",
+      "avatar": "https://reqres.in/img/faces/2-image.jpg"
+    }
+  },
+  "TSNT-5527": {
+    "createAResultTable1": {
+      "TableId": "25",
+      "TableName": "Automation_users1",
+      "TableType": "JSON",
+      "TablePath": "$.data"
+    },
+    "createResultTableFields1": {
+      "FieldName": "id",
+      "Description": "id",
+      "ValueType": "int",
+      "Length": "",
+      "FieldPath": "id",
+      "Active": true,
+      "TableName": "Automation_users1",
+      "TableId": 25,
+      "FieldId": 0
+    },
+    "createResultTableFields2": {
+      "FieldName": "email",
+      "Description": "email",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "email",
+      "Active": true,
+      "TableName": "Automation_users1",
+      "TableId": 25,
+      "FieldId": 0
+    },
+    "createResultTableFields3": {
+      "FieldName": "first_name",
+      "Description": "first name",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "first_name",
+      "Active": true,
+      "TableName": "Automation_users1",
+      "TableId": 25,
+      "FieldId": 0
+    },
+    "createResultTableFields4": {
+      "FieldName": "last_name",
+      "Description":"last name",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "last_name",
+      "Active": true,
+      "TableName": "Automation_users1",
+      "TableId": 25,
+      "FieldId": 0
+    },
+    "createResultTableFields5": {
+      "FieldName": "avatar",
+      "Description": "avatar",
+      "ValueType": "nvarchar",
+      "Length": "100",
+      "FieldPath": "avatar",
+      "Active": true,
+      "TableName": "Automation_users1",
+      "TableId": 25,
+      "FieldId": 0
+    },
+    "createAWorkflow1": {
+      "Definition":"{\"workflowId\":\"automation_resulttable1\",\"workflowActions\":[{\"workflowActionId\":\"RandomNumber8\",\"workflowActionType\":9,\"workflowActionName\":\"Random Number\",\"workflowActionCustomType\":\"RandomNumber\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Random_Number_Title\",\"workflowItemImage\":\"ic_RandomNumber.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"RESTCall1\",\"workflowActionType\":5,\"workflowActionName\":\"REST Call\",\"configuration\":{\"method\":\"1\",\"uri\":\"https://reqres.in/api/users/2\",\"timeout\":\"\",\"credential\":\"\",\"parameters\":[],\"body\":\"\"},\"results\":[],\"resultTables\":[{\"value\":\"25\"}],\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Rest_Title\",\"workflowItemImage\":\"ic_rest_api.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"RulesChecking8\",\"workflowActionType\":9,\"workflowActionName\":\"Rules Checking\",\"workflowActionCustomType\":\"FraudRules\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Rules_Title\",\"workflowItemImage\":\"ic_rules.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"ScorecardScoring8\",\"workflowActionType\":9,\"workflowActionName\":\"Scorecard Scoring\",\"workflowActionCustomType\":\"FraudScoring\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Scoring_Title\",\"workflowItemImage\":\"ic_Scorecards.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"CriteriaFields7\",\"workflowActionType\":9,\"workflowActionName\":\"Criteria Fields\",\"workflowActionCustomType\":\"CriteriaFields\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Criteria_Field_Title\",\"workflowItemImage\":\"ic_CriteriaFields.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"CalculatedFields7\",\"workflowActionType\":9,\"workflowActionName\":\"Calculated Fields\",\"workflowActionCustomType\":\"CalculatedFields\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Calculated_Field_Title\",\"workflowItemImage\":\"ic_CalculatedFields.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"AutoAction4\",\"workflowActionType\":9,\"workflowActionName\":\"Auto Action\",\"workflowActionCustomType\":\"AutoAction\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Auto_Action_Title\",\"workflowItemImage\":\"ic_auto_action.svg\"},\"inputs\":[],\"outputs\":[]},{\"workflowActionId\":\"AlertAssignment6\",\"workflowActionType\":9,\"workflowActionName\":\"Alert Assignment\",\"workflowActionCustomType\":\"FraudAlertAssignment\",\"properties\":{\"workflowActionName\":\"ProcessManager.Res_Workflow_Designer_Object_Fraud_Alert_Title\",\"workflowItemImage\":\"ic_AlertAssignment.svg\"},\"inputs\":[],\"outputs\":[]}],\"workflowDescription\":\"automation_resulttable\",\"workflowIcon\":\"\",\"adapterId\":\"\",\"workflowTested\":false,\"workflowVariables\":[]}"},
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation5527",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "Janet"
+    },
+    "createARule1":{"RuleDetail":"<NewDataSet><Rules><Rules_Code>RT0002</Rules_Code><Rules_Description><![CDATA[Result table first name equals applicant first name]]></Rules_Description><Fraud_Score>30</Fraud_Score><Matches_Minimum>1</Matches_Minimum><Matches_Maximum>999</Matches_Maximum><ApplicationsAge_From>0</ApplicationsAge_From><ApplicationsAge_To>0</ApplicationsAge_To><Apply_Exclusions>0</Apply_Exclusions><Active_Flag>1</Active_Flag><Database_To_Apply>A</Database_To_Apply><MatchToItself_Flag>1</MatchToItself_Flag><NearMatching_Flag>False</NearMatching_Flag><Comments><![CDATA[]]></Comments><Rule_Group></Rule_Group><Rule_Admin_Group_Code>&#160;</Rule_Admin_Group_Code><Rules_UserId></Rules_UserId><Action></Action></Rules><RuleDefinition><Sequence_Number>1</Sequence_Number><ApplicationCategory_Number>225</ApplicationCategory_Number><ApplicationCategory_Label>Automation_users1</ApplicationCategory_Label><ApplicationField_Number>{{ApplicationFieldNumber}}</ApplicationField_Number><ApplicationField_Label>first name</ApplicationField_Label><ApplicationField_Type>Text</ApplicationField_Type><Operator_Type><![CDATA[=]]></Operator_Type><Field_Flag>0</Field_Flag><Value_Flag>1</Value_Flag><DatabaseCategory_Number>0</DatabaseCategory_Number><DatabaseCategory_Label></DatabaseCategory_Label><DatabaseField_Number>0</DatabaseField_Number><DatabaseField_Label></DatabaseField_Label><DatabaseField_Type></DatabaseField_Type><Assignment_Value>Janet</Assignment_Value><Mandatory_Flag>0</Mandatory_Flag><Left_Bracket></Left_Bracket><Right_Bracket></Right_Bracket><Record_Id>0</Record_Id><Logical_Operator></Logical_Operator><Variable_Flag>0</Variable_Flag><Reference_Table_Query></Reference_Table_Query></RuleDefinition></NewDataSet>","ActionCode":"A"},
+    "valueMatchesTab": {
+      "leftColumn1": "Automation_users1.first name",
+      "rightColumn1": "Janet = Janet",
+      "ruleDetails1": "RT0002 - Result table first name equals applicant first name"
+    },
+    "verifyRow1": {
+      "#": "1",
+      "id": "2",
+      "email": "janet.weaver@reqres.in",
+      "first name": "Janet",
+      "last name": "Weaver",
+      "avatar": "https://reqres.in/img/faces/2-image.jpg"
+    }
+  }
+}
+
+
+
+
+

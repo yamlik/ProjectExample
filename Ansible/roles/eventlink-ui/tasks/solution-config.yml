@@ -1,0 +1,52 @@
+---
+# tasks file for TEST-ui integration with solution-config.json
+- name: "Add EL UI items in solution config"
+  solutionconfig:
+    menuitem:
+      label: "{{ item.label }}"
+      tooltip: "{{ item.tooltip }}"
+      url: "http://{{ el_ui_fqdn }}:{{ httpd_listening_port }}{{ item.url }}"
+      permissions: ["{{ item.permissions }}"]
+      state: present
+  with_items: "{{ solution_config_menu_items_dictionary }}"
+
+- name: "Take product version"
+  shell: "cat {{ el_ui_release_path }} | cut -d '=' -f 2 | head -1"
+  register: product_version
+  changed_when: False  
+  
+- name: "Take product relase year"
+  shell: "cat {{ el_ui_release_path }} | cut -d '=' -f 2 | tail -1"
+  register: product_year
+  changed_when: False
+  
+- name: "Add EL UI banner in solution config"
+  solutionconfig:
+    product_name: "{{ product_version.stdout | default('TEST ') }}"
+    copyright_text: "{{ el_copyright_text_sign }}{{ product_year.stdout }}{{ el_copyright_text_company }}{{ el_copyright_text_all_rights_reserved }}"
+    envbanner:
+      name: "{{ el_banner_name }}"
+      description: "{{ el_banner_desc }}"
+      mode: "{{ el_banner_mode }}"
+      theme: "{{ el_banner_theme }}"
+      state: present 
+  when: el_set_banner
+
+- name: "Add sticky notes backend"
+  solutionconfig:
+    product_name: "{{ product_version.stdout | default('TEST ') }}"
+    copyright_text: "{{ el_copyright_text_company }}{{ product_year.stdout }}{{ el_copyright_text_all_rights_reserved }}"  
+    sticky_note_backend:
+      module: "{{ el_sticky_notes_module }}"
+      restUrl: "http://{{ el_ui_fqdn }}:{{ httpd_listening_port }}{{ el_sticky_notes_backend }}" 
+      
+- name: "Add EL UI copyright and product name"
+  solutionconfig:
+    product_name: "{{ product_version.stdout | default('TEST ') }}"
+    copyright_text: "{{ el_copyright_text_sign }}{{ product_year.stdout }}{{ el_copyright_text_company }}{{ el_copyright_text_all_rights_reserved }}"
+
+- name: "Create link to Solution Config"
+  file:
+    src: "{{ solution_config_dir }}"
+    dest: "{{ TEST_webapp_location }}/solution-config"
+    state: link

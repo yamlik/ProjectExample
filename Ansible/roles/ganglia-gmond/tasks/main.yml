@@ -1,0 +1,61 @@
+---
+- name: Install ganglia-gmond package
+  yum:
+    name: ganglia-gmond
+    state: present
+  become: true
+  become_method: sudo
+
+- name: "Install ganglia-gmond-python package"
+  yum:
+    name: "ganglia-gmond-python"
+    state: "present"
+  become: true
+  become_method: sudo
+
+- name: "Open ports for gmond"
+  firewalld:
+    zone: public
+    port: "{{ item.port }}/{{ item.protocol }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - { port: "{{ gmond_udp_recv_port }}", protocol: 'udp' }
+    - { port: "{{ gmond_tcp_accept_port }}", protocol: 'tcp' }
+
+- name: Copy gmond configuration
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('ganglia') }}"
+    group: "{{ item.group | default('ganglia') }}"
+    mode: "{{ item.mode | default(0644) }}"
+  become: true
+  become_method: sudo
+  with_items:
+    - { src: 'gmond.conf.j2', dest: '/etc/ganglia/gmond.conf' }
+    - { src: 'gmond.service.j2', dest: '/usr/lib/systemd/system/gmond.service' }
+
+- name: Enable gmond for processing online
+  systemd:
+    name: gmond
+    enabled: yes
+  become: true
+  become_method: sudo
+  when:
+   - "'processingon' in inventory_hostname"
+
+- name: Restart gmond
+  service:
+    name:  gmond
+    state: restarted
+  become: true
+  become_method: sudo
+
+- name: Wait for gmond to start
+  check-service-status:
+    name: gmond
+...    

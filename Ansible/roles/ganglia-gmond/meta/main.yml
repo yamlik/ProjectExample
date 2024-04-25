@@ -1,0 +1,6 @@
+---
+dependencies:
+  - role: ganglia-collect-primary-hosts
+
+  - role: check-variables
+    check_variables: "ganglia_primary_hosts"

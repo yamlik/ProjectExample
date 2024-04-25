@@ -1,0 +1,38 @@
+---
+# defaults file for devtool-ui
+
+# ports for DevTool
+devtool_ui_http_port: "57080"
+devtool_ui_ajp_port: "57009"
+devtool_ui_shutdown_port: "57005"
+devtool_ui_redirect_port: "57081"
+httpd_listening_port: "55000"
+devtool_backend_http_port: "58080"
+
+el_ui_fqdn: "{{ inventory_hostname }}"
+devtool_ui_fqdn: "{{ inventory_hostname }}"
+devtool_backend_fqdn: "{{ inventory_hostname }}"
+
+# Hosts for services
+devtool_ui_service:         "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+devtool_backend_service:    "{{ protocol | default('http') }}://{{ devtool_backend_fqdn }}:{{ devtool_backend_http_port }}"
+devtool_ui_setting_service: "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+ui_config_service:          "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+TEST_ui_service:       "{{ protocol | default('http') }}://{{ el_ui_fqdn }}:{{ httpd_listening_port }}"
+
+# devtool vars for kc
+
+product_install_dir_devtool_ui: "{{ devtool_install_dir }}"
+
+devtool_ui_package_name: devtool
+devtool_user: "TEST"
+devtool_group: "TEST"
+
+
+product_install_dir_TEST_ui: "{{ install_directory }}/TEST-ui"
+
+# Files and directories location
+tomcat_dir: '/opt/TEST/tomcat'
+devtool_install_dir: '/opt/TEST/devtool'
+server_xml_file_location: '{{ tomcat_dir }}/devtool/conf/server.xml'
+install_directory: '/opt/TEST/TEST'

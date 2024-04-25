@@ -1,0 +1,10 @@
+---
+
+prometheus_cert_dir: /opt/TEST/prometheus/tls
+node_exporter_dir: /opt/TEST/node-exporter
+ca_key_backup_dir: /opt/TEST/certs/prometheus_ca
+
+node_exporter_port: 9100
+operation: ""
+
+...

@@ -1,0 +1,1449 @@
+{
+  "TC-35189": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_35189",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Id Number 1": "QWERTY1"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35189LOAN"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_35189",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant1": {
+      "Id Number 1": "QWERTY1",
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Surname": "NAIK",
+      "Sex": "M",
+      "Date of Birth": "16/06/1992"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "QWERTY1",
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Surname": "NAIKJ",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Surname": "NAIK",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_35189LOAN"
+    }
+  },
+  "TC-35190": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation351901",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "07492"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation351902",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "07492"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Id Number 1": "07492"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "07492"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "07492"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "07492"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_35190MTGE"
+    }
+  },
+  "TC-35634": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test_35634",
+      "Application Date": "20/10/2021",
+      "Application Type": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test_35634CARD"
+    },
+
+    "VerifyData": {
+      "Value1": "FRAUD SCORE",
+      "Value2": "RULES SCORE"
+    }
+  },
+  "TC-54383_1": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "blue",
+      "Home Address 2": "blue",
+      "Home Address 3": "blue",
+      "Home Address 4": "blue",
+      "Home Address 5": "blue",
+      "Home Address 6": "blue",
+      "Home Postcode": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54383MTGE"
+    }
+  },
+  "TC-54384": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation54384",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "FirstStreet",
+      "Home Address 2": "SecondStreet",
+      "Home Address 3": "ThirdStreet",
+      "Home Address 4": "FourthStreet",
+      "Home Address 5": "FifthStreet",
+      "Home Address 6": "SixthStreet",
+      "Home Postcode": "1234"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation54384MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation543841",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "SecondStreet",
+      "Home Address 2": "FirstStreet",
+      "Home Address 3": "FourthStreet",
+      "Home Address 4": "ThirdStreet",
+      "Home Address 5": "SixthStreet",
+      "Home Address 6": "FifthStreet",
+      "Home Postcode": "1234"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 1": "SecondStreet",
+      "Home Address 2": "FirstStreet",
+      "Home Address 3": "FourthStreet",
+      "Home Address 4": "ThirdStreet",
+      "Home Address 5": "SixthStreet",
+      "Home Address 6": "FifthStreet",
+      "Home Postcode": "1234"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 1": "SecondStreet",
+      "Home Address 2": "FirstStreet",
+      "Home Address 3": "FourthStreet",
+      "Home Address 4": "ThirdStreet",
+      "Home Address 5": "SixthStreet",
+      "Home Address 6": "FifthStreet",
+      "Home Postcode": "1234"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "SecondStreet",
+      "Home Address 2": "FirstStreet",
+      "Home Address 3": "FourthStreet",
+      "Home Address 4": "ThirdStreet",
+      "Home Address 5": "SixthStreet",
+      "Home Address 6": "FifthStreet",
+      "Home Postcode": "1234"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "FirstStreet",
+      "Home Address 2": "SecondStreet",
+      "Home Address 3": "ThirdStreet",
+      "Home Address 4": "FourthStreet",
+      "Home Address 5": "FifthStreet",
+      "Home Address 6": "SixthStreet",
+      "Home Postcode": "1234"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "blue",
+      "Home Address 2": "blue",
+      "Home Address 4": "blue",
+      "Home Address 5": "blue",
+      "Home Postcode": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation543841MTGE"
+    }
+  },
+  "TC-54385": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Surname": "CASSIDI",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDI"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54385MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Surname": "CASSIDY",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDY"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Surname": "CASSIDY",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDY"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Surname": "CASSIDI",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDI"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Surname": "CASSIDY",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDY"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Surname": "CASSIDI",
+      "Date of Birth": "20/10/2020",
+      "Home Phone Number": "1234",
+      "User Field 2": "CASSIDI"
+    },
+    "verifyRowColorApplicant": {
+      "Surname": "blue",
+      "Date of Birth": "blue",
+      "User Field 2": "blue",
+      "Home Phone Number": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54385MTGE"
+    }
+  },
+  "TC-54386": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54386",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Surname": "NAIKJ",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54386LOAN"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54386",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant1": {
+      "Surname": "NAIK",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Surname": "NAIK",
+      "Sex": "M",
+      "Date of Birth": "16/06/1992"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Surname": "NAIKJ",
+      "Sex": "M",
+      "Date of Birth": "16/06/1992"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Surname": "NAIK",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Surname": "NAIKJ",
+      "Sex": "Male",
+      "Date of Birth": "16/06/1992"
+    },
+    "verifyRowColorApplicant": {
+      "Surname": "blue",
+      "Sex": "blue",
+      "Date of Birth": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54386LOAN"
+    }
+  },
+  "TC-54387": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54387",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "CBC": {
+      "User Field 36": "123456789"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54387MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54387",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE",
+      "User Field 40": "123456789"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "User Field 40": "blue"
+    },
+    "verifyDbValuesFullApplicant": {
+      "User Field 36": "123456789"
+    },
+    "verifyRowColorApplicant": {
+      "User Field 36": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54387MTGE"
+    }
+  },
+  "TC-54388": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54388",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "SMITH"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54388MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54388",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "PAUL"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "PAUL"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "SMITH"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "PAUL"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "SMITH"
+    },
+    "verifyRowColorApplicant": {
+      "Date of Birth": "blue",
+      "Surname": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54388MTGE"
+    }
+  },
+  "TC-54389": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54389",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "JOHN",
+      "First Name": "CITIZEN"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54389MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54388",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "CITIZEN",
+      "First Name": "JOHN"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "CITIZEN",
+      "First Name": "JOHN"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "JOHN",
+      "First Name": "CITIZEN"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE",
+      "Scorecard Score": "0"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "CITIZEN",
+      "First Name": "JOHN"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Date of Birth": "05/12/2000",
+      "Surname": "JOHN",
+      "First Name": "CITIZEN"
+    },
+    "verifyRowColorApplicant": {
+      "Date of Birth": "blue",
+      "Full Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54389MTGE"
+    }
+  },
+  "TC-54390": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_54390",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Company Name": "NESTLE"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Company Name": "NESTLE"
+    },
+    "verifyRowColorApplicant": {
+      "Company Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_54390MTGE"
+    }
+  },
+  "TC-54391": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_54391",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Income": "51000",
+      "Date of Birth": "01/12/2000"
+    },
+    "verifyValueMatchesTab": {
+      "Age of Applicant (Years)": "22",
+      "Income": "51000.00"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Number": "Automation_54391",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Age of Applicant (Years)": "22",
+      "Income": "51000.00"
+    },
+    "verifyRowColorApplicant": {
+      "Age of Applicant (Years)": "blue",
+      "Income": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_54391MTGE"
+    }
+  },
+  "TC-54392": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_54392",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Credit Bureau": {
+      "User Field 21": "18/01/2031"
+    },
+    "verifyValueMatchesTab": {
+      "Age of Applicant (Years)": "21",
+      "Income": "51000.00"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Number": "AAutomation_54392",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "User Field 21": "18/01/2031"
+    },
+    "verifyRowColorApplicant": {
+      "User Field 21": "blue"
+    }
+  },
+  "TC-54393": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation549340",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560037"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation549340MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation54934100",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560038"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560038"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560037"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560038"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560037"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "blue",
+      "Home Address 2": "blue",
+      "Home Postcode": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation54934100MTGE"
+    }
+  },
+  "TC-54394": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST11",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Home Address 5": "BANGALORE",
+      "Company Address 5": "HYDERABAD"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 5": "BANGALORE",
+      "Company Address 5": "HYDERABAD"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 5": "BANGALORE",
+      "Company Address 5": "HYDERABAD"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 5": "BANGALORE",
+      "Company Address 5": "HYDERABAD"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 5": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test11LOAN"
+    }
+  },
+  "TC-54395": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "543951",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Id Number1": "12345",
+      "Income": "100.00"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation544000MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "543952",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD"
+    },
+    "Applicant1": {
+      "Id Number1": "12345",
+      "Income": "200.00"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Income": "100.00",
+      "Id Number 1": "12345"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Income": "50",
+      "Id Number 1": "12345"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD",
+      "Rules Score": "40",
+      "Expiry Date": "20/01/2064"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "01/01/2022",
+      "Application Type": "CARD",
+      "Expiry Date": "20/01/2064"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "12345",
+      "Income Increase Percentage": "100.00",
+      "Income": "200.00"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "12345",
+      "Income": "100.00"
+    },
+    "verifyRowColorApplicant": {
+      "Id Number 1": "blue",
+      "Income Increase Percentage": "blue"
+    }
+  },
+  "TC-54396": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54396",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Company Name": "TESLA"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54383MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54396",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Company Name": "TESLA"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Company Name": "TESLA"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Company Name": "TESLA"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Company Name": "TESLA"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Company Name": "TESLA"
+    },
+    "verifyRowColorApplicant": {
+      "Company Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54383MTGE"
+    }
+  },
+  "TC-54397": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation1_54397",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Phone Number": "987654321"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation1_54397MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation2_54397",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Phone Number": "987654321"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Phone Number": "987654321"
+    },
+    "verifyRowColorApplicant": {
+      "Home Phone Number": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation2_54397MTGE"
+    }
+  },
+  "TC-54398": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54398",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Surname": "Shrivastave",
+      "Date of Birth": "13/07/1983",
+      "First Name": "Sunil"
+    },
+    "verifyValueMatchesTab": {
+      "Applicant.First Name": "Sunil",
+      " Applicant.Surname": "Shrivastave"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Number": "Automation_54398",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Surname": "Shrivastave",
+      "Date of Birth": "13/07/1983",
+      "First Name": "Sunil"
+    },
+
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54398MTGE"
+    }
+  },
+  "TC-54400": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation54400",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "KA",
+      "Home Address 6": "TN",
+      "Home Postcode": "560037"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation544000MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation54934100",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "TN",
+      "Home Address 6": "KA",
+      "Home Postcode": "560037"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "KA",
+      "Home Address 6": "TN",
+      "Home Postcode": "560037"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "TN",
+      "Home Address 6": "KA",
+      "Home Postcode": "560037"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "TN",
+      "Home Address 6": "KA",
+      "Home Postcode": "560037"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "TG",
+      "Home Address 4": "AP",
+      "Home Address 5": "KA",
+      "Home Address 6": "TN",
+      "Home Postcode": "560037"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "blue",
+      "Home Address 4": "blue",
+      "Home Address 5": "blue",
+      "Home Address 6": "blue",
+      "Home Postcode": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation54400MTGE"
+    }
+  },
+  "TC-54383_2": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "SecondApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54383_2MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "green",
+      "Home Address 2": "green",
+      "Home Address 3": "green",
+      "Home Address 4": "green",
+      "Home Address 5": "green",
+      "Home Address 6": "green",
+      "Home Postcode": "green"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54383_2MTGE"
+    }
+  },
+  "TC-54399": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_54399",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "NESTLE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "First Name": "NESTLE"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "First Name": "NESTLE"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "First Name": "NESTLE"
+    },
+    "verifyDbValuesFullApplicant": {
+      "First Name": "NESTLE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_54390MTGE"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+---
+# tasks file for TEST-httpd
+- assert:
+    that:
+      - "httpd_listening_port is defined"
+    msg: "'httpd listening port is not defined'"
+
+- name: "Install packages."
+  register: packages_installed
+  package:
+    name="{{ item }}"
+    state=present
+  become: true
+  become_method: sudo
+  with_items:
+    - "httpd"
+    - "libselinux-python"
+    - "libsemanage-python"
+  
+- name: "Configure listening port."
+  when: packages_installed|success
+  template:
+    src: httpd.conf.j2
+    dest: "{{ httpd_config_file }}"
+  become: true
+  become_method: sudo
+  
+- name: "Configure proxy directives of services."
+  when: packages_installed|success
+  template:
+    src: proxy.conf.j2
+    dest: "{{ httpd_conf_dir }}/{{ item.service_name.split('/')[0] }}.conf"
+    mode: 0644
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ service_dictionary }}"
+    
+- name: "Copy additional configuration file."
+  when: packages_installed|success
+  copy:
+    src: "{{ role_path }}/files/additionalconfig.conf"
+    dest: "{{ httpd_conf_dir }}/additionalconfig.conf"
+    mode: 0644
+  become: true
+  become_method: sudo
+    
+- name: "Make /TEST default URL."
+  when: packages_installed|success
+  copy:
+    src: "{{ role_path }}/files/welcome.conf"
+    dest: "{{ httpd_conf_dir }}/welcome.conf"
+    mode: 0644
+  become: true
+  become_method: sudo
+  
+- name: "Open httpd listening port in firewall."
+  when: packages_installed|success
+  firewalld:
+    zone: public
+    port: "{{ httpd_listening_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  notify: "Restart firewall service"
+
+- name: "Enable httpd proxy port forwarding in SELinux."
+  when: packages_installed|success
+  register: configuration_done
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+  become: true
+  become_method: sudo
+    
+- name: "Start and enable httpd"
+  when: configuration_done
+  service:
+    name: 'httpd'
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo

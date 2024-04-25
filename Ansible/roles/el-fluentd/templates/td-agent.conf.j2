@@ -1,0 +1,304 @@
+<source>
+    @type syslog
+    port {{ rsyslog_tcp_port }}
+    protocol_type tcp
+    format /(^(?<header>[^\{]+)?(?<message>\{.+type.+\})$)|(^(?<log>[^\{].+))/
+    tag syslog
+</source>
+
+<source>
+    @type tcp
+    port {{ td_agent_tcp_port }}
+    bind 0.0.0.0
+    format /(^(?<header>[^\{]+)?(?<message>\{.+type.+\})$)|(^(?<log>[^\{].+))/
+    tag webhook
+</source>
+
+<source>
+  @type forward
+  @id input_forward
+  port 24224
+  bind 0.0.0.0
+</source>
+
+<filter clog.go-api>
+  @type record_transformer
+  <record>
+    message ${record.to_json}
+  </record>
+  enable_ruby true
+</filter>
+
+<match clog.go-api>
+  @type rewrite_tag_filter
+  <rule>
+    key type
+    pattern .+
+    tag TEST.logging.json
+  </rule>
+</match>
+
+<match system syslog.**>
+  @type rewrite_tag_filter
+  <rule>
+     key message
+     pattern .+
+     tag TEST.logging.json
+  </rule>
+  <rule>
+     key log
+     pattern .+
+     tag TEST.logging.legacy
+  </rule>
+</match>
+
+<match webhook>
+  @type rewrite_tag_filter
+  <rule>
+     key message
+     pattern .+
+     tag webhook.logging.json
+  </rule>
+</match>
+
+<filter TEST.logging.legacy>
+  @type clog
+  is_container false
+</filter>
+
+<filter TEST.logging.legacy>
+  @type record_modifier
+  <record>
+    log {% raw %}${{"message":record["log"]}}{% endraw %} 
+    type log
+  </record>
+</filter>
+
+<filter TEST.logging.json>
+    @type parser
+    key_name message
+    <parse>
+        @type json
+        time_key time
+        time_format %iso8601
+        keep_time_key true
+    </parse>
+</filter>
+
+<filter webhook.logging.json>
+    @type parser
+    key_name message
+    <parse>
+        @type json
+        time_key time
+        time_format %iso8601
+        keep_time_key true
+    </parse>
+</filter>
+
+<filter webhook.logging.json>
+   @type record_transformer
+   enable_ruby true
+   <record>
+     time ${time.utc.strftime('%FT%T.%3NZ')}
+    </record>
+</filter>
+
+<filter webhook.logging.json>
+   @type record_transformer
+   <record>
+     system DR
+   </record>
+</filter>
+
+<filter webhook.logging.json TEST.logging.json>
+    @type clog
+    is_container false
+</filter>
+
+<match webhook.logging.json TEST.logging.json>
+    @type rewrite_tag_filter
+    <rule>
+      key type
+      pattern ^log$
+      tag TEST.logging.tmp
+    </rule>
+    <rule>
+        key type
+        pattern ^(.+)$
+        tag TEST.logging.$1
+    </rule>
+</match>
+
+<match TEST.logging.tmp>
+    @type rewrite_tag_filter
+    <rule>
+      key facility
+      pattern 24
+      tag TEST.logging.authlog
+    </rule>
+    <rule>
+      key $['log']['event-type']
+      pattern ^(.+)$
+      tag TEST.logging.auditlog
+    </rule>
+    <rule>
+        key $['log']['message']
+        #pattern ^\s*\{(.+)?\s*"message":.+\}\s*$
+        pattern ^(.+)$
+        tag TEST.logging.log
+    </rule>
+    <rule>
+        key log
+        pattern ^(.+)$
+        tag TEST.logging.log2
+    </rule>
+</match>
+
+#prometheus begin
+<source>
+  @type prometheus
+  @id prometheus_source_ipv4
+  port 24231
+</source>
+
+<source>
+  @type prometheus
+  @id prometheus_source_ipv6
+  bind ::
+  port 24231
+</source>
+
+
+<filter TEST.logging.counter>
+  @type record_modifier
+  <record>
+      counter_value ${record["counter"]["value"]}
+      counter_id ${record["counter"]["id"]}
+      counter_stream ${record["extension"]["STREAM"]}
+      counter_node ${record["extension"]["NODE"]}
+  </record>
+</filter>
+
+<filter TEST.logging.counter>
+  @type prometheus
+  <metric>
+      name meas_gauge
+      type gauge
+      desc "measurement exported via fluent-plugin-prometheus"
+      key counter_value
+      append_timestamp true
+      metric_expiration {{ td_agent_metrics_expiration }}
+      audit_interval {{ td_agent_audit_interval }}
+      <labels>
+          id ${counter_id}
+          HOST ${host}
+          STREAM ${counter_stream}
+          NODE ${counter_node}
+      </labels>
+  </metric>
+</filter>
+#prometheus end
+
+<match TEST.logging.*>
+    @type copy
+    <store>
+        @type relabel
+        @label @TEST-LOGGING-ROUTING
+    </store>
+</match>
+
+<label @TEST-LOGGING-ROUTING>
+  <match TEST.logging.log TEST.logging.legacy>
+    @type copy
+   <store>
+     @type file
+     format json
+     time_slice_format %Y%m%d%H
+     append true
+     path /var/log/td-agent/${tag}
+     <buffer tag>
+       @type file
+       path /var/log/td-agent/log/buffer/TEST.logging.all.file
+       timekey 3600
+       timekey_wait 0
+       timekey_use_utc true
+       chunk_limit_size 256MB
+       chunk_limit_records 120000
+     </buffer>
+   </store>
+ </match>
+
+   <filter TEST.logging.alarm>
+        @type record_transformer
+        <record>
+            @class com.TEST.cam.alma.own.api.event.UnifiedLoggingAlarmEvent
+        </record>
+    </filter>
+
+{% if alarm_version == 2 %}
+    <match TEST.logging.alarm>
+        @type copy
+        <store>
+           @type amqp
+           hosts {{ amq_host }}
+           port {{ amq_port }}
+	{% if fluentd_enable_ssl is defined and fluentd_enable_ssl == true and crmq_ssl_configured == true %}
+           tls true
+           tls_cert {{ fluentd_cert_dir }}/fluentd.crt
+           tls_key {{ fluentd_cert_dir }}/fluentd.key
+           tls_ca_certificates {{ fluentd_cert_dir }}/rabbitmq_ca.crt
+           tls_verify_peer true
+	{% endif %}
+           vhost /
+           user {{ mq_username }}
+           pass {{ mq_password }}
+           key event
+           exchange cfw
+           exchange_type direct
+           content_type application/json
+           heartbeat {{ amq_heartbeat_seconds }}
+           durable true
+           <buffer>
+               @type file
+               path /var/log/td-agent/rabbitmq-buffer/TEST.logging.all.alarm
+               flush_mode immediate
+           </buffer>
+        </store>
+        <store>
+           @type file
+           format json
+           time_slice_format %Y%m%d%H
+           append true
+           path /var/log/td-agent/${tag}
+           <buffer tag>
+               @type file
+               path /var/log/td-agent/buffer/TEST.log.alarm
+               timekey 3600
+               timekey_wait 0
+               timekey_use_utc true
+
+           </buffer>
+        </store>
+    </match>
+{% endif %}
+
+    <match TEST.logging.counter>
+        @type copy
+        <store>
+          @type prometheus
+          <metric>
+            name meas_gauge
+            type gauge
+            desc "measurement exported via fluent-plugin-prometheus"
+            key counter_value
+            <labels>
+              id ${counter_id}
+              HOST ${host}
+              STREAM ${counter_stream}
+              NODE ${counter_node}
+            </labels>
+          </metric>
+        </store>
+    </match>
+</label>

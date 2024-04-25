@@ -1,0 +1,73 @@
+---
+# tasks file for devtool-backend
+- name: "Add/Update '{{ el_devtool_backend_package_name }}' section of RC file with provided details."
+  blockinfile:
+    block: |
+      program:                                  {{ el_devtool_rc_name }}
+      el_ui_host:                               {{ el_ui_host_url }}
+      max_node_package_filesize_mb:             {{ el_devtool_backend_max_node_package_filesize_mb }}
+      max_stream_package_filesize_mb:           {{ el_devtool_backend_max_stream_package_filesize_mb }}
+      response_timeout_sec:                     {{ el_devtool_backend_response_timeout_sec }} # this is the default minimum value
+    dest: "{{ rc_file_location }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR '{{ el_devtool_backend_package_name }}'"
+  become: true
+  become_method: sudo
+
+- name: "Check if crypto is installed"
+  stat:
+    path: "{{ el_crypto_path }}"
+  register: crypto_installed
+
+- name: "Create el-crypto link"
+  file:
+    src: "{{ el_crypto_path }}"
+    dest: "{{ el_devtool_crypto_link_path }}"
+    state: link
+  when: crypto_installed.stat.exists 
+  
+- name: "Configure {{ el_devtool_backend_package_name }} webapp"
+  include_role:
+    name: configure-webapp
+  vars:
+    component_name: "{{ el_devtool_backend_component_name }}"
+    service_name: "{{ el_devtool_backend_service_name }}"
+    configuration_files:
+      - src: "server.xml.j2"
+        dest: "{{ el_devtool_backend_tomcat_service_path }}/server.xml"
+      - src: "tomcat@devtool-backend.j2"
+        dest: "/etc/sysconfig/tomcat@devtool-backend"
+        become: true
+    wait_for_port: "{{ el_devtool_backend_http_port }}"
+    product_fqdn: "{{ el_devtool_backend_fqdn }}"
+
+- name: "Configure audittrail for {{ el_devtool_backend_package_name }}"
+  include_role:
+    name: configure-audittrail-mapping
+  vars:
+    product_moduleid: "{{ moduleid_devtool_backend }}"
+    product_component_name: "{{ at_module_name_devtool_backend }}"
+    context_xml_file_src: "{{ context_xml_file_src_devtool_backend }}"
+    context_xml_file_dest: "{{ context_xml_file_dest_devtool_backend }}"
+
+- name: "Configure {{ el_devtool_backend_package_name }} webapp to use Keycloak"
+  include_role:
+    name: configure-webapp-with-keycloak
+  vars:
+    kc_client_id: "{{ kc_client_id_devtool_backend }}"
+    kc_client_name: "{{ kc_client_name_devtool_backend }}"
+    kc_client_description: "{{ kc_client_description_devtool_backend }}"
+    kc_client_conf_file: "{{ kc_client_conf_file_devtool_backend }}"
+    product_fqdn: "{{ el_devtool_backend_fqdn }}"
+    kc_client_scope_mappings: "{{ kc_client_scope_mappings_devtool_backend }}"
+    client_local_conf: "{{ client_local_conf_devtool_backend }}"
+    product_client_roles: []
+    certificate_alias: "{{ certificate_alias_devtool_backend }}"
+    keystore_file_name: "{{ keystore_file_name_devtool_backend }}"
+    truststore_file_name: "{{ truststore_file_name_devtool_backend }}"
+    product_install_dir: "{{ product_install_dir_devtool_backend }}"
+    product_kc_http_port: "{{ product_kc_http_port_devtool_backend }}"
+    product_kc_origins: "{{ product_kc_origins_devtool_backend }}"
+    product_redirect_uris: "{{ product_redirect_uris_devtool_backend }}"
+    product_kc_base_url: "{{ product_kc_base_url_devtool_backend }}"
+    product_kc_admin_url: "{{ product_kc_admin_url_devtool_backend }}"
+    product_service_name: "{{ el_devtool_backend_service_name }}"

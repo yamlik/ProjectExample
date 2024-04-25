@@ -1,0 +1,123 @@
+password_extension_parameters:
+  - { name: "passwd_postgresql_user", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_postgresql_user }}" }
+  - { name: "passwd_postgresql_admin", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_postgresql_admin }}" }
+  - { name: "passwd_TEST_gui", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_TEST_gui }}" }
+  - { name: "passwd_keycloak_admin", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_keycloak_admin }}" }
+  - { name: "passwd_unix_user", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_unix_user }}" }
+  - { name: "passwd_unix_root_user", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_unix_root_user }}" }
+  - { name: "passwd_crdb_user", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_crdb_user }}" }
+  - { name: "gen3gppxml_sftp_password", value: "{{ vnf_context_data.vnf_attributes.extensions.gen3gppxml_sftp_password }}" }
+  - { name: "passwd_jmx_user", value: "{{ vnf_context_data.vnf_attributes.extensions.passwd_jmx_user }}" }
+
+ip_inputs:
+  -
+    jsonName: "db_oam_ecp"
+    extensionName: "db_oam_ip"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses }}"
+    required: 2
+  -
+    jsonName: "DB_OAM_IPv4_virtual_ECP"
+    extensionName: "db_oam_VIP"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.DB_OAM_IPv4_virtual_ECP.addresses }}"
+    required: 1
+  -
+    jsonName: "ui_oam_ecp"
+    extensionName: "ui_oam_ip"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses }}"
+    required: 2
+  -
+    jsonName: "UI_OAM_IPv4_virtual_ECP"
+    extensionName: "ui_oam_VIP"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_OAM_IPv4_virtual_ECP.addresses }}"
+    required: 1
+  -
+    jsonName: "processingON_oam_ecp"
+    extensionName: "processingON_oam_ip"
+    value: "{{  processingon_oam_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingON_aspect_group.count|int }}"
+  -
+    jsonName: "processingON_charging_ecp"
+    extensionName: "processingON_charg_ip"
+    value: "{{  processingon_charg_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingON_aspect_group.count|int }}"
+  -
+    jsonName: "processingON_billing_ecp"
+    extensionName: "processingON_bill_ip"
+    value: "{{  processingon_bill_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingON_aspect_group.count|int }}"
+  -
+    jsonName: "processingOFF_oam_ecp"
+    extensionName: "processingOFF_oam_ip"
+    value: "{{  processingoff_oam_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int * 2 }}"
+  -
+    jsonName: "processingOFF_OAM_IPv4_virtual_ECP"
+    extensionName: "processingOFF_oam_VIP"
+    value: "{{  processingoff_oam_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int }}"
+  -
+    jsonName: "processingOFF_charging_ecp"
+    extensionName: "processingOFF_charg_ip"
+    value: "{{  processingoff_charg_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int * 2 }}"
+  -
+    jsonName: "processingOFF_charg_IPv4_virtual_ECP"
+    extensionName: "processingOFF_charg_VIP"
+    value: "{{  processingoff_charg_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int }}"
+  -
+    jsonName: "processingOFF_billing_ecp"
+    extensionName: "processingOFF_bill_ip"
+    value: "{{  processingoff_bill_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int * 2 }}"
+  -
+    jsonName: "processingOFF_bill_IPv4_virtual_ECP"
+    extensionName: "processingOFF_bill_VIP"
+    value: "{{  processingoff_bill_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.processingOFF_aspect_group.count|int }}"
+  -
+    jsonName: "cgf_oam_ecp"
+    extensionName: "cgf_oam_ip"
+    value: "{{ cgf_oam_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int * 2 }}"
+  -
+    jsonName: "cgf_OAM_IPv4_virtual_ECP"
+    extensionName: "cgf_oam_VIP"
+    value: "{{ cgf_oam_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int }}"
+  -
+    jsonName: "cgf_charging_ecp"
+    extensionName: "cgf_charg_ip"
+    value: "{{ cgf_charg_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int * 2 }}"
+  -
+    jsonName: "cgf_charg_IPv4_virtual_ECP"
+    extensionName: "cgf_charg_VIP"
+    value: "{{ cgf_charg_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int }}"
+  -
+    jsonName: "cgf_billing_ecp"
+    extensionName: "cgf_bill_ip"
+    value: "{{ cgf_bill_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int *2 }}"
+  -
+    jsonName: "cgf_bill_IPv4_virtual_ECP"
+    extensionName: "cgf_bill_VIP"
+    value: "{{ cgf_bill_vip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.cgf_aspect_group.count|int }}"
+  -
+    jsonName: "oam_ecp"
+    extensionName: "oam_ip"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses }}"
+    required: 2
+  -
+    jsonName: "OAM_IPv4_virtual_ECP"
+    extensionName: "oam_VIP"
+    value: "{{  vnf_context_data.stack_params.cbam.externalConnectionPoints.OAM_IPv4_virtual_ECP.addresses }}"
+    required: 1
+  -
+    jsonName: "crdb_oam_ecp"
+    extensionName: "crdb_oam_ip"
+    value: "{{  crdb_oam_ip_list }}"
+    required: "{{ vnf_context_data.stack_params.cbam.resources.crdb_aspect_group.count|int }}"
+...

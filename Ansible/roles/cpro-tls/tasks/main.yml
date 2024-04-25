@@ -1,0 +1,48 @@
+---
+
+- include: setup_ssl.yml
+
+- name: Check if node_exporter.service exist
+  shell: "systemctl list-units --full -all | grep -Fq \"node_exporter.service\""
+  register: prometheus_service_exists
+  become: true
+  become_method: sudo
+    
+- name: configure node_exporter.service
+  lineinfile:
+    path: /usr/lib/systemd/system/node_exporter.service
+    state: present
+    regexp: '^ExecStart=/bin/node_exporter'
+    line: ExecStart=/bin/node_exporter --web.listen-address=:{{ node_exporter_port }} --web.config={{ node_exporter_dir }}/web.yml
+  become: true
+  become_method: sudo
+  
+- name: Restart node_exporter service
+  systemd:
+    name: node_exporter
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+  become: true
+  become_method: sudo
+   
+- name: Verify if node_exporter metrics can be access (GET)
+  uri:
+    url: https://localhost:{{ node_exporter_port }}/metrics
+    method: GET
+    status_code: 200
+    validate_certs: no
+        
+
+- name: Restart prometheus-server.service 
+  systemd:
+    name: prometheus-server
+    state: restarted
+    daemon_reload: yes
+  register: prometheus_status
+  until: "prometheus_status is defined and prometheus_status.state is defined and prometheus_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+  when: host_type == "ui"

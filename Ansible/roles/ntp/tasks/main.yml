@@ -1,0 +1,41 @@
+---
+- name: Ensure Chrony is started & enabled
+  systemd:
+    enabled: yes
+    daemon_reload: yes
+    name: chronyd
+    state: started
+  when: vnf_context_data.stack_params.cbam.extensions.ntp_enabled == true
+  become: yes
+
+- name: Ensure Chrony is stopped & disabled
+  systemd:
+    enabled: no
+    daemon_reload: yes
+    name: chronyd
+    state: stopped
+  when: vnf_context_data.stack_params.cbam.extensions.ntp_enabled == false
+  become: yes
+
+- name: Generate chrony.conf file to /etc/chrony
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+  when: vnf_context_data.stack_params.cbam.extensions.ntp_enabled == true
+  become: yes
+
+- name: Restart Chrony
+  systemd:
+    name: chronyd
+    state: restarted
+  when: vnf_context_data.stack_params.cbam.extensions.ntp_enabled == true
+  become: yes
+
+- name: Verify Chrony daemon started
+  shell: systemctl status chronyd
+  register: result
+  until: result.rc == 0
+  retries: 30
+  delay: 1 
+  when: vnf_context_data.stack_params.cbam.extensions.ntp_enabled == true
+  become: yes

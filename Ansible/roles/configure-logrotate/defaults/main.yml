@@ -1,0 +1,13 @@
+---
+# full path of the main logrotate configuration file
+logrotate_config_main: /etc/logrotate.conf
+# full path of additional logrotate configuration directory
+logrotate_config_dir: /etc/logrotate.d
+# space delimited, full path of additional log files to be included into the list of log rotation
+logrotate_additional_logs: "/var/log/ha/ha.log"
+# max. no. of rotated log files to be kept. old logs are removed
+logrotate_files_to_keep: 30
+# min. file size for a log file to be rotated 
+logrotate_file_size: 1M
+# enable default level gzip compression on rotated log file
+logrotate_enable_compression: true

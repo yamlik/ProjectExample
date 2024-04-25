@@ -1,0 +1,7 @@
+---
+# vars file for el-devtool-ui installation
+
+# Package properties
+el_devtool_ui_package_name: "el-devtool-ui"
+
+...

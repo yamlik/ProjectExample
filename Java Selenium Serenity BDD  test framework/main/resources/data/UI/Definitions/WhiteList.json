@@ -1,0 +1,45 @@
+{
+  "TSNT-5016": {
+    "createAUser1": {
+      "UserId": "NONADMIN2",
+      "UserName": "NONADMIN2",
+      "ProfileName": "whitelist",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@1",
+      "ReEnterPassword": "productUnderTest@1"
+    },
+    "NONADMIN2": {
+      "password": "productUnderTest@1",
+      "database": "Default",
+      "newPassword": "productUnderTest@2"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "APP12345",
+      "Application Date": "20/10/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "ABCDEFG"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "APP1234",
+      "Application Date": "20/10/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "ABCDEFG"
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    },
+    "verifyRow1": {
+      "Application Number": "APP1234"
+    }
+  }
+}

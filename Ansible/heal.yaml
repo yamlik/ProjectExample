@@ -1,0 +1,27 @@
+---
+- name: preparations
+  hosts: "{{ inventory_group.split('-')[0:2] | join('-') }}"
+  gather_facts: no
+  tasks:
+    - name: make inventory from template
+      template: src="{{ playbook_dir }}/templates/inventory.j2" dest="{{ inventory_dir }}/inventory"
+      delegate_to: localhost
+
+    - name: Update some values in runplaybook.sh for the 2nd Ansible run
+      replace:
+        path: '{{ inventory_dir }}/runplaybook.sh'
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      delegate_to: localhost
+      with_items:
+        - { regexp: "std.out", replace: "std_check.out" }
+        - { regexp: "heal.yaml", replace: "{{ playname }}" }
+        - { regexp: "-vvvv", replace: "{{ vnf_context_data.stack_params.cbam.extensions.ansible_verbosity }}" }
+        - { regexp: "ansible_inventory.py", replace: "inventory" }
+
+    - name: Create ansible.cfg from template
+      template: src="{{ playbook_dir }}/templates/ansible.cfg.j2" dest="{{ inventory_dir }}/ansible.cfg"
+      delegate_to: localhost
+
+    - name: rerun the script for ansible
+      local_action: script {{ inventory_dir }}/runplaybook.sh

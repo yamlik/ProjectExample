@@ -1,0 +1,101 @@
+---
+- assert:
+    that:
+        - "login_user is defined"
+        - "login_password is defined"
+        - "login_host is defined"
+        - "login_password is defined"
+        - "login_db is defined"
+        - "login_port is defined"
+        - "db_name is defined"
+        - "db_encoding is defined"
+        - "db_lc_collate is defined"
+        - "db_lc_ctype is defined"
+        - "db_tablespace is defined"
+        - "user_name is defined"
+        - "user_password is defined"
+        - "user_role_attrs is defined"
+
+- name: "Install liquibase-core"
+  when: changelogs is defined and changelogs_dir is defined 
+  register: liquibase_installed
+  yum:
+    name: liquibase-core
+    state: present
+  become: true
+  become_method: sudo
+
+- name: "Install PostgreSQL driver module"
+  register: psycopg2_installed
+  pip:
+    name: psycopg2
+    umask: "0022"
+    state: present 
+  become: true
+  become_method: sudo
+
+- name: "Create database user"
+  when: psycopg2_installed|success
+  register: database_user_created
+  postgresql_user:
+    login_host: "{{ login_host }}" 
+    port: "{{ login_port }}"
+    login_user: "{{ login_user }}"
+    login_password: "{{ login_password }}"
+    db: "{{ login_db }}"
+    name: "{{ user_name }}"
+    password: "{{ user_password }}"
+    role_attr_flags: "{{ user_role_attrs }}"
+    state: present
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: "Create database"
+  when: database_user_created|success
+  register: database_created
+  create-postgresql-database:
+    login_host: "{{ login_host }}"
+    port: "{{ login_port }}"
+    login_user: "{{ user_name }}"
+    login_password: "{{ user_password }}"
+    name: "{{ db_name }}"
+    owner: "{{ user_name }}"
+    encoding: "{{ db_encoding }}"
+    lc_collate: "{{ db_lc_collate }}"
+    lc_ctype: "{{ db_lc_ctype }}"
+    tablespace: "{{ db_tablespace }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: "Create directory for changelogs"
+  when: database_created|success and changelogs_dir is defined
+  register: changelogs_dir_created
+  file:
+    path: "{{ changelogs_dir.path | default(changelogs_dir) }}"
+    owner: "{{ changelogs_dir.owner | default('TEST') }}"
+    group: "{{ changelogs_dir.group | default('TEST') }}"
+    mode: "{{ changelogs_dir.mode | default(0775) }}"
+    state: directory
+  become: "{{ changelogs_dir.become | default(true) }}"
+  become_method: sudo
+
+- name: "Copy liquibase changelog"
+  when: changelogs_dir_created|success and changelogs is defined
+  register: changelogs_copied
+  copy:
+    src: "{{ item.name | default(item) }}"
+    dest: "{{ changelogs_dir.path | default(changelogs_dir) }}/{{ item.name | default(item) }}"
+    owner: "{{ item.owner | default('TEST') }}"
+    group: "{{ item.group | default('TEST') }}"
+    mode: "{{ item.mode | default(0644) }}"
+  become: "{{ item.become | default(false) }}"
+  become_method: sudo
+  with_items:
+    - "{{ changelogs }}"
+
+- name: "Create database tables"
+  when: changelogs_copied|success and changelogs is defined
+  command: java -jar /usr/share/java/liquibase-core/liquibase-core.jar --driver=org.postgresql.Driver --classpath=/usr/share/java/postgresql-jdbc.jar --changeLogFile={{ item | quote }} --url={{ db_jdbc_url | quote }} --username={{ user_name | quote }} --password={{ user_password | quote }} migrate
+  args:
+    chdir: "{{ changelogs_dir.path | default(changelogs_dir) }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  with_items:
+    - "{{ changelogs }}"

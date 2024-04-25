@@ -1,0 +1,21 @@
+[Unit]
+Description=EventManagement service
+After=syslog.target network.target network-online.target appdata.mount opt-event\x2dmanagement-install-eventmanagement\x2dengine-logs.mount var-www-html.mount
+Requires=opt-event\x2dmanagement-install-eventmanagement\x2dengine-logs.mount appdata.mount var-www-html.mount
+
+[Service]
+Type=forking
+User=eventm
+Group=TEST
+WorkingDirectory=/opt/event-management/install
+ExecStart=/opt/event-management/install/eventmanagement-engine/bin/em_control start
+ExecStop=/opt/event-management/install/eventmanagement-engine/bin/em_control stop
+
+#KillMode=process
+Restart=always
+TimeoutStartSec=900
+TimeoutSec=900
+#WatchdogSec=10
+
+[Install]
+WantedBy=multi-user.target

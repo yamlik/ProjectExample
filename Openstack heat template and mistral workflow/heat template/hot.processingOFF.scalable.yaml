@@ -1,0 +1,192 @@
+heat_template_version: 2016-10-14
+
+parameters:
+  cbam:
+    type: json
+    description: The data calculated from the data known by TLM
+  prefix:
+    type: string
+    description: prefix
+  node_index:
+    type: string
+  resources:
+    type: json
+  key_name:
+    type: string
+  el_common_security_group_id:
+    type: string
+  el_offline_security_group_id:
+    type: string
+  internal_network_security_group_id:
+    type: string
+  internal_network:
+    type: string
+    description: Internal network for storage replication
+    default: invalid
+  internal_subnet:
+    type: string
+    description: Internal subnet for storage replication
+    default: invalid
+
+resources:
+  offline_server_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:  offline_servergroup
+      policies: [ 'anti-affinity' ]
+
+  processingOFF_virtual_ip_on_oam_network:
+    type: OS::Neutron::Port
+    properties:
+      admin_state_up: true
+      name: { list_join: [ "-", [ { get_param: prefix }, external, processingOFF, vip, { get_param: node_index }, oam ] ] }
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_OAM_IPv4_virtual_ECP, networkId ] }
+      fixed_ips: [{
+        "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_OAM_IPv4_virtual_ECP, addresses, { get_param: [resources, { get_param: node_index}, _mappedIndexNumeric ] }, subnetId ] },
+        "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_OAM_IPv4_virtual_ECP, addresses, { get_param: [resources, { get_param: node_index}, _mappedIndexNumeric ] }, ip ] }
+      }]
+
+  processingOFF_charg_virtual_ip:
+    type: OS::Neutron::Port
+    properties:
+      admin_state_up: true
+      name: { list_join: [ "-", [ { get_param: prefix }, external, processingOFF, vip, { get_param: node_index }, charg ] ] }
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_charg_IPv4_virtual_ECP, networkId ] }
+      fixed_ips: [{
+        "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_charg_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, subnetId ] },
+        "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_charg_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, ip ] }
+      }]
+
+  processingOFF_bill_virtual_ip:
+    type: OS::Neutron::Port
+    properties:
+      admin_state_up: true
+      name: { list_join: [ "-", [ {get_param: prefix}, external, processingOFF, vip, { get_param: node_index }, bill ] ] }
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_bill_IPv4_virtual_ECP, networkId ] }
+      fixed_ips: [{
+              "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_bill_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, subnetId ] },
+              "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_bill_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, ip ] }
+      }]
+
+  data_volume_1:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_offline_data ]}
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: node_index }, data ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  data_volume_2:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_offline_storage ]}
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: node_index }, storage ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  data_volume_3:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_offline_offline ]}
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: node_index }, offline ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  data_volume_4:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_offline_timesten ]}
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: node_index }, TimesTen ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  data_volume_5:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_offline_control ]}
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: node_index }, control ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  processingOFF_node:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      data_volume_1,
+      data_volume_2,
+      data_volume_3,
+      data_volume_4,
+      data_volume_5,
+      processingOFF_virtual_ip_on_oam_network,
+      processingOFF_charg_virtual_ip,
+      processingOFF_bill_virtual_ip
+    ]
+    properties:
+      count: 2
+      resource_def:
+        type: hot.processingOFF.static.yaml
+        properties:
+          data_mount_id: { get_resource: data_volume_1 }
+          storage_mount_id: { get_resource: data_volume_2 }
+          offline_mount_id: { get_resource: data_volume_3 }
+          timesten_mount_id: { get_resource: data_volume_4 }
+          control_mount_id: { get_resource: data_volume_5 }
+          cbam: { get_param: cbam }
+          prefix: { get_param: prefix }
+          node_index: '%index%'
+          port_index: { get_param: node_index }
+          resources: { get_param: resources }
+          key_name: { get_param: key_name }
+          el_common_security_group_id: { get_param: el_common_security_group_id }
+          el_offline_security_group_id: { get_param: el_offline_security_group_id }
+          internal_network_security_group_id: { get_param: internal_network_security_group_id }
+          internal_network: { get_param: internal_network }
+          internal_subnet:  { get_param: internal_subnet }
+          offline_server_group_id: { get_resource: offline_server_group }
+          processingOFF_virtual_ip_on_oam_network: { get_attr: [ processingOFF_virtual_ip_on_oam_network, fixed_ips, 0, ip_address ] }
+          processingOFF_charg_virtual_ip: { get_attr: [ processingOFF_charg_virtual_ip, fixed_ips, 0, ip_address ] }
+          processingOFF_bill_virtual_ip: { get_attr: [ processingOFF_bill_virtual_ip, fixed_ips, 0, ip_address ] }
+          # index_to_node_mapping: { get_param: [index_to_node_mapping, { get_param: node_index } ] }
+          
+  volume_attachment_1:
+    type: OS::Cinder::VolumeAttachment
+    depends_on: [
+      processingOFF_node,
+      data_volume_1
+    ]
+    properties:
+      volume_id: { get_resource: data_volume_1 }
+      instance_uuid: { get_attr: [ processingOFF_node, { list_join: [ ".", [ resource, { get_param: [ cbam, resources, processing_active_list, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, active_instance ] }, processing_server_id ] ] } ] }
+
+  volume_attachment_2:
+    type: OS::Cinder::VolumeAttachment
+    depends_on: volume_attachment_1
+    properties:
+      volume_id: { get_resource: data_volume_2 }
+      instance_uuid: { get_attr: [ processingOFF_node, { list_join: [ ".", [ resource, { get_param: [ cbam, resources, processing_active_list, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, active_instance ] }, processing_server_id ] ] } ] }
+
+  volume_attachment_3:
+    type: OS::Cinder::VolumeAttachment
+    depends_on: volume_attachment_2
+    properties:
+      volume_id: { get_resource: data_volume_3 }
+      instance_uuid: { get_attr: [ processingOFF_node, { list_join: [ ".", [ resource, { get_param: [ cbam, resources, processing_active_list, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, active_instance ] }, processing_server_id ] ] } ] }
+
+  volume_attachment_4:
+    type: OS::Cinder::VolumeAttachment
+    depends_on: volume_attachment_3
+    properties:
+      volume_id: { get_resource: data_volume_4 }
+      instance_uuid: { get_attr: [ processingOFF_node, { list_join: [ ".", [ resource, { get_param: [ cbam, resources, processing_active_list, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, active_instance ] }, processing_server_id ] ] } ] }
+
+  volume_attachment_5:
+    type: OS::Cinder::VolumeAttachment
+    depends_on: volume_attachment_4
+    properties:
+      volume_id: { get_resource: data_volume_5 }
+      instance_uuid: { get_attr: [ processingOFF_node, { list_join: [ ".", [ resource, { get_param: [ cbam, resources, processing_active_list, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, active_instance ] }, processing_server_id ] ] } ] }
+
+outputs:
+  processingOFF_oam_virtual_ip:
+    description: ProcessingOFF virtual ip on OAM network
+    value: { get_param: [cbam, externalConnectionPoints, processingOFF_OAM_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ]  }, ip ] }
+  processingOFF_charg_virtual_ip_address:
+    description: ProcessingOFF virtual ip on charging network
+    value: { get_param: [cbam, externalConnectionPoints, processingOFF_charg_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, ip ] }
+  processingOFF_bill_virtual_ip_address:
+    description: ProcessingOFF virtual ip on billing network
+    value: { get_param: [cbam, externalConnectionPoints, processingOFF_bill_IPv4_virtual_ECP, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, ip ] }

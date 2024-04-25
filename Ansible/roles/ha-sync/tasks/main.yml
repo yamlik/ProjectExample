@@ -1,0 +1,15 @@
+- name: debug in ha-sync main tasks
+  debug: msg="role_path={{role_path}}, hookFunction={{hookFunction}}"
+
+- debug: msg="HA is not enabled, ignore ha-sync"
+  when: ha_group is not defined
+
+- block:
+    - stat: path="{{role_path}}/tasks/{{hookFunction}}.yml"
+      delegate_to: 127.0.0.1
+      become: false
+      register: statResult
+
+    - include: "{{hookFunction}}.yml"
+      when: statResult.stat.isreg is defined and statResult.stat.isreg
+  when: ha_group is defined

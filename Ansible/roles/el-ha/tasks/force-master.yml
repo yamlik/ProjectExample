@@ -1,0 +1,14 @@
+---
+  - service: name=keepalived state=stopped
+
+  - service: name=keepalived state=started
+    when: inventory_hostname == ha_master
+
+  - pause:
+      seconds: 30
+
+  - service: name=keepalived state=started
+    when: inventory_hostname != ha_master
+
+  - pause:
+      seconds: 30

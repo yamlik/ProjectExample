@@ -1,0 +1,79 @@
+clouds:
+  ipv4:
+    auth:
+      username: cb0930sa
+      password: Lab_Acc0unt
+      project_name: CB0930
+      auth_url: https://10.11.203.68:13000/v3
+      user_domain_name: "Default"
+      project_domain_name: "default"
+      project_id: "9a2a6a3385744084afe07ac288250df4"
+      lab_cert: "/certs/vlab-os_cacert-fi-712.crt"
+    regionName: regionOne
+    os_interface: public
+    os_api_version: 3
+    verify: False
+
+cbamjson:
+  computeResourceFlavours:  [{"vnfdVirtualComputeDescId": "processingON_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "processingOFF_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "db_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "ui_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "oam_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "crdb_compute","resourceId": "m1.medium"},{"vnfdVirtualComputeDescId": "cgf_compute","resourceId": "m1.medium"}]
+  softwareImages: [{"resourceId": "DR20_6-processing.rhel-20200922.qcow2","vnfdSoftwareImageId": "processingON_image"},{"resourceId": "DR20_6-processing.rhel-20200922.qcow2","vnfdSoftwareImageId": "processingOFF_image"},{"resourceId": "DR20_6-DB.rhel-20200922.qcow2","vnfdSoftwareImageId": "db_image"},{"resourceId": "DR20_6-UI.rhel-20200922.qcow2","vnfdSoftwareImageId": "ui_image"},{"resourceId": "DR20_6-OAM.rhel-20200922.qcow2","vnfdSoftwareImageId": "oam_image"},{"resourceId": "DR20_6-processing.rhel-20200922.qcow","vnfdSoftwareImageId": "cgf_image"},{"resourceId": "DR20_6-CRDB.rhel-20200903.qcow2","vnfdSoftwareImageId": "crdb_image"}]
+  id: "cbis"
+  interfaceInfo: "regionOne"
+  instantiationLevelId: "default"
+  region: regionOne
+  api-version: 3
+vnfd:
+  testId: "daily-195"
+  use_floating_ip: false
+  ui_fqdn: "data-refinery.TEST.com"
+  default_password: "P@ssword1"
+  default_keycloak_password: "P@ssword1"
+  oam_network_netmask: "24"
+  charging_network_netmask: "24"
+  billing_network_netmask: "24"
+  ip_protocol_version: "ipv4"
+  cgf_lookup_server_name: "SmokeCGF"
+  offline_lookup_server_name: "SmokeServer"
+  online_lookup_server_name: "SmokeOnline"
+  enable_force_scale_in: False
+  install_gtp_collector: True
+  availability_zones: ["zone1", "zone2"]
+
+  oam_network_id: "oam_v4"
+  oam_subnet_id: "oam_ipv4"
+  oam_network_netmask: "24"
+
+  public_network_id: "d990469f-282b-4af3-9f52-19041017921d"
+                
+  charging_network_id: "charging_dual"
+  charging_subnet_id: "charging_ipv4"
+  charging_network_netmask: "24"
+
+  billing_network_id: "billing_dual"
+  billing_subnet_id: "billing_ipv4"
+  billing_network_netmask: "24"
+
+
+  authorized_key_path: "WORKSPACE/products/data_refinery/vnf/test_automation/ssh_key/vnf_key.pub"
+  authorized_private_key_path: "WORKSPACE/products/data_refinery/vnf/test_automation/ssh_key/vnf_key"
+
+  hide_sensitive_debug_info: False
+
+vnfInfo:
+  client_id: cbamAPI
+  client_secret: 'ea0846da-d91d-4d7b-a606-88af7698b569'
+  ip: 'https://10.11.198.218'
+  folder_name: 'daily-fi-712-cbam195sp2'
+  json_file: cbam.json
+  generated_json_file: generated_cbam.json
+  vnf_id: ipv4
+  vnf_path: WORKSPACE/products/data_refinery/vnf/vnf_package/
+  generator_vnf_path: WORKSPACE/products/data_refinery/vnf/vnf_package/
+  test_file_path: WORKSPACE/products/data_refinery/vnf/test_automation/yamlFiles/daily-fi-712-cbam195sp2/
+  jumphost_ip: '10.11.198.207'
+  jumphost_login: ['installer', 'Dev0ps4life!123']
+  use_json: True
+  api_version: 4
+  cbam_version: "19.5"
+  dr_version: "21"
+  vnf_type: "generic"

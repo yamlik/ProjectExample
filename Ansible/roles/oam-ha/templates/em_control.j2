@@ -1,0 +1,148 @@
+#!/bin/ksh
+
+source /opt/event-management/install/eventmanagement-engine/env-eventmanagement.ksh
+
+# Prints message to the ctl_control (if the -c option is not given)
+function ctlctrl {
+    if [ $standalone -ne 1 ]; then
+echo "ctlctrl:$1:$2"
+    fi
+}
+
+# Prints message to the stderr
+function errmsg {
+    echo 1>&2 $1
+}
+
+# Prints usage to the stderr
+function usage {
+    errmsg "Usage: $0 [-c] <method>"
+    errmsg "where:"
+    errmsg "  -c         Does not print ctlctrl protocol messages"
+    errmsg "  <method>   start, stop or status"
+    exit 1
+}
+
+# Gets the current status of the process
+function getstatus {
+    eventmgmt status
+    if [ $? -ne 0 ]; then
+        state="STOPPED"
+    else
+        reply=$(echo $reply | cut -f2 -d ' ')
+        state="RUNNING"
+    fi
+    message="Event Management is $state"
+}
+
+function eventmgmt {
+    if [ $1 = "start" ]; then
+        MANAGEMENT_PORT=`grep "^\s*ad19port\s*:" "$RCFILE" | awk -F': ' '{print $2 + 1}' | head -1`
+        MANAGEMENT_OPTS="$MANAGEMENT_OPTS -Dcom.sun.management.jmxremote.port=$MANAGEMENT_PORT"
+        MANAGEMENT_OPTS="$MANAGEMENT_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+        MANAGEMENT_OPTS="$MANAGEMENT_OPTS -Dcom.sun.management.jmxremote.ssl=false"
+
+        java $JAVA_OPTS -cp "$CLASSPATH" $MANAGEMENT_OPTS $DISPATCHER_OPTS $MAIN_CLASS $1 >> $DISPATCHER_HOME/logs/eventmanagement.out 2>&1 &
+    else
+        reply=$(java $JAVA_OPTS -cp "$CLASSPATH" $DISPATCHER_OPTS $MAIN_CLASS $1 2>&1)
+    fi
+}
+
+if [ -z "$DISPATCHER_HOME" ]; then
+    errmsg "The DISPATCHER_HOME environment variable is not defined correctly"
+    exit 1
+fi
+
+if [ "$RCFILE" = "" ]; then
+    errmsg "The RCFILE environment variable is not defined correctly"
+    exit 1
+fi
+
+# Check if this is run without ctl_control (-c option)
+standalone=0
+while getopts c option $@; do
+    case $option in
+        c)  standalone=1;;
+        ?)  usage;;
+    esac
+done
+shift `expr $OPTIND - 1`
+
+# Tell our realname to the ctl_control
+ctlctrl "name" "eventmanagement"
+
+# Check that the method is given
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+DISPATCHER_OPTS="-DRCFILE=$RCFILE -Djava.util.logging.config.file=$DISPATCHER_HOME/conf/eventmanagement_logging.properties -Dcom.TEST.cc.event.engine.stats.file=$DISPATCHER_HOME/conf/engine.stats"
+
+JAVA_OPTS="-Xmx256m"
+
+MAIN_CLASS=com.TEST.cc.event.engine.Dispatcher
+
+commons_lang_jar=$(ls $DISPATCHER_HOME/lib/commons-lang-*.jar)
+CLASSPATH=$DISPATCHER_HOME/lib/classes:$commons_lang_jar:$DISPATCHER_HOME/lib/*
+
+# Get method ie. start, stop or status
+method=$1
+
+# Check current status of the process
+echo "Checking Event Management status..."
+getstatus
+echo "$message"
+
+if [ "$method" = "start" ]; then
+    if [ "$state" = "RUNNING" ]; then
+        ctlctrl "message" "Warning - Event Management is already running"
+        echo "Event Management is already running"
+        exit 0
+    else
+        echo "Starting Event Management..."
+        eventmgmt start
+        let counter=0
+        while [ $counter -le 900 ]; do
+            sleep 1
+            getstatus
+            if [ "$state" = "RUNNING" ]; then 
+                echo "Event Management is started"
+                exit 0;
+            fi
+			print -n "."
+            let counter=$counter+1         
+        done      
+        # Failed to start the dispatcher
+        exit 1;
+    fi
+elif [ "$method" = "stop" ]; then
+    if [ "$state" = "STOPPED" ]; then 
+        ctlctrl "message" "Warning - Event Management is already stopped"
+        errmsg "Event Management is already stopped"
+        exit 0
+    else
+        echo "Stopping Event Management..."
+        eventmgmt stop
+        let counter=0
+        while [ $counter -le 90 ]; do
+            sleep 1
+            getstatus
+            if [ "$state" = "STOPPED" ]; then       
+                echo "Event Management is stopped"
+                exit 0;
+            fi
+			print -n "."
+            let counter=$counter+1                                                
+        done
+        # Failed to stop the dispatcher
+        exit 1;
+        
+    fi
+elif [ "$method" = "status" ]; then
+    getstatus
+    ctlctrl "state" $state
+    exit 0
+else 
+    ctlctrl message "Unknown method $method"
+    usage
+fi

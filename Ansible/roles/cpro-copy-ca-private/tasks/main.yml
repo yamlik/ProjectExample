@@ -1,0 +1,25 @@
+---
+
+- name: Copy backup ca private key to docker playbook directory
+  fetch:
+    src: "{{ ca_key_backup_dir}}/prometheus_ca/prometheus_ca"
+    dest: "{{ playbook_dir }}/prometheus_ca" 
+    flat: yes
+
+- name: Copy backup rabbitmq ca crt to docker playbook directory
+  fetch:
+    src: "{{ ca_key_backup_dir}}/crmq/rabbitmq_ca.crt"
+    dest: "{{ playbook_dir }}/rabbitmq_ca.crt" 
+    flat: yes
+
+- name: Copy backup rabbitmq ca key to docker playbook directory
+  fetch:
+    src: "{{ ca_key_backup_dir}}/crmq/rabbitmq_ca.key"
+    dest: "{{ playbook_dir }}/rabbitmq_ca.key" 
+    flat: yes
+
+- name: Copy backup fluentd key to docker playbook directory
+  fetch:
+    src: "{{ ca_key_backup_dir}}/el-fluentd/fluentd.key"
+    dest: "{{ playbook_dir }}/fluentd.key" 
+    flat: yes

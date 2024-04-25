@@ -1,0 +1,34 @@
+[host]
+clusterName={{ cluster_name }}
+shareDir=no
+
+[rrd]
+rrdFilePath= {{ rrd_files_location }}
+pt3GPPXmlFileDir= {{ files_3gppxml_location }}
+delayMeasSeconds= 135
+
+[rdbaas]
+redis3gppdir = /appdata/netact/rdbaas
+#[NA|5min|15min|1hour|12hour]
+cluster = NA
+nodes = NA
+bdbs = NA
+shards = NA
+VNFNAME = VNFname
+OUTPUT = /var/log/redislabs/meas
+
+[ganglia]
+nativePM = NA
+measPM = NA
+timeinterval= NA
+fetchtime=255
+
+[xml]
+dnPrefix = dn
+elementType = eletype
+userLabel =
+localDn =
+swVersion = 32.435 V7.0
+
+[clear]
+expiredDays = {{ file_3gppxml_expiry_interval_day }}

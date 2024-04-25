@@ -1,0 +1,12 @@
+- name: "Check obdc.ini exists in {{ odbc_ini_location }}"
+  stat:
+    path: "{{ odbc_ini_location }}/.odbc.ini"
+  register: odbc_stat_result_install_dir
+
+- name: "Check obdc.ini exists in {{ tt_backup_dir }}"
+  stat:
+    path: "{{ tt_backup_dir }}/.odbc.ini"
+  register: odbc_stat_result_backup_dir
+
+- include: "{{hookFunction}}.yml"
+  when: (odbc_stat_result_install_dir is defined and odbc_stat_result_install_dir.stat.exists == true) or (odbc_stat_result_backup_dir.stat.exists is defined and odbc_stat_result_backup_dir.stat.exists == true)

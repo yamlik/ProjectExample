@@ -1,0 +1,492 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    options {
+      timeout(time: 600, unit: 'MINUTES')
+      buildDiscarder(logRotator(daysToKeepStr: '30',  artifactDaysToKeepStr: '30'))
+      //disableConcurrentBuilds()
+      timestamps()
+    }
+
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl..com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+    parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'develop', description: 'Git Branch to build on.', trim: true)
+        text(name: 'images_to_convert', 
+              defaultValue: '{"output_images": [\n{ "golden_image_name" : "DR2006-processing-centos-7.8-20201016011629", "image_output_name" : "DR2006-processing-centos-7.8-20201016011629" },\n{ "golden_image_name" : "DR2006-UI-centos-7.8-20201016011633", "image_output_name" : "DR2006-UI-centos-7.8-20201016011633" }]}', 
+              description: 'Image to convert and upload. Support single and multiple images upload. Update the golden_image_name & image_output_name accordingly.'
+              )
+        choice(name: 'type', 
+               choices:"qcow2\nvmdk", 
+               description: "qcow2 - for creating compressed qcow2 from RAW<br>vmdk - for creating VMware VM image (ova)"
+              )
+        choice(name: 'upload_to_vsphere', 
+               choices: "Yes\nNo", 
+               description: "Select no if you do not want to publish the VMware image to vSphere. For debugging VMware VM image upload only."
+              )
+        choice(name: 'upload_to_artifactory', 
+               choices: "Yes\nNo", 
+               description: "Select no if you do not want to publish the VM image/disk to Artifactory. Useful for debugging VMware VM image."
+              )
+        string(name: 'output_folder', 
+               defaultValue: '', 
+               description: 'This is the folder which is created in Artifactory for upload image gathering purposes. For example RC2 or 19.6-release', 
+               trim: true
+              )
+        choice(name: 'Invoke_Parameters', 
+               choices: "No\nYes", 
+               description: "Do you wish to do a dry run to grab parameters?"
+              )
+        booleanParam(name: 'copy_artifacts', defaultValue: false, description: 'Copy artifacts from upstream job.')
+        choice(
+            name: 'build_lab',
+            choices: [
+                'pl-008',
+                'pl-036'
+            ],
+            description: 'Select a vLab for the build.'
+        )
+    }
+    environment {
+        //OS_USER_CREDS = credentials('PL_008_OS_CREDS')
+        //OS_AUTH_URL = 'https://10.75.237.4:13000/v3'
+        //OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+        //OS_USERNAME = "$OS_USER_CREDS_USR"
+        //OS_PROJECT = 'v8603_DI_DR'
+        //OS_INTERFACE='public'
+        //OS_IDENTITY_API_VERSION='3'
+        //OS_USER_DOMAIN_NAME='Default'
+        //OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+        //OS_PROJECT_NAME = 'v8603_DI_DR'
+        //OS_REGION_NAME = 'regionOne'
+        //OS_PASSWORD = "$OS_USER_CREDS_PSW"
+        output_base_path = '/home/jenkins'
+        no_proxy="127.0.0.1,localhost,.noklab.net,.int.net..com,.ext.net..com,.int..com,.TEST-rdnet.com,.TEST-net.net,.inside.siemeTESTetworks.com,.access.siemeTESTetworks.com,.TEST-intra.net,.inside.TEST.com,.access.TEST.com, repo.lab.pl..com"
+        TF_VAR_USER = credentials('TF_VAR_USER')
+        VLAB_VCENTER_HOST = '10.93.138.2'
+        VLAB_VCENTER_DC = 'Finland-SLM-DC'
+        VLAB_VDC_NETWORK = 'VM Network SB'
+        VLAB_VDC_DEVOPS_DS = 'DS_1'
+        VLAB_VDC_DEVOPS_ESXI = '10.93.138.1'
+        VLAB_VDC_DEVOPS_HOST_FOLDER = 'DevOps'
+        VLAB_VDC_DEVOPS_VM_FOLDER = 'DevOps Base Images/uploaded'
+    }
+
+    stages {
+
+        stage("Parameterizing") {
+            steps {
+                script {
+                    sh 'printenv | sort'
+
+                    currentBuild.description = "Build Type : ${params.type}"
+                    
+                    if ("${params.Invoke_Parameters}" == "Yes") {
+                        currentBuild.result = 'ABORTED'
+                        error('DRY RUN COMPLETED. JOB PARAMETERIZED.')
+                    }
+                }
+            }
+        }
+        stage("Initialising vLab variables") {
+          when {
+              environment name: 'Invoke_Parameters', value: 'No'
+          }
+          stages {
+            stage("Set vLab pl-008 variables") {
+              when {
+                environment name: 'build_lab', value: 'pl-008'
+              }
+              steps {
+                script {
+                  withCredentials([usernamePassword(credentialsId: 'PL_008_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                    env.OS_AUTH_URL = 'https://10.75.237.4:13000/v3'
+                    env.OS_IDENTITY_API_VERSION = '3'
+                    env.OS_PROJECT = 'v8603_DI_DR'
+                    env.OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+                    env.OS_PROJECT_NAME = 'v8603_DI_DR'
+                    env.OS_NETWORK_ID = '2fee903a-eacc-4a9f-af3d-1cf620da0587'
+                    env.OS_NETWORK="v8603_DI_DR_Provider_369"
+                    env.OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+                    env.OS_REGION_NAME = "regionOne"                  
+                    env.OS_INTERFACE ='public'
+                    env.OS_USER_DOMAIN_NAME = 'Default'
+                    env.OS_VOLUME_API_VERSION = '2'
+                    env.OS_USERNAME = lab_user_name
+                    env.OS_PASSWORD = lab_user_password
+                  }
+                }
+              }
+            }
+                  
+            stage("Set vLab pl-036 variables") {
+              when {
+                environment name: 'build_lab', value: 'pl-036'
+              }
+              steps {
+                script {
+                  withCredentials([usernamePassword(credentialsId: 'PL_036_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                    env.OS_AUTH_URL = 'https://pl-036.vlab.TEST-rdnet.net:13000/v3'
+                    env.OS_IDENTITY_API_VERSION = '3'
+                    env.OS_PROJECT = 'CB0643'
+                    env.OS_PROJECT_ID = '4d9ac580707a4bd2bcd6934a2f7af975'
+                    env.OS_PROJECT_NAME = 'CB0643'
+                    env.OS_NETWORK_ID = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+                    env.OS_NETWORK = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+                    env.OS_CACERT = '/certs/vlab-os_cacert-pl-036.pem'
+                    env.OS_REGION_NAME = "regionOne"
+                    env.OS_INTERFACE ='public'
+                    env.OS_USER_DOMAIN_NAME = 'Default'
+                    env.OS_USERNAME = lab_user_name
+                    env.OS_PASSWORD = lab_user_password
+                  }
+                  sh """
+                    cd /certs
+                    wget --no-check-certificate https://10.75.217.187/vlabs/vlab-os_cacert-pl-036.pem
+                    printenv
+                  """
+                }
+              }
+            }
+          }
+        }
+        stage("Download image from OpenStack") {
+            when {
+                  environment name: 'copy_artifacts', value: 'false'
+                }
+            steps {
+              script{
+                def jsonObj = readJSON text: images_to_convert, returnPojo: true
+                
+                jsonObj['output_images'].each { arrObj ->
+
+                    def image_to_download = arrObj['golden_image_name']
+
+                    sh """
+                      echo -e "\n Downloading ${image_to_download} image from OpenStack\n"
+                      
+                      mkdir -p ${env.output_base_path}/download_dir
+                      cd ${env.output_base_path}/download_dir
+
+                      source /env/bin/activate
+                      
+                      nohup openstack --insecure image save --file ${image_to_download}_temp ${image_to_download} &
+                    """
+                }
+
+                sh """
+                  for i in {1..250};do
+                    echo \$i
+
+                    process_count=\$(ps -ef | grep "openstack --insecure image save" | grep -v grep | wc -l)
+
+                    if [ \$process_count -eq 0 ]; then
+                      break; #break from loop
+                    fi
+                    sleep 30
+                  done
+
+                  cd ${env.output_base_path}/download_dir
+
+                  ls -lart
+                """
+              }
+            }
+        }
+
+        
+        stage("Do actions specific to qcow2 type"){
+            when {
+              environment name: 'type', value: 'qcow2'
+            }
+            stages {
+              stage("Convert image from RAW to qcow2") {
+                when {
+                  environment name: 'copy_artifacts', value: 'false'
+                }
+                steps {
+                  script {
+                    def jsonObj = readJSON text: images_to_convert, returnPojo: true
+              
+                    jsonObj['output_images'].each { arrObj ->
+
+                      def image_to_convert = arrObj['golden_image_name']
+                      def output_name = arrObj['image_output_name']
+                      sh """
+                        cd ${env.output_base_path}/download_dir
+
+                        mkdir -p ${env.output_base_path}/qcow2/
+
+                        qemu-img convert -c -f raw -O qcow2 ${image_to_convert}_temp ${env.output_base_path}/qcow2/${output_name}.qcow2
+                        
+                      """
+                    }
+
+                    sh """
+                      for i in {1..250};do
+                        echo \$i
+
+                        process_count=\$(ps -ef | grep qemu-img | grep -v grep | wc -l)
+
+                        if [ \$process_count -eq 0 ]; then
+                          break; #break from loop
+                        fi
+                        sleep 30
+                      done
+
+                      ls -lart ${env.output_base_path}/qcow2
+                    """
+                    // sh """
+                    // cd ${env.output_base_path}
+                    // qemu-img convert -c -f raw -O qcow2 temp ${image_output_name}.qcow2
+                    // mkdir -p ${env.output_base_path}/qcow2/
+                    // mv ${image_output_name}.qcow2 ${env.output_base_path}/qcow2/
+                    // echo -e "\n the content of qcow2 folder is \n"
+                    // ls -lh ${env.output_base_path}/qcow2/
+                    // """
+                  }
+                }
+              }
+
+              stage("Copy Artifacts from upstream job") {
+                when {
+                  environment name: 'copy_artifacts', value: 'true'
+                }
+                steps{
+                  copyArtifacts filter: "*.qcow2", fingerprintArtifacts: true, projectName: 'end-to-end-pipeline', selector: upstream(), target: "${env.output_base_path}/qcow2"
+                }
+              }
+              stage("Upload converted qcow2 image to artifactory") {
+                when {
+                  environment name: 'upload_to_artifactory', value: 'Yes'
+                }
+                steps{
+                  script {
+                    withCredentials([usernamePassword(credentialsId: 'drdo-artifactory', passwordVariable: 'ARTIFACTORY_PWD', usernameVariable: 'ARTIFACTORY_USER')]) {
+                      def rtServer = Artifactory.server env.ARTIFACTORY_SERVER_ID
+                      rtServer.credentialsId = 'drdo-artifactory'
+
+                      def buildInfo = Artifactory.newBuildInfo()
+                      buildInfo.env.filter.addExclude("*CREDENTIAL*")
+                      buildInfo.env.capture = true
+                      buildInfo.env.collect()
+                      
+                      def jsonObj = readJSON text: images_to_convert, returnPojo: true
+                
+                      def uploadQcow2 = ""
+                      
+                      jsonObj['output_images'].each { arrObj ->
+                        def output_name = arrObj['image_output_name']
+  
+                        if (uploadQcow2 == "" || uploadQcow2 == null){
+                          uploadQcow2 = "{\"files\":[{\"pattern\": \"${env.output_base_path}/qcow2/${output_name}.qcow2\",\"target\": \"drdo-generic-candidates/qcow2/${output_folder}/${buildInfo.number}/${output_name}.qcow2\"}"
+                        } else {
+                          uploadQcow2 = uploadQcow2 + ",{\"pattern\": \"${env.output_base_path}/qcow2/${output_name}.qcow2\",\"target\": \"drdo-generic-candidates/qcow2/${output_folder}/${buildInfo.number}/${output_name}.qcow2\"}"
+                        }
+                      }
+
+                      uploadQcow2 = uploadQcow2 + "]}"
+
+                      echo uploadQcow2
+                      // def uploadQcow2 = """{
+                      //   "files":[
+                      //     {
+                      //       "pattern": "${env.output_base_path}/qcow2/**",
+                      //       "target": "drdo-generic-candidates/qcow2/${output_folder}/${buildInfo.number}"
+                      //     }            
+                      //   ]  
+                      // } 
+                      // """
+
+                      rtServer.upload(uploadQcow2, buildInfo)
+                      rtServer.publishBuildInfo(buildInfo)
+
+                      def promotionConfig = [
+                        buildName: buildInfo.name,
+                        buildNumber: buildInfo.number,
+                        status: 'Released',
+                        targetRepo: 'drdo-generic-releases',
+                        includeDependencies: false,
+                        copy: true,
+                        failFast: true
+                      ]
+                      
+                      Artifactory.addInteractivePromotion server: rtServer, promotionConfig: promotionConfig, displayName: 'Promote candidates'
+                      
+                    }
+                  }
+                }
+              }
+            }      
+        }
+        
+        stage("Do actions specific to vmdk type"){
+            when {
+              environment name: 'type', value: 'vmdk'
+            }
+            stages {
+              stage("Convert image from RAW to vmdk") {
+                when {
+                  environment name: 'copy_artifacts', value: 'false'
+                }
+                  steps {
+                    script{
+                      def jsonObj = readJSON text: images_to_convert, returnPojo: true
+                
+                      jsonObj['output_images'].each { arrObj ->
+
+                        def image_to_convert = arrObj['golden_image_name']
+                        def output_name = arrObj['image_output_name']
+
+                        sh """
+                        cd ${env.output_base_path}/download_dir
+                        qemu-img convert -f raw -O vmdk ${image_to_convert}_temp ${output_name}.vmdk 
+                        mkdir -p ${env.output_base_path}/ova/
+                        mv ${output_name}.vmdk ${env.output_base_path}/ova/
+                        echo -e "\n the content of ova folder is \n"
+                        ls -lh ${env.output_base_path}/ova/
+                        """
+                      }
+                    }
+                  }
+              }   
+
+              stage("Copy Artifacts from upstream job") {
+                when {
+                  environment name: 'copy_artifacts', value: 'true'
+                }
+                steps{
+                  copyArtifacts filter: "*.vmdk", fingerprintArtifacts: true, projectName: 'end-to-end-pipeline', selector: upstream(), target: "${env.output_base_path}/ova"
+                }
+              }
+
+              stage("Modify ovf file with the correct vmdk name"){
+                steps {
+                  script{
+                    def jsonObj = readJSON text: images_to_convert, returnPojo: true
+
+                    jsonObj['output_images'].each { arrObj ->
+
+                      def output_name = arrObj['image_output_name']
+
+                      sh """
+                      cd ${env.output_base_path}/ova/
+                      cp /vmware_helpers/ovf_template.ovf ${env.output_base_path}/ova/${output_name}.ovf
+                      sed -i 's/VMDK_NAME/${output_name}.vmdk/' ${env.output_base_path}/ova/${output_name}.ovf
+                      sed -i 's/VMNAME_PLACE/${output_name}/' ${env.output_base_path}/ova/${output_name}.ovf
+                      """
+                    }
+                  }
+                }
+              }
+          
+              stage("Generate OVA file with OVF file"){
+                steps {
+                  script{
+                    def jsonObj = readJSON text: images_to_convert, returnPojo: true
+
+                    jsonObj['output_images'].each { arrObj ->
+
+                      def output_name = arrObj['image_output_name']
+
+                      sh """
+                      ovftool ${env.output_base_path}/ova/${output_name}.ovf ${env.output_base_path}/ova/${output_name}.ova
+                      """
+                    }
+                  }
+                }
+              }
+              stage("Deploy OVA file to vSphere") {
+                when {
+                  environment name: 'upload_to_vsphere', value: 'Yes'
+                }
+                steps {
+                  script{
+                    def jsonObj = readJSON text: images_to_convert, returnPojo: true
+
+                    jsonObj['output_images'].each { arrObj ->
+
+                      def output_name = arrObj['image_output_name']
+
+                      sh """
+                      #ovftool --disableVerification --noSSLVerify --acceptAllEulas --name=${output_name} --datastore=${env.VLAB_VDC_DEVOPS_DS} --diskMode=thin --vmFolder="${env.VLAB_VDC_DEVOPS_VM_FOLDER}" --network="${env.VLAB_VDC_NETWORK}" --overwrite ${env.output_base_path}/ova/${output_name}.ova "vi://${TF_VAR_USER_USR}:${TF_VAR_USER_PSW}@${env.VLAB_VCENTER_HOST}/${env.VLAB_VCENTER_DC}/host/${env.VLAB_VDC_DEVOPS_HOST_FOLDER}/${env.VLAB_VDC_DEVOPS_ESXI}"
+                      ovftool --disableVerification --noSSLVerify --acceptAllEulas --name=${output_name} --datastore=${env.VLAB_VDC_DEVOPS_DS} --diskMode=thin --vmFolder="${env.VLAB_VDC_DEVOPS_VM_FOLDER}" --network="${env.VLAB_VDC_NETWORK}" --overwrite ${env.output_base_path}/ova/${output_name}.ova "vi://${TF_VAR_USER_USR}:${TF_VAR_USER_PSW}@${env.VLAB_VCENTER_HOST}/${env.VLAB_VCENTER_DC}/host/${env.VLAB_VDC_DEVOPS_ESXI}"
+                      """
+                    }
+                  } 
+                }
+              }
+              stage("Upload created ova file to artifactory") {
+                when {
+                  environment name: 'upload_to_artifactory', value: 'Yes'
+                }
+                steps{
+                  script {
+                    withCredentials([usernamePassword(credentialsId: 'drdo-artifactory', passwordVariable: 'ARTIFACTORY_PWD', usernameVariable: 'ARTIFACTORY_USER')]) {
+                      def rtServer = Artifactory.server env.ARTIFACTORY_SERVER_ID
+                      rtServer.credentialsId = 'drdo-artifactory'
+                
+                      def buildInfo = Artifactory.newBuildInfo()
+                      buildInfo.env.filter.addExclude("*CREDENTIAL*")
+                      buildInfo.env.capture = true
+                      buildInfo.env.collect()
+                      
+                      def jsonObj = readJSON text: images_to_convert, returnPojo: true
+                      
+                      def uploadOva = ""
+
+                      jsonObj['output_images'].each { arrObj ->
+
+                        def output_name = arrObj['image_output_name']
+                      
+
+                        uploadOva = """{
+                          "files":[
+                            {
+                              "pattern": "${env.output_base_path}/ova/${output_name}.ova",
+                              "target": "drdo-generic-candidates/ova/${output_folder}/${buildInfo.number}/"
+                            }            
+                          ]  
+                        } 
+                        """      
+                      }
+
+                      echo uploadOva
+
+                      rtServer.upload(uploadOva, buildInfo)
+                      rtServer.publishBuildInfo(buildInfo)
+
+                      def promotionConfig = [
+                        buildName: buildInfo.name,
+                        buildNumber: buildInfo.number,
+                        status: 'Released',
+                        targetRepo: 'drdo-generic-releases',
+                        includeDependencies: false,
+                        copy: true,
+                        failFast: true
+                      ]
+                      
+                      Artifactory.addInteractivePromotion server: rtServer, promotionConfig: promotionConfig, displayName: 'Promote candidates'
+                    }
+                  }
+                }
+              }
+            }
+        }     
+  
+     }    
+
+ } 

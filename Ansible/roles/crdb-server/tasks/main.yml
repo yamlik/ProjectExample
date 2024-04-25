@@ -1,0 +1,402 @@
+---
+- name: Check tls folder exists in persistent volume
+  stat:
+    path: "{{ dump_dir }}/tls"
+  register: stat_result
+  when: crdb_ssl == true 
+
+- name: Set IPv4 variable
+  set_fact:
+    private_ip: "{{ vnf_context_data['resource_model']['resources']['crdb_aspect_group']['resources'][item]['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+  with_items: "{{ groups['vdu-crdb'].index(inventory_hostname) }}"  
+
+- name: "Ensure group {{ group }} exists"
+  group:
+    name: "{{ group }}"
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: Add user and group "{{ user }}"
+  user: name={{ user }} group={{ group }} createhome=no
+  become: yes
+  become_method: sudo
+
+# Open firewall open base on configured port number
+- name: open ports for crdb
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ sentinel_port }}"
+    - "{{ redis_port }}"
+  
+- name: setup redis sentinel system file
+  template:
+    src: redis-sentinel.service.j2
+    dest: "/etc/systemd/system/redis-sentinel.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  become: true
+  become_method: sudo
+
+- name: setup redisio system file
+  template:
+    src: redisio.service.j2
+    dest: "/etc/systemd/system/redisio.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  become: true
+  become_method: sudo
+
+- name: change permission of redisio directory
+  file:
+    path: "/etc/redisio"
+    state: directory
+    recurse: yes
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+
+- name: create {{ log_dir }}
+  file:
+    path: "{{ log_dir }}/"
+    state: directory
+    recurse: yes
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+
+- name: create redis log files
+  file:
+    path: "{{ log_dir }}/{{ item }}"
+    state: touch
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0666
+  with_items:
+    - "sentinel.log"
+    - "server.log"
+
+- name: create dump directory
+  file:
+    path: "{{ dump_dir }}"
+    state: directory
+    recurse: yes
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+
+- name: create tls directory
+  file: 
+    path: "{{ dump_dir }}/tls"
+    state: directory
+                
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )
+
+
+- name: Create ca key
+  command: "openssl genrsa -out {{ dump_dir }}/tls/ca.key 4096"
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false ) and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+
+- name: Create redis key
+  command: "openssl genrsa -out {{ dump_dir }}/tls/redis.key 2048"
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false ) and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+   
+- name: Create dhparam key
+  command: " openssl dhparam -out {{ dump_dir }}/tls/redis.dh 2048"
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+
+- name: Register ca key
+  command: "openssl req -x509 -new -nodes -sha256 -key {{ dump_dir }}/tls/ca.key -days 3650 -subj \'/O=Redis Test/CN=tlsificate Authority\' -out {{ dump_dir }}/tls/ca.crt"
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+
+- name: Create extension list
+  shell: echo -e "[v3_req]\nsubjectAltName = @alt_names\n[ alt_names ]\nIP.1={{ private_ip_0 }}\nIP.2={{ private_ip_1 }}\nIP.3={{ private_ip_2 }}" > extensions.txt
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+
+- name: Register redis key
+  shell: "openssl req -new -sha256 -key {{ dump_dir }}/tls/redis.key -subj '/O=Redis Test/CN=Server' | openssl x509 -req -sha256 -CA {{ dump_dir }}/tls/ca.crt -CAkey {{ dump_dir }}/tls/ca.key -CAserial {{ dump_dir }}/tls/ca.txt -CAcreateserial -days 3650 -extensions v3_req -extfile extensions.txt -out {{ dump_dir }}/tls/redis.crt"
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+
+- name: Change all cert ownership
+  file:
+   path: "{{ dump_dir }}/tls"
+   owner: "{{ user }}"
+   group: "{{ group }}"
+   mode: 0755
+   recurse: yes
+  become: true
+  become_method: sudo 
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )                                                                                                                                
+  
+- name: fetch created tls certs back to docker
+  fetch:
+    src: "{{ item }}"
+    dest: "{{ playbook_dir }}"
+  with_items:
+    - "{{ dump_dir}}/tls/ca.key"
+    - "{{ dump_dir}}/tls/redis.key"
+    - "{{ dump_dir}}/tls/redis.dh"
+    - "{{ dump_dir}}/tls/redis.crt"
+    - "{{ dump_dir}}/tls/ca.crt"
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and ( groups['vdu-crdb'].index(inventory_hostname) == 0 )
+  
+- name: Copy tls certs to remaining crdb instance
+  copy:
+    src: "{{ item }}"
+    dest: "{{ dump_dir }}/tls/"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  with_items:
+     - "{{ playbook_dir }}/{{ groups['vdu-crdb'][0] }}/{{ dump_dir}}/tls/ca.key"
+     - "{{ playbook_dir }}/{{ groups['vdu-crdb'][0] }}/{{ dump_dir}}/tls/redis.key"
+     - "{{ playbook_dir }}/{{ groups['vdu-crdb'][0] }}/{{ dump_dir}}/tls/redis.dh"
+     - "{{ playbook_dir }}/{{ groups['vdu-crdb'][0] }}/{{ dump_dir}}/tls/redis.crt"
+     - "{{ playbook_dir }}/{{ groups['vdu-crdb'][0] }}/{{ dump_dir}}/tls/ca.crt"
+  when: ( crdb_ssl == true ) and ( stat_result.stat.exists == false )  and  ( groups['vdu-crdb'].index(inventory_hostname) == 1  or groups['vdu-crdb'].index(inventory_hostname) == 2 )
+  become: true
+  become_method: sudo 
+
+- name: apply selinux context to dump directory
+  sefcontext:
+    target: "{{ dump_dir }}(/.*)?"
+    setype: redis_conf_t
+    state: present
+  become: true
+  become_method: sudo
+
+- name: apply selinux context to redisio directory
+  sefcontext:
+    target: "/etc/redisio(/.*)?"
+    setype: redis_conf_t
+    state: present
+  become: true
+  become_method: sudo
+
+- name: apply selinux context to {{ log_dir }}
+  sefcontext:
+    target: '{{ log_dir }}(/.*)?'
+    setype: redis_log_t
+    state: present
+  become: true
+  become_method: sudo
+
+- name: apply selinux context to /var/lib/redis/TEST_cg_module.so
+  sefcontext:
+    target: "{{ dump_dir }}/TEST_cg_module.so"
+    setype: redis_exec_t
+    state: present
+  become: true
+  become_method: sudo
+  
+- name: Apply new SELinux file context to filesystem for non ssl
+  command: restorecon -irv /etc/redisio {{ log_dir }} {{ dump_dir }}
+  become: true
+  become_method: sudo
+  when: crdb_ssl == false 
+  
+- name: Apply new SELinux file context to filesystem for ssl
+  command: restorecon -irv /etc/redisio {{ log_dir }} {{ dump_dir }} {{dump_dir}}/tls
+  become: true
+  become_method: sudo
+  when: crdb_ssl == true
+
+- name: Update redis.conf with generic changes
+  lineinfile:
+    backrefs: yes
+    path: "/etc/redisio/redis.conf"
+    line: "{{ item.to }}"
+    regexp: "{{ item.from }}"
+    state: present
+  with_items:
+    - { from: "^bind .*", to: "bind {{ private_ip }}" }
+    - { from: "^protected-mode yes",to: "protected-mode no" }
+    - { from: "^supervised no", to: "supervised systemd" }
+    - { from: "^dir ./" , to: "dir {{ dump_dir }}" }
+    - { from: "^logfile *" , to: "logfile \"{{ log_dir }}/server.log\"" }
+
+- name: Check presence of items in server config file
+  lineinfile:
+    state: absent
+    path: "/etc/redisio/redis.conf"
+    regexp: "{{ item }}"
+  check_mode: true
+  register: check
+  with_items:
+    - "^masterauth *"
+    - "^requirepass *"
+    - "^dbfilename *"
+
+- name: Insert item if not exist, update item if content not same in server config
+  lineinfile:
+     path: "/etc/redisio/redis.conf"
+     line: "{{ item.to  }}"
+     regexp: "{{ item.from }}"
+     state: present
+  when:  item.found|list|join("\", \"")  == '0' or item.found|list|join("\", \"") == '1'
+  with_items:
+    - { found: "{{ check.results[0].found }}", from: "^masterauth *", to: "masterauth {{ pass_crdb }}" }
+    - { found: "{{ check.results[1].found }}", from: "^requirepass *", to: "requirepass {{ pass_crdb  }}" }
+    - { found: "{{ check.results[2].found }}", from: "^dbfilename *", to: "dbfilename dump.rdb" }
+
+- name: Add tls related info to redis.conf
+  lineinfile:
+    path: "/etc/redisio/redis.conf"
+    line: "{{ item }}"
+    state: present
+  with_items:
+    - "tls-cert-file {{ dump_dir }}/tls/redis.crt"
+    - "tls-key-file {{ dump_dir }}/tls/redis.key"
+    - "tls-ca-cert-file {{ dump_dir }}/tls/ca.crt"
+    - "tls-dh-params-file {{ dump_dir }}/tls/redis.dh"
+    - "tls-replication yes"
+    - "port 0"
+    - "tls-port 6379"
+  when: crdb_ssl == true
+
+- name: Set Master Redis IP variable
+  set_fact:
+    master_private_ip: "{{ vnf_context_data['resource_model']['resources']['crdb_aspect_group']['resources']['0']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+  
+- name: add replica configuration to slave host
+  lineinfile:
+    path: "/etc/redisio/redis.conf"
+    line: "replicaof {{master_private_ip}} 6379"
+    insertafter: "^# replicaof <masterip> <masterport>"
+    state: present
+  when: "groups['vdu-crdb'].index(inventory_hostname) != 0" #index 0 is the master host
+  
+- name: add TEST cg module into redis config
+  lineinfile:
+    path: "/etc/redisio/redis.conf"
+    line: "loadmodule {{ dump_dir }}/TEST_cg_module.so"
+    insertafter: "^# loadmodule /path/to/other_module.so"
+    state: present
+    
+
+- name: Update sentinel.conf with generic changes
+  lineinfile:
+    backrefs: yes
+    path: "/etc/redisio/sentinel.conf"
+    line: "{{ item.to }}"
+    regexp: "{{ item.from }}"
+    state: present
+  with_items:
+    - { from: "^logfile *", to: "logfile \"{{ log_dir }}/sentinel.log\"" }
+    - { from: "^dir /tmp", to: "dir /etc/redisio" }
+    - { from: "^sentinel monitor mymaster .*", to: "sentinel monitor mymaster {{master_private_ip}} {{ redis_port }} {{ quorum }}" }
+    - { from: "^sentinel down-after-milliseconds mymaster [0-9]*", to: "sentinel down-after-milliseconds mymaster 60000" }
+    - { from: "^sentinel failover-timeout mymaster [0-9]*", to: "sentinel failover-timeout mymaster 180000" }
+
+- name: Check presence of items in sentinel config file
+  lineinfile:
+    state: absent
+    path: "/etc/redisio/sentinel.conf"
+    regexp: "{{ item }}"
+  check_mode: true
+  register: check
+  with_items:
+    - "^sentinel parallel-syncs mymaster [0-9]*"
+    - "^sentinel auth-pass *"
+    - "^requirepass *"
+
+- name: Insert item if not exist, update item if content not same in sentinel config
+  lineinfile:
+     path: "/etc/redisio/sentinel.conf"
+     line: "{{ item.to  }}"
+     regexp: "{{ item.from }}"
+     state: present
+  when:  item.found|list|join("\", \"")  == '0' or item.found|list|join("\", \"") == '1'
+  with_items:
+    - { found: "{{ check.results[0].found }}", from: "^sentinel parallel-syncs mymaster [0-9]*", to: "sentinel parallel-syncs mymaster 1" }
+    - { found: "{{ check.results[1].found }}", from: "^sentinel auth-pass *", to: "sentinel auth-pass mymaster {{ pass_crdb }}" }
+    - { found: "{{ check.results[2].found }}", from: "^requirepass *", to: "requirepass {{ pass_crdb  }}" }
+
+- name: Add tls related info to sentinel.conf
+  lineinfile:
+    path: "/etc/redisio/sentinel.conf"
+    line: "{{ item }}"
+    state: present
+  with_items:
+    - "tls-cert-file {{ dump_dir }}/tls/redis.crt"
+    - "tls-key-file {{ dump_dir }}/tls/redis.key"
+    - "tls-ca-cert-file {{ dump_dir }}/tls/ca.crt"
+    - "tls-dh-params-file {{ dump_dir }}/tls/redis.dh"
+    - "tls-replication yes"
+    - "port 0"
+    - "tls-port 26379"
+  when: crdb_ssl == true
+
+# Enable and start redis service 
+- name: enable and start service redisio
+  systemd:
+    name: redisio
+    enabled: yes
+    state: restarted
+    daemon_reload: yes
+  register: redisio_status
+  until: "redisio_status is defined and redisio_status.state is defined and redisio_status.state == 'started'"  
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+# Enable and start redis-sentinel service 
+- name: enable and start service redis-sentinel
+  systemd:
+    name: redis-sentinel
+    enabled: yes
+    state: restarted
+    daemon_reload: yes
+  register: sentinel_status
+  until: "sentinel_status is defined and sentinel_status.state is defined and sentinel_status.state == 'started'"  
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: Verify status of redis
+  shell: tail -20 {{ log_dir }}/server.log | grep -w "Ready to accept connections"
+  register: redis_output
+  until: redis_output.stdout != ""
+  retries: 3
+  delay: 10
+
+- name: Verify status of sentinel
+  shell: tail -10 {{ log_dir }}/sentinel.log | grep -w "monitor master mymaster"
+  register: sentinel_output
+  until: sentinel_output.stdout != ""
+  retries: 3
+  delay: 10
+  
+...

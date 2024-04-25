@@ -1,0 +1,47 @@
+#!/bin/bash -e
+
+SSH_CMD=$(which ssh)
+RSYNC_CMD=$(which rsync)
+UNISON_CMD=$(which unison)
+HA_CMD=$(which ha)
+
+if [[ $(${HA_CMD} role) != "ACTIVE" ]]; then
+  exit 0
+fi
+
+REMOTE_USER=root
+REMOTE_HOST="{{ sync_target_host }}"
+
+RSYNC_PATH="{{ sync_directory }}/meas"
+RSYNC_FILTER_FILE="/.rsync_filter"
+RSYNC_MODE="-au"
+
+UNISON_SYNC_MODE="-owner -group -batch"
+UNNISON_SYNC_IGNORES='Name {lock,.nfs*}'
+UNISON_QUIET_MODE="-terse -silent"
+
+DEBUG_MODE=0
+if (( DEBUG_MODE > 0 )); then
+  RSYNC_DEBUG_MODE="--progress"
+  #RSYNC_DRY_RUN_MODE="--dry-run"
+  UNISON_QUIET_MODE=""
+  UNISON_DEBUG_MODE="-debug all"
+fi
+
+# Check if remote path has been sync-ed before
+REMOTE_COUNT=$(${SSH_CMD} ${REMOTE_USER}@${REMOTE_HOST} "find ${RSYNC_PATH} -type f | wc -l" 2>/dev/null)
+
+if (( REMOTE_COUNT > 1 )); then
+  # "Normal time" sync
+  (( DEBUG_MODE > 0 )) && echo "Starting remote sync..."
+  ${UNISON_CMD} ${RSYNC_PATH} ssh://${REMOTE_USER}@${REMOTE_HOST}/${RSYNC_PATH} ${UNISON_SYNC_MODE} -ignore "${UNNISON_SYNC_IGNORES}" ${UNISON_QUIET_MODE} ${UNISON_DEBUG_MODE}
+  (( DEBUG_MODE > 0 )) && echo "Remote sync completed"
+else
+  # First time synchronisation
+  (( DEBUG_MODE > 0 )) && echo "Initializing remote sync..."
+  ${RSYNC_CMD} ${RSYNC_MODE} --filter=": ${RSYNC_FILTER_FILE}" ${RSYNC_DRY_RUN_MODE} ${RSYNC_DEBUG_MODE} ${RSYNC_PATH}/ ${REMOTE_USER}@${REMOTE_HOST}:${RSYNC_PATH}
+  ${RSYNC_CMD} ${RSYNC_MODE} --filter=": ${RSYNC_FILTER_FILE}" ${RSYNC_DRY_RUN_MODE} ${RSYNC_DEBUG_MODE} ${REMOTE_USER}@${REMOTE_HOST}:${RSYNC_PATH}/ ${RSYNC_PATH}
+  (( DEBUG_MODE > 0 )) && echo "Initial remote sync completed"
+fi
+
+exit 0

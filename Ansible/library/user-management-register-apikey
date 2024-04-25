@@ -1,0 +1,100 @@
+#!/bin/bash
+
+function log {
+  log_lines="${log_lines}$*\n"
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'"
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "$1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+  exit 1
+}
+
+# validate <extended grep pattern> <variable name>...
+# Example: validate "^[0-9]{4,5}$" tcp_port udp_port
+function validate {
+  local valid=true
+  local extended_grep_pattern="$1"; shift
+  local variable_name
+  for variable_name in "$@"
+  do
+    grep --quiet --extended-regexp "${extended_grep_pattern}" <<< "${!variable_name}" ||
+        { log "ERROR: ${variable_name} ('${!variable_name}') does not conform to '${extended_grep_pattern}'"; valid=false; }
+  done
+  ${valid} || fail
+}
+
+DEPRECATION_WARNING="DEPRECATION WARNING: This module has been deprecated.\nPlease use Ansible module 'register-apikey' instead, provided by ccp-commons-ansible RPM package."
+
+log_lines="${DEPRECATION_WARNING}\n"
+failed=true
+changed=false
+
+# Default parameter values
+um_db_host=
+um_db_port=5432
+um_db_user=ccpum
+um_db_password=
+um_db_name=ccpum_db
+module_id=
+apikey=
+
+# Source parameters (possibly overwriting defaults)
+source "$1"
+log_variables um_db_host um_db_port um_db_user um_db_name
+
+# Validate parameteres
+valid_module_id="^[a-zA-Z0-9_-]{1,255}$"
+valid_apikey="^[a-fA-F0-9]{15,255}$"
+validate "${valid_module_id}" module_id
+validate "${valid_apikey}" apikey
+
+# Common psql parameters
+database_params="--host ${um_db_host} --port ${um_db_port} --username ${um_db_user} --dbname ${um_db_name} --no-password"
+formatting_params="--no-align --tuples-only --field-separator=|"
+
+log "Checking if an API key already exists..."
+query="SELECT * FROM api_keys WHERE module_id='${module_id}'"
+output=$(PGPASSWORD="${um_db_password}" psql $database_params $formatting_params --command "${query}") ||
+    fail "ERROR: failed to execute query: '${query}'"
+
+# Parse output, for example "openam|f0237fha0"
+entry_module_id=$(cut --delimiter="|" --fields=1 <<< "$output")
+entry_apikey=$(cut --delimiter="|" --fields=2 <<< "$output")
+
+if [ "$module_id" = "$entry_module_id" ]
+then
+    log "An existing API key found for module '$module_id'"
+    if [ "$apikey" = "$entry_apikey" ]
+    then
+        log "API key unchanged: skipping"
+        failed=false
+    else
+        log "API key changed: updating"
+        query="UPDATE api_keys SET shared_key='$apikey' WHERE module_id='${module_id}';"
+        PGPASSWORD="${um_db_password}" psql $database_params $formatting_params --quiet \
+                  --command "${query}" || fail "ERROR: failed to update API key"
+        changed=true
+        failed=false
+    fi
+else
+    log "No existing API key for module '$module_id': inserting"
+    PGPASSWORD="${um_db_password}" psql $database_params $formatting_params --quiet \
+         --command "INSERT INTO api_keys VALUES ('${module_id}', '${apikey}');" ||
+        fail "ERROR: failed to insert API key"
+    changed=true
+    failed=false
+fi
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+exit 0

@@ -1,0 +1,94 @@
+---
+# defaults file for devtool-ui
+
+# ports for DevTool
+devtool_ui_http_port: "57080"
+devtool_ui_ajp_port: "57009"
+devtool_ui_shutdown_port: "57005"
+devtool_ui_redirect_port: "57081"
+httpd_listening_port: "55000"
+devtool_backend_http_port: "58080"
+
+el_ui_fqdn: "{{ inventory_hostname }}"
+devtool_ui_fqdn: "{{ inventory_hostname }}"
+devtool_backend_fqdn: "{{ inventory_hostname }}"
+
+#devtool-settings.json variables
+refreshingInterval: 60000
+devtoolBackend: "/devtool/ext"
+TESTBackend: "/devtool/ext"
+TESTApp: "/TEST"
+
+# Hosts for services
+devtool_ui_service:         "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+devtool_backend_service:    "{{ protocol | default('http') }}://{{ devtool_backend_fqdn }}:{{ devtool_backend_http_port }}"
+devtool_ui_setting_service: "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+ui_config_service:          "{{ protocol | default('http') }}://{{ devtool_ui_fqdn }}:{{ devtool_ui_http_port }}"
+TEST_ui_service:       "{{ protocol | default('http') }}://{{ el_ui_fqdn }}:{{ httpd_listening_port }}"
+
+# devtool vars for kc
+
+product_fqdn_devtool_ui: "{{ devtool_ui_fqdn }}"
+client_local_conf_devtool_ui: "{{ ansible_dir }}/devtool-ui-keycloak.json"
+product_client_roles_devtool_ui: "{{ devtool_permission_dictionary }}"
+certificate_alias_devtool_ui: "devtool-ui"
+keystore_file_name_devtool_ui: "{{ certificate_alias }}.jks"
+truststore_file_name_devtool_ui: "trusted-certs.jks"
+product_install_dir_devtool_ui: "{{ devtool_install_dir }}"
+product_kc_http_port_devtool_ui: "{{ devtool_ui_http_port }}"
+product_kc_origins_devtool_ui:
+  - "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ devtool_ui_http_port }}"
+  - "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ httpd_listening_port }}"
+product_redirect_uris_devtool_ui:
+  - "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ devtool_ui_http_port }}/*"
+  - "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ httpd_listening_port }}/*"
+product_kc_base_url_devtool_ui: "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ devtool_ui_http_port }}/devtool"
+product_kc_admin_url_devtool_ui: "{{ protocol | default('http') }}://{{ product_fqdn_devtool_ui }}:{{ devtool_ui_http_port }}/devtool"
+product_service_name_devtool_ui: "{{ devtool_tomcat_service_name }}"
+kc_client_scope_mappings_devtool_ui:
+  - { client_id: "TEST_ui", role_name: "TEST.browse" }
+
+devtool_ui_package_name: devtool
+devtool_user: "TEST"
+devtool_group: "TEST"
+
+
+
+# Files and directories location
+tomcat_dir: '/opt/TEST/tomcat'
+ansible_dir:  '/tmp/ansible_tmp'
+devtool_install_dir: '/opt/TEST/devtool'
+server_xml_file_location: '{{ tomcat_dir  }}/devtool/conf/server.xml'
+install_directory: '/opt/TEST/TEST'
+rc_file_location: '{{ install_directory }}/.mds.rc'
+devtool_tomcat_service_path: '/etc/sysconfig/tomcat@devtool'
+devtool_tomcat_service_name: 'tomcat@devtool'
+ui_config_file_location: '/opt/TEST/ui-config/ui-config.json'
+devtool_settings_file_location: '{{ tomcat_dir }}/devtool/webapps/settings/devtool-settings.json'
+devtool_proxy_file_location: "{{ devtool_install_dir }}/devtool.proxy.conf"
+
+# vars for solution config role
+devtool_add_solution_config_entry: true
+devtool_deploy_solution_config: true
+
+# vars for httpd role
+devtool_service_dictionary:
+    - {service_name:  "devtool", service: "{{ devtool_ui_service }}" }
+    - {service_name:  "settings/devtool-settings.json", service: "{{ devtool_ui_setting_service }}" }
+    - {service_name:  "ui-config/ui-config.json", service: "{{ ui_config_service }}" }
+    - {service_name: "TEST", service: "{{ TEST_ui_service }}" }
+
+
+#kc vars
+kc_client_id_devtool_ui: "{{ devtool_ui_package_name }}"
+kc_client_name_devtool_ui: "Development Tool"
+kc_client_description_devtool_ui: "TEST Mediation DevTool UI"
+kc_client_conf_file_devtool_ui: "{{ tomcat_dir }}/devtool/conf/dt-ui-keycloak.json"
+
+devtool_permission_dictionary:
+  - {name: "devtool.read", description: "Read permission for DevTool."}
+  - {name: "devtool.write", description: "Write permission for DevTool."}
+  - {name: "devtool.workspace.read", description: "Read permission for DevTool SDK."}
+  - {name: "devtool.workspace.write", description: "Write permission for DevTool SDK."}
+  - {name: "testtool.read", description: "Read permission for Test Tool."}
+...

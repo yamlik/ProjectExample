@@ -1,0 +1,36 @@
+---
+
+# allow external access to this component ports.
+allow_external_access: False
+
+gen3gppxml_vendor_name: TEST
+gen3gppxml_log_level: INFO
+gen3gppxml_report_postfix: 
+gen3gppxml_report_location: /appdata/meas/
+gen3gppxml_report_expiry_days: 2
+gen3gppxml_report_threadpool_size: 20
+
+#support multiple gran using comma, eg: '"5m","10m"'
+gen3gppxml_system_metrics_gran_period: '"15m"'
+gen3gppxml_app_metrics_gran_period: '"1h"'
+
+gen3gppxml_rest_http: 'true'
+gen3gppxml_rest_http_port: 8084
+gen3gppxml_enable_https: false
+gen3gppxml_rest_https: 'false'
+gen3gppxml_rest_https_port: 8081
+gen3gppxml_rest_https_verify_client: 'false'
+gen3gppxml_rest_https_cacert: /etc/gen3gppxml/secret/rest/ca.crt
+gen3gppxml_rest_https_cert: /etc/gen3gppxml/secret/rest/gen3gppxml.crt
+gen3gppxml_rest_https_key: /etc/gen3gppxml/secret/rest/gen3gppxml.key
+
+gen3gppxml_prometheus_url: http://localhost:9090/api/v1
+gen3gppxml_prometheus_is_https: 'false'
+gen3gppxml_prometheus_cacert: /etc/gen3gppxml/secret/prometheus/ca.crt
+gen3gppxml_prometheus_cert: /etc/gen3gppxml/secret/prometheus/gen3gppxml.crt
+gen3gppxml_prometheus_key: /etc/gen3gppxml/secret/prometheus/gen3gppxml.key
+gen3gppxml_prometheus_authentication_enable: 'false'
+gen3gppxml_prometheus_authentication_key: /etc/gen3gppxml/secret/prometheus/auth.key
+
+
+...

@@ -1,0 +1,82 @@
+---      
+
+# Stop rrdcached service, ignore error when the rrdcached
+# service file does not exist yet
+- name: stop service rrdcached
+  systemd:
+    name: rrdcached
+    enabled: yes
+    state: stopped
+  become: true
+  become_method: sudo
+  ignore_errors: yes
+  
+# Replace rrdcached.service file
+- name: replace rrdcached.service
+  template:
+    src: rrdcached.service.j2
+    dest: "/usr/lib/systemd/system/rrdcached.service"
+    mode: 0600
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+    
+# Start rrdcached service
+- name: start service rrdcached
+  systemd:
+    name: rrdcached
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: true
+  become_method: sudo
+  
+# Replace measCollecXml.conf
+- name: replace measCollecXml.conf
+  template:
+    src: measCollecXml.conf.j2
+    dest: "/opt/ganglia/3gpptool/measCollecXml.conf"
+    mode: 0755
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+# Run the cron job script
+- name: init GAN_3GPPPM_ADMIN
+  shell: "/opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN init"
+  register: init_result
+  become: true
+  become_method: sudo
+ 
+# Fail the execution if shell command fails
+- name: fail when script has error
+  fail: msg="Failed to execute /opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN init"
+  when: init_result.rc != 0
+
+- name: add 3GPPM cron job
+  shell: "/opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN ganglia"
+  register: add_result
+  become: true
+  become_method: sudo
+
+# Fail the execution if shell command fails
+- name: fail when script has error
+  fail: msg="Failed to execute /opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN add"
+  when: add_result.rc != 0
+
+# Check if the cron job is active
+- name: check if cron job is created
+  shell: "crontab -l | grep composeNativePMXML"
+  register: command_result
+  become: true
+  become_method: sudo
+
+# Fail the execution if the cronjob is not found
+- name: fail when script has error
+  fail: msg="Cronjob not found (composeNativePMXML)"
+  when: command_result.rc != 0
+  
+   
+...

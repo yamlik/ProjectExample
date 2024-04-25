@@ -1,0 +1,45 @@
+---
+- name: wait for SSH
+  local_action: |
+    wait_for host={{ ansible_host }}
+    state=started port=22 search_regex=OpenSSH
+    delay=10 timeout={{ timeout }} connect_timeout=10
+  become: no
+
+- name: This is needed in order to get facts
+  setup:
+
+- name: Check HA role
+  shell: ha role
+  register: ha_role
+  ignore_errors: True
+  become: true
+  when: inventory_hostname in groups[inventory_group]
+
+- copy:
+    content: "{{ inventory_hostname }}"
+    dest: "{{ playbook_dir }}/HA_STANDBY"
+  delegate_to: localhost
+  become: no
+  when:
+    - inventory_hostname in groups[inventory_group]
+    - ha_role.stdout != "ACTIVE"
+
+- copy:
+    content: "{{ groups[inventory_group][1] }}"
+    dest: "{{ playbook_dir }}/HA_MASTER"
+  delegate_to: localhost
+  become: no
+  when: 
+    - inventory_hostname == groups[inventory_group][0]
+    - ha_role.stdout != "ACTIVE"
+
+- copy:
+    content: "{{ groups[inventory_group][0] }}"
+    dest: "{{ playbook_dir }}/HA_MASTER"
+  delegate_to: localhost
+  become: no
+  when: 
+    - inventory_hostname == groups[inventory_group][1]
+    - ha_role.stdout != "ACTIVE"
+...

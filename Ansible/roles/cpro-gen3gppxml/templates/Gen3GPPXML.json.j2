@@ -1,0 +1,304 @@
+{
+    "measCollecFile" :
+    {
+        "xmlns" : "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec",
+        "xmlns:xsi" : "http://www.w3.org/2001/XMLSchema-instance",
+        "xmlns:schemaLocation" : "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec",
+        "fileHeader" :
+        {
+            "fileFormatVersion" : "32.435 V9.1.0",
+            "vendorName" : "{{ gen3gppxml_vendor_name }}",
+            "dnPrefix" :"dn",
+            "elementType" : "eletype"
+        }
+    },
+    "REST" : 
+    {
+        "HTTP" :
+        {
+            "enable": {{ gen3gppxml_rest_http }},
+            "httpPort": {{ gen3gppxml_rest_http_port }}
+        },
+        "HTTPS":
+        {
+            "enable":{{ gen3gppxml_rest_https }},
+            "httpsPort" : {{ gen3gppxml_rest_https_port }},
+            "verifyClient" : {{ gen3gppxml_rest_https_verify_client }},
+            "securityFiles" :
+            {
+                "caCert":"{{ gen3gppxml_rest_https_cacert }}",
+                "cert":"{{ gen3gppxml_rest_https_cert }}",
+                "key":"{{ gen3gppxml_rest_https_key }}"
+            }
+        },
+        "SSO":
+        {
+            "enable":false,
+            "validationUrl":"http://localhost:8280/auth/realms/myrealm/protocol/openid-connect/userinfo",
+            "HTTPS": false,
+            "securityFiles" :
+            {
+                "caCert":"/etc/gen3gppxml/secret/sso/ca.crt",
+                "cert":"/etc/gen3gppxml/secret/sso/gen3gppxml.crt",
+                "key":"/etc/gen3gppxml/secret/sso/gen3gppxml.key"
+            }
+        }
+    },
+    "prometheus" :
+    {
+        "url" : "{{ gen3gppxml_prometheus_url }}",
+        "HTTPS" : {{ gen3gppxml_prometheus_is_https }},
+        "securityFiles" :
+        {
+            "caCert":"{{ gen3gppxml_prometheus_cacert }}",
+            "cert":"{{ gen3gppxml_prometheus_cert }}",
+            "key":"{{ gen3gppxml_prometheus_key }}"
+        },
+        "authentication" :
+        {
+            "enable":"{{ gen3gppxml_prometheus_authentication_enable }}",
+            "username" :"",
+            "password" :"",
+            "key":""
+        }
+    },
+    "plugins" :
+    {
+        "vesAgent" :
+        {
+            "enable" : "false",
+            "connectString" : "127.0.0.1:9991",
+            "appName" : "csf"
+        }
+    },
+    "postFix" : "{{ gen3gppxml_report_postfix }}",
+    "logLevel" : "{{ gen3gppxml_log_level }}",
+    "reportLocation" : "{{ gen3gppxml_report_location }}",
+    "expiredDays" : "{{ gen3gppxml_report_expiry_days }}",
+    "threadPoolSize" : {{ gen3gppxml_report_threadpool_size }},
+    "filter" : ["job='node'", "job='fluentd'"],
+    "defaultGranPeriod" : [{{ gen3gppxml_system_metrics_gran_period }}],
+    "defaultRule" : "avg",
+    "defaultValueType" : "integer",
+    "orientation" : "vertical",
+    "hideNonExistentMetrics" : "true",
+    "invalidValue" : "0",
+    "FastPass" : {
+        "enable" : "true",
+        "maxAttributeValueEachLength" : 80,
+        "maxAttributeTypeEachLength" : 6,
+        "maxAttributeTypeNum" : 10,
+        "replaceInvalidCharInMeasObjLdnWith" : "_"
+    },
+    "measGroups" :
+    [
+        {
+            "measInfoId" : "M101",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_boot_time_seconds"}
+            ]
+        },
+        {
+            "measInfoId" : "M103",
+            "objects" : {"PLTFM":"1"},
+            "dnLabels" : ["CPU"],
+            "hostDnUpperCase" : true,
+            "labelRename": {"CPU":"cpu"},
+            "metrics" :
+            [
+                {
+                    "metric" : "node_cpu_seconds_total",
+                    "rule" : "max",
+                    "label" :
+                    {
+                        "name" : "mode",
+                        "value" : ["idle", "iowait", "irq", "nice", "softirq", "steal", "system", "user"]
+                    }
+                }
+            ]
+        },
+        {
+            "measInfoId" : "M104",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "dnLabels" : ["DISK"],
+            "labelRename": {"DISK":"device"},
+            "metrics" :
+            [
+                {"metric":"node_disk_read_bytes_total", "rule":"max"},
+                {"metric":"node_disk_written_bytes_total", "rule":"max"},
+                {"metric":"node_disk_io_now"},
+                {"metric":"node_disk_io_time_seconds_total"}
+            ]
+        },
+        {
+            "measInfoId" : "M105",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_entropy_available_bits"}
+            ]
+        },
+        {
+            "measInfoId" : "M106",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_load1"},
+                {"metric":"node_load5"},
+                {"metric":"node_load15"}
+            ]
+        },
+        {
+            "measInfoId" : "M107",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_memory_AnonPages_bytes"},
+                {"metric":"node_memory_Buffers_bytes"},
+                {"metric":"node_memory_Cached_bytes"},
+                {"metric":"node_memory_Dirty_bytes"},
+                {"metric":"node_memory_HardwareCorrupted_bytes"},
+                {"metric":"node_memory_Mapped_bytes"},
+                {"metric":"node_memory_MemFree_bytes"},
+                {"metric":"node_memory_MemTotal_bytes"},
+                {"metric":"node_memory_Shmem_bytes"},
+                {"metric":"node_memory_SwapFree_bytes"},
+                {"metric":"node_memory_SwapTotal_bytes"},
+                {"metric":"node_memory_Writeback_bytes"}
+            ]
+        },
+        {
+            "measInfoId" : "M109",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_procs_blocked"},
+                {"metric":"node_procs_running"},
+                {"metric":"node_context_switches_total", "rule":"max"}
+            ]
+        },
+        {
+            "measInfoId" : "M110",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_netstat_Tcp_AttemptFails"},
+                {"metric":"node_netstat_Tcp_InSegs"},
+                {"metric":"node_netstat_Tcp_OutSegs"},
+                {"metric":"node_netstat_Tcp_RetransSegs"},
+                {"metric":"node_netstat_TcpExt_ListenDrops"}
+            ]
+        },
+        {
+            "measInfoId" : "M111",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_netstat_Udp_InDatagrams"},
+                {"metric":"node_netstat_Udp_InErrors"},
+                {"metric":"node_netstat_Udp_OutDatagrams"}
+            ]
+        },
+        {
+            "measInfoId" : "M112",
+            "objects" : {"PLTFM":"1"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_vmstat_pgpgin"},
+                {"metric":"node_vmstat_pgpgout"}
+            ]
+        },
+        {
+            "measInfoId" : "M113",
+            "objects" : {"PLTFM":"1"},
+            "dnLabels" : ["IF"],
+            "labelRename": {"IF":"device"},
+            "hostDnUpperCase" : true,
+            "metrics" :
+            [
+                {"metric":"node_network_receive_bytes_total"},
+                {"metric":"node_network_receive_drop_total"},
+                {"metric":"node_network_receive_errs_total"},
+                {"metric":"node_network_receive_packets_total"}
+            ]
+        },
+        {
+            "measInfoId" : "M114",
+            "objects" : {"PLTFM":"1"},
+            "dnLabels" : ["IF"],
+            "hostDnUpperCase" : true,
+            "labelRename": {"IF":"device"},
+            "metrics" :
+            [
+                {"metric":"node_network_transmit_bytes_total"},
+                {"metric":"node_network_transmit_drop_total"},
+                {"metric":"node_network_transmit_errs_total"},
+                {"metric":"node_network_transmit_packets_total"}
+            ]
+        },
+        {
+            "measInfoId" : "M115",
+            "objects" : {"PLTFM":"1"},
+            "dnLabels" : ["DISK", "FS", "MP"],
+            "hostDnUpperCase" : true,
+            "labelRename": {"DISK":"device", "FS":"fstype", "MP":"mountpoint"},
+            "metrics" :
+            [
+                {"metric":"node_filesystem_free_bytes"},
+                {"metric":"node_filesystem_size_bytes"}
+            ]
+        },
+        {
+            "measInfoId" : "M116",
+            "granPeriod" : [{{ gen3gppxml_app_metrics_gran_period }}],
+            "objects" : {"APP":"1"},
+            "dnLabels" : ["HOST","STREAM","NODE"],
+            "hostDnUpperCase" : true,
+            "prependHost" : false,
+            "metrics" :
+            [
+                {"metric":"RecordsIn"},
+                {"metric":"RecordsOut"},
+                {"metric":"Filtered"},
+                {"metric":"Rejected"},
+                {"metric":"ReprocessedIn"},
+                {"metric":"Created"},
+                {"metric":"Duplicated"},
+                {"metric":"Stored"},
+                {"metric":"Retrieved"},
+                {"metric":"ReducedInMerging"}
+            ]
+        },
+		{
+            "measInfoId" : "M118",
+            "granPeriod" : ["1h"],
+            "objects" : {"APP":"1"},
+            "dnLabels": ["SERVIF"],
+            "labelRename" : {"SERVIF":"instance"},
+            "prependHost" : false,
+            "metrics" :
+            [
+                {
+                   "metric" : "http_server_requests_seconds_count",
+                   "rule" : "avg",
+                   "label" :
+                   {
+                      "name" : "status",
+                      "value" : ["200", "201", "204", "400", "405", "500", "503"]
+                   }
+               }
+            ]
+        }
+    ]
+}

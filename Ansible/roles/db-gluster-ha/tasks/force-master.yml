@@ -1,0 +1,17 @@
+---
+#- debug: 
+#    msg: " ansible_ssh_host = {{ ansible_ssh_host }} , vdu-db-0 = {{  groups['vdu-db'][0] }} , vdu-db-1 = {{  groups['vdu-db'][1] }}"
+
+- service: name=keepalived state=stopped
+
+- service: name=keepalived state=started
+  when: inventory_hostname == groups['vdu-db'][0]
+
+- pause:
+   seconds: 30
+
+- service: name=keepalived state=started
+  when: inventory_hostname == groups['vdu-db'][1]
+
+- pause:
+   seconds: 30

@@ -1,0 +1,12 @@
+---
+
+# Undeploy crypto_tool.sh from template
+- name: remove crypto_tool.sh script 
+  file:
+    path: "{{ TEST_home }}/bin/crypto_tool.sh"
+    state: absent  
+  tags:
+    - install
+
+
+...

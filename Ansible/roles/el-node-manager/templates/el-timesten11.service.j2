@@ -1,0 +1,15 @@
+[Unit]
+Description=TEST TimesTen11
+Wants=network-online.target
+After=network.target network-online.target opt-TEST-TimesTen-TEST_timesten-data.mount
+Requires=opt-TEST-TimesTen-TEST_timesten-data.mount
+
+[Service]
+User={{ user }}
+Group={{ group }}
+Type=forking
+ExecStart=/opt/TEST/TimesTen/TEST_timesten/startup/tt_TEST_timesten start
+ExecStop=/opt/TEST/TimesTen/TEST_timesten/startup/tt_TEST_timesten stop
+
+[Install]
+WantedBy=multi-user.target

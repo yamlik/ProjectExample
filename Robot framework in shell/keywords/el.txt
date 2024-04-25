@@ -1,0 +1,665 @@
+*** Settings ***
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/sql/db_script_${DB_VENDOR_NAME}.txt
+
+*** Variables ***
+${DB_VENDOR_ORACLE}        1
+${DB_VENDOR_DB2}           2
+${DB_VENDOR_POSTGRESQL}    3
+
+${SV_LATEST_STREAM_VERSION_LINK}  xpath=//tr[2]/td[1]/a[text()='View']
+${DELAY}  0
+${CHECK_INTERVAL}  10 seconds
+
+${NODE_INTERNAL}  xpath=//tbody/tr[9]/td/table/tbody/tr[1]/td[2]/select
+${NODE_APPLICATION}  xpath=//tbody/tr[9]/td/table/tbody/tr[2]/td[2]/select
+${LIBRARIES}  xpath=//tbody/tr[9]/td/table/tbody/tr[3]/td[2]/select
+${level_value}
+${level}
+${internal_diag_level}
+${lib_diag_level}
+${ROBOT_LOG_LEVEL}  WARN
+
+*** Keywords ***
+# plugin_state: on or off
+Toggle Node Manager Audit Plugin  [Arguments]  ${plugin_name}  ${plugin_state}
+    Write  mkdir -p ${AUTO_EL_INST_DIR}/robot/auditplugin
+    Read Until Prompt
+    Put File  ${ROBOT_PATH}/keywords/nm_audit_plugin_config.sh  ${AUTO_EL_INST_DIR}/robot/auditplugin/
+    Write  ${AUTO_EL_INST_DIR}/robot/auditplugin/nm_audit_plugin_config.sh ${plugin_name} ${plugin_state}
+    Read Until Prompt
+    Write  rm -rf ${AUTO_EL_INST_DIR}/robot/auditplugin
+    Read Until Prompt
+
+#Documentation  Configure the node manager summary file plug-in with the given stream name and enable the plug-in
+Enable Summary File Plugin  [Arguments]  ${stream_name}
+    Toggle Node Manager Audit Plugin  summaryfile  on
+    Write  cp -f $TEST_HOME/internal/manager/plugins/summaryConfig.xml $TEST_HOME/internal/manager/plugins/summaryConfig.xml.robot.bak
+    Read Until Prompt
+    Write  cat $TEST_HOME/internal/manager/plugins/summaryConfig.xml | sed -e 's|<stream name="SDK_stream">|<stream name="${stream_name}">|g' > $TEST_HOME/internal/manager/plugins/summaryConfig.xml.tmp
+    Read Until Prompt
+    Write  mv -f $TEST_HOME/internal/manager/plugins/summaryConfig.xml.tmp $TEST_HOME/internal/manager/plugins/summaryConfig.xml
+    Read Until Prompt
+    el_host.Restart Node Manager
+
+#Documentation  Revert the changes on node manager summary file plug-in with the backup made and disable the plug-in
+Disable Summary File Plugin
+    Toggle Node Manager Audit Plugin  summaryfile  off
+    Write  cp -f $TEST_HOME/internal/manager/plugins/summaryConfig.xml.robot.bak $TEST_HOME/internal/manager/plugins/summaryConfig.xml
+    Read Until Prompt
+    Restart Node Manager
+
+Delete Robot Data  [Arguments]  ${robotDataDirectory}
+   ## Navigate to away from current directory before the deletion to avoid deletion happen on current directory
+   ## e.g. on SunOS 
+   ## rm: Cannot remove any directory in the path of the current working directory
+   ##/TEST/projects/elink/cm2/CM2_ksol10ft1_Oracle_TT_Plain_b027/ksol10ft1_a/robot_automation/cmdl_2208_01_Nodebase
+   Write  cd ${AUTO_EL_INST_DIR}
+   Read Until Prompt
+   Write  rm -rf ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+   Read Until Prompt
+   Write  cd ${AUTO_EL_INST_DIR}/robot_automation
+   Read Until Prompt
+
+Insert Diag Level
+    Set Suite Variable   ${internal_diag_level}      0
+    Set Suite Variable   ${lib_diag_level}      0   
+    SQL - Insert Diag Level  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_id}  ${internal_diag_level}  ${app_level_value}  ${lib_diag_level}
+
+
+Update Diag Level
+    SQL - Update Diag Level  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_id}  ${internal_diag_level}  ${app_level_value}  ${lib_diag_level} 
+
+Get Diag Level
+    SQL - Get Diag Level   ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_id}
+
+Get Internal Diag Level
+    Start Command  cat diag_level.txt | awk -F, '{print $1}'
+    ${internal_diag_level}=  Read Command Output
+    ${internal_diag_level}=   Convert To Integer   ${internal_diag_level}
+    Set Suite Variable   ${internal_diag_level}      ${internal_diag_level}
+
+Get Lib Diag Level
+    Start Command  cat diag_level.txt | awk -F, '{print $3}'
+    ${lib_diag_level}=   Read Command Output
+    ${lib_diag_level}=   Convert To Integer   ${lib_diag_level}
+    Set Suite Variable   ${lib_diag_level}  ${lib_diag_level}
+
+#Documentation  Sets default DB_VENDOR to Oracle for instance with CM older version 6.5.0.
+Get DB_VENDOR
+    ${CM_VERSION}=  el_host.Get CM Version
+    Run Keyword If      ${CM_VERSION} < 650   Set Suite Variable   ${DB_VENDOR}      ${DB_VENDOR_ORACLE}
+
+Copy Query File and Source Profile  [Arguments]  ${robotDataDirectory}
+    Login To Test Host
+
+    Get DB_VENDOR
+    Start Command  ls ${AUTO_EL_INST_DIR}/ | grep robot_automation | wc -l
+    ${directoryExist}=  Read Command Output
+    Run Keyword If  '${directoryExist}' == '0' or '${directoryExist}' == ''  Start Command  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/
+    Write  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+    Put File  ${ROBOT_PATH}/keywords/*.ksh  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+    Put File  ${ROBOT_PATH}/keywords/*.sh  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+    Write   cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  . ./.profile
+    Read Until Prompt
+
+Copy Query File  [Arguments]  ${robotDataDirectory}
+    Login To Test Host
+
+    Start Command  ls ${AUTO_EL_INST_DIR}/ | grep robot_automation | wc -l
+    ${directoryExist}=  Read Command Output
+    Run Keyword If  '${directoryExist}' == '0' or '${directoryExist}' == ''  Start Command  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/
+    Write  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+    Put File  ${ROBOT_PATH}/keywords/*.ksh  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+    Put File  ${ROBOT_PATH}/keywords/*.sh  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+    Write   cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+
+
+#Documentation  Sets a node parameter on a given stream
+Set Node Parameters  [Arguments]  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value}  ${robotDataDirectory}  
+   SQL - Set Node Parameters  ${robotDataDirectory}  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value} 
+
+
+Set Node Parameters List  [Arguments]  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value}  ${robotDataDirectory}
+   Set Node Parameters  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value}  ${robotDataDirectory}
+
+Set Mandatory Node Parameters   [Arguments]  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value}  ${robotDataDirectory}
+    Set Node Parameters  ${stream_name}  ${node_name}  ${parameter_name}  ${parameter_value}  ${robotDataDirectory}
+
+Set All Nodes To Use Same Diagnostic Level In Stream  [Arguments]  ${stream_name}  ${level}  ${robotDataDirectory}
+    Run Keyword If      '${level}' == 'High'  Set Suite Variable   ${app_level_value}      90
+    Run Keyword If      '${level}' == 'Medium'  Set Suite Variable   ${app_level_value}      50
+    Run Keyword If      '${level}' == 'Low'  Set Suite Variable   ${app_level_value}      10
+    Run Keyword If      '${level}' == 'None'  Set Suite Variable   ${app_level_value}      0
+
+    Copy Query File and Source Profile  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    ${stream_id}  Tools Get Stream Id  ${stream_name}
+    
+    ${diag_exist}=   SQL - Get Diagnostic Level Count  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_id}
+    ${diag_exist}=   Convert To Integer   ${diag_exist}
+
+    Run Keyword If   '${diag_exist}' == '0'  Insert Diag Level
+
+    Run Keyword If   '${diag_exist}' != '0'  Get Diag Level
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_ORACLE}'  Start Command  cat ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/diag_level.sql.result | tail -2 | head -1 > diag_level.txt
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_POSTGRESQL}'  Start Command  cat ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/diag_level.sql.result | tail -2 | head -1 > diag_level.txt
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_DB2}'  Start Command  cat ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/diag_level.sql.result | tail -1 > diag_level.txt
+
+    Run Keyword If   '${diag_exist}' != '0'  Get Internal Diag Level
+    Run Keyword If   '${diag_exist}' != '0'  Get Lib Diag Level
+    Run Keyword If   '${DB_VENDOR}' != '0'  Update Diag Level
+
+    Delete Robot Data  ${robotDataDirectory}
+
+#Documentation  Retrieves a node parameter on a given stream
+Get Node Parameter  [Arguments]  ${stream_name}  ${node_name}  ${parameter_name}  ${robotDataDirectory}
+   Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+   Read Until Prompt
+   ## Delete previous run of result file if any
+   Write  rm npv.sql.result
+   Read Until Prompt
+   
+   ${result}=  SQL - Get Node Parameter  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}  ${parameter_name}  
+   [Return]  ${result}
+
+
+Is Text Present   [Arguments]   ${text}
+    ${result}=  Call Selenium Api  is_text_present  ${text}
+    [Return]  ${result}
+
+#Documentation  Acknowledge all warning and error messages (regardless of stream)
+Acknowledge Messages  [Arguments]  ${robotDataDirectory}
+   Copy Query File  ${robotDataDirectory} 
+   SQL - Acknowledge Messages  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+   Delete Robot Data  ${robotDataDirectory}
+
+#Documentation  Wait for the given stream to be in the expected status. Failed if it failed to do so within the timeout period.  Stream name should be double quoted if it contains space in the name.
+Wait Until Stream Is   [Arguments]  ${stream_name}  ${timeout}    ${wanted_status}   ${wanted_status2}=default
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Check Stream Status Is   ${stream_name}  ${wanted_status}  ${wanted_status2}
+
+#TNI
+Wait Until Stream Is Not  [Arguments]  ${stream_name}  ${timeout}    ${unwanted_status}   ${unwanted_status2}=default
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    el.Check Stream Status Is Not   ${stream_name}  ${unwanted_status}  ${unwanted_status2}
+
+
+#Documentation  Wait for the given stream to be in the expected status. Failed if it failed to do so within the timeout period. Note that the "Errorcheck" was refering to notifications in GUI which no longer applicable. Stream name should be double quoted if it contains space in the name.
+Wait Without Errorcheck Until Stream Is   [Arguments]  ${stream_name}  ${timeout}    ${wanted_status}   ${wanted_status2}=default
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Check Stream Status Is   ${stream_name}  ${wanted_status}  ${wanted_status2}
+
+#Documentation  Wait for the given stream to be in the expected status. Failed if it failed to do so within the timeout period. Note that the "Errorcheck" was refering to notifications in GUI which no longer applicable. Stream name should be double quoted if it contains space in the name.
+Wait Without Errorcheck Until Monitored Stream Is   [Arguments]  ${stream_name}  ${timeout}    ${wanted_status}   ${wanted_status2}=default
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Check Monitored Stream Status Is   ${stream_name}  ${wanted_status}  ${wanted_status2}
+
+Refresh Browser
+    Call Selenium Api   refresh
+
+#Documentation  Test if the given stream status matches the wanted status. The comparison is case insensitive. Stream name should be double quoted if it contains space in the name.
+Check Stream Status Is  [Arguments]   ${stream_name}  ${wanted_status}  ${wanted_status2}=default
+    ${actual_status}=  Get Stream Status  ${stream_name}
+    Should Match Regexp  ${actual_status}  (?i)(${wanted_status}|${wanted_status2})
+
+#TNI
+Check Stream Status Is Not  [Arguments]   ${stream_name}  ${unwanted_status}  ${unwanted_status2}=default
+    ${actual_status}=  Get Stream Status  ${stream_name}
+    Should Not Match Regexp  ${actual_status}  (?i)(${unwanted_status}|${unwanted_status2})
+#TNI
+
+
+#Documentation  Test if the given stream status matches the wanted status. The comparison is case insensitive. Stream name should be double quoted if it contains space in the name.
+Check Monitored Stream Status Is  [Arguments]   ${stream_name}  ${wanted_status}  ${wanted_status2}=default
+    ${actual_status}=  Get Monitored Stream Status  ${stream_name}
+    Should Match Regexp  ${actual_status}  (?i)(${wanted_status}|${wanted_status2})
+
+#Documentation  Returns the requested monitored stream status. Stream name should be double quoted if it contains space in the name.
+Get Monitored Stream Status  [Arguments]  ${stream_name}
+    ${result}=  Execute Command  tools.pl -c monitorstreams | grep ${stream_name} | awk '{print ($NF)}' | sed -e 's/(//' -e 's/)//' | awk '{printf("%s%s", toupper(substr($1,1,1)), tolower(substr($1,2)))}'
+    [Return]   ${result}
+
+#Documentation  Returns the requested stream status in Titlecase, including non-monitored streams. Returns "-" for non-monitored stream as stream status. Stream name should be double quoted if it contains space in the name.
+Get Stream Status  [Arguments]  ${stream_name}
+    ## Converting to lower case in SunOS doesn't work with awk but have to use nawk
+    ${AWK}=  Set Variable If
+	...   '${INSTALL_FILE_HOST}'!='SunOS'  awk
+	...   '${INSTALL_FILE_HOST}'=='SunOS'  nawk
+    Start Command  tools.pl -c browsestreams | grep -w ${stream_name} | ${AWK} '{print ($NF)}' | sed -e 's/(//' -e 's/)//' | ${AWK} '{printf("%s%s", toupper(substr($1,1,1)), tolower(substr($1,2)))}'
+    ${result}=  Read Command Output
+    [Return]   ${result}
+
+#Documentation  Stop the given monitored stream. Default stopping method is abort and not leaving collectors to run. Note that argument "leave_collectors_running" takes only "True" as true (default is False), while default value for argument "stopping_method" is "abort".
+Stop Normal Stream  [Arguments]   ${stream_name}  ${leave_collectors_running}=False   ${stopping_method}=abort
+    Log  ${leave_collectors_running}
+    Run Keyword If  '${leave_collectors_running}'=='True'  Start Command  tools.pl -c stopstream -n ${stream_name} -t ${stopping_method} -r
+    Run Keyword Unless  '${leave_collectors_running}'=='True'  Start Command  tools.pl -c stopstream -n ${stream_name} -t ${stopping_method}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+
+#Documentation  Alias to keyword "Stop Normal Stream".
+Stop Stream  [Arguments]   ${stream_name}  ${leave_collectors_running}=False   ${stopping_method}=abort
+    Stop Normal Stream  ${stream_name}  ${leave_collectors_running}  ${stopping_method}
+
+End Stream   [Arguments]   ${stream_name}
+    Stop Stream   ${stream_name}   False  end
+
+Abort Stream  [Arguments]   ${stream_name}
+    Stop Stream   ${stream_name}   False  abort
+
+Flush Stream  [Arguments]   ${stream_name}
+    Stop Stream   ${stream_name}   False  flush
+Start Node   [Arguments]   ${stream_name}   ${node_name}
+    Tools Enable Node  ${stream_name}  ${node_name}
+
+Stop Node  [Arguments]   ${stream_name}   ${node_name}   ${stopping_method}
+    Tools Disable Node   ${stream_name}   ${node_name}   ${stopping_method}
+
+Executing Stop Stream  [Arguments]  ${stream_name}  ${stop_mode}  ${timeout}
+		${stream_status}=  el_host.Tools Get Stream Status  ${stream_name}
+    Log  Current status of the stream: ${stream_status}  ${ROBOT_LOG_LEVEL}
+    	Run Keyword If  "${stream_status}"==""  Log  ${stream_name} is not a monitored stream.  ${ROBOT_LOG_LEVEL}
+    	Run Keyword If  "${stream_status.strip()}"!="STOPPED" and "${stream_status.strip()}"!=""  Log  Stopping Stream.... ${ROBOT_LOG_LEVEL}
+    	Run Keyword If  "${stream_status.strip()}"!="STOPPED" and "${stream_status.strip()}"!=""  el.Stop Stream  ${stream_name}  ${stop_mode}
+    	Run Keyword If  "${stream_status.strip()}"!="STOPPED" and "${stream_status.strip()}"!=""  el.Wait Until Stream Is   ${stream_name}   ${timeout}   Stopped
+
+Kill Node  [Arguments]   ${stream_name}   ${node_name}
+    Tools Kill Node   ${stream_name}   ${node_name}
+
+#Documentation  Stream name and node name should be double quoted if they contain space in the name
+Wait Until Node Is   [Arguments]  ${stream_name}  ${node_name}   ${timeout}    ${wanted_status}   ${wanted_status2}=default
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Check Node Status Is   ${stream_name}  ${node_name}  ${wanted_status}  ${wanted_status2}
+
+#Documentation  Stream name and node name should be double quoted if they contain space in the name
+Check Node Status Is  [Arguments]   ${stream_name}  ${node_name}  ${wanted_status}  ${wanted_status2}=default
+    #Tools Check Node Status Is   ${stream_name}  ${node_name}  ${wanted_status}
+    ${actual_status}=  Get Node Status  ${stream_name}  ${node_name}
+    Should Match Regexp  ${actual_status}  (?i)(${wanted_status}|${wanted_status2})
+
+#Documentation  Stream name and node name should be double quoted if they contain space in the name
+Get Node Status  [Arguments]  ${stream_name}  ${node_name}
+    ${result}=  Execute Command  tools.pl -c monitorstream -n ${stream_name} | grep ${node_name} | awk '{print $NF}' | awk '{printf("%s%s", toupper(substr($1,1,1)), tolower(substr($1,2)))}'
+    [Return]  ${result}
+
+Start Latest Stream With Interactive Mode  [Arguments]   ${stream_name}
+    ${stream_latest_version}  Tools Get Stream Latest Version    ${stream_name}
+    Tools Start Versioned Stream  ${stream_name}  ${stream_latest_version}
+
+Resume Stream  [Arguments]   ${stream_name}
+    Tools Start Monitored Stream   ${stream_name}
+
+Start Stream    [Arguments]   ${stream_name}   ${stream_version}
+    Tools Start Versioned Stream  ${stream_name}  ${stream_version}
+    Sleep  10
+    ${stream_status}  Tools Get Stream Status  ${stream_name}
+    Run Keyword If   '${stream_status}'=='Stopped'  Tools Start Monitored Stream   ${stream_name}
+
+Reconfigure To Latest Stream  [Arguments]  ${STREAM_NAME}
+	${stream_latest_version}=     Tools Get Stream Latest Version     ${STREAM_NAME}
+	Start Command  tools.pl -c startstream -n ${STREAM_NAME} -v ${stream_latest_version} -r
+	${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+
+Start Latest Stream  [Arguments]  ${STREAM_NAME}  ${checkstatus}=1
+	Set Default Configuration  timeout=60
+	${stream_latest_version}=     Tools Get Stream Latest Version     ${STREAM_NAME}
+	${stream_status}=  Tools Get Stream Status  ${STREAM_NAME}
+	#TNI
+    Run Keyword If  "${stream_status}" == "Pending" or "${stream_status}" == "PENDING"  Wait Until Stream Is Not    ${STREAM_NAME}    15 minute  Pending
+	Run Keyword If  "${stream_status}" == ""  Write   tools.pl -c startstream -n ${STREAM_NAME} -v ${stream_latest_version}
+	Run Keyword If  "${stream_status}" != "" and ${stream_latest_version.strip()} == 1  Write   tools.pl -c startstream -n ${STREAM_NAME} -v ${stream_latest_version} -r
+	Run Keyword If  ("${stream_status}" != "" and ${stream_latest_version.strip()} == 1) or "${stream_status}" == ""  Read Until Prompt
+	Run Keyword If  ("${stream_status}" != "" and ${stream_latest_version.strip()} == 1) or "${stream_status}" == ""  Wait Until Stream Is Not    ${STREAM_NAME}    15 minute  Pending
+	
+	#Set Default Configuration  timeout=60 seconds
+	
+	Run Keyword If  "${stream_status}" != ""  Write   tools.pl -c startstream -n ${STREAM_NAME} -v ${stream_latest_version}
+	Run Keyword If  "${stream_status}" != ""  Read Until Prompt
+	Run Keyword If  "${checkstatus}" == "1"  Wait Until Stream Is    ${STREAM_NAME}    5 minute  Running
+	#TNI
+
+Verify Stream Status  [Arguments]  ${Stream_name}  ${wanted_result}
+    ${result}=  Get Stream Status  ${Stream_name}
+    Should Match Regexp  ${result}  (?i)${wanted_result}
+
+#Documentation  Return 1 when the given stream exists in the browsestreams command
+Is Stream Exists  [Arguments]  ${Stream_name}
+    Start Command   uname -s
+    ${result}=  Read Command Output
+    Run Keyword If  "${result}" == "SunOS"  Start Command   tools.pl -c browsestreams | awk '{print $2}' | /usr/xpg4/bin/grep -E '^${Stream_name}$' | wc -l
+    Run Keyword Unless  "${result}" == "SunOS"  Start Command   tools.pl -c browsestreams | awk '{print $2}' | grep -E '^${Stream_name}$' | wc -l
+    ${result}=  Read Command Output
+    [Return]  ${result.strip()}
+
+Hide Stream Using DB  [Arguments]  ${stream_name}  ${stream_version}
+    SQL - Hide Stream Using DB  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${stream_version}
+
+Delete Stream Using DB  [Arguments]  ${stream_name}  ${stream_version}
+    SQL - Delete Stream Using DB  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${stream_version}
+
+Get Monitored Stream Version  [Arguments]  ${stream_name}
+    Start Command   tools.pl -c monitorstreams | grep -w ${Stream_name} | awk '{print $(NF-1)}'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+Get Latest Stream Version   [Arguments]   ${stream_name}  ${robotDataDirectory}
+    Copy Query File  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+    ${result}=  SQL - Get Latest Stream Version  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}
+    [Return]  ${result.strip()}
+
+Hide Stream By Version  [Arguments]  ${stream_name}  ${stream_version}  ${robotDataDirectory}
+    ${stream_status}=  Get Stream Status  ${stream_name}
+    Should Match Regexp  ${stream_status}  (?i)(STOPPED)
+    Copy Query File  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    SQL - Hide Stream By Version  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${stream_version}
+    Delete Robot Data  ${robotDataDirectory}
+
+#Documentation  An alias to keyword "Hide Monitored Stream"
+Hide Stream  [Arguments]   ${stream_name}  ${robotDataDirectory}
+    Hide Monitored Stream  ${stream_name}  ${robotDataDirectory}
+
+Hide Monitored Stream  [Arguments]   ${stream_name}  ${robotDataDirectory}
+    ${stream_status}=  Get Stream Status  ${stream_name}
+    Should Match Regexp  ${stream_status}  (?i)(STOPPED)
+
+    ${stream_version}=  Get Monitored Stream Version  ${stream_name}
+    Copy Query File  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    SQL - Hide Monitored Stream  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${stream_version} 
+    Delete Robot Data  ${robotDataDirectory}
+
+#Documentation  Delete a stopped/not monitored stream
+Delete Stream  [Arguments]   ${stream_name}  ${robotDataDirectory}
+    ${stream_status}=  Get Stream Status  ${stream_name}
+    Should Match Regexp  ${stream_status}  (?i)(-|STOPPED|^$)
+    Copy Query File  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    SQL - Delete Stream  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}
+    Delete Robot Data  ${robotDataDirectory}
+
+Login To TEST
+    Login To Test Host
+    Set Client Configuration  prompt=$
+    Write   export PS1=$
+    Read Until Prompt
+    ${CM_VERSION}=  Get CM Version
+    Close Connection
+
+    Log  logging to ${LOGIN URL}
+    Open Login Page
+    Run Keyword If  '${CM_VERSION}'>='700'  CM70_Login
+    Run Keyword If  '${CM_VERSION}'=='650'  CM65_Login
+    Run Keyword If  '${CM_VERSION}'<'650'   CM64_Login
+
+    # CM-6.5.0 or older - default page is legacy UI
+    Run Keyword If  '${CM_VERSION}'<='650'  Wait Until Page Contains  LOGOUT  2 minutes
+
+    # EL-7.0 or newer - switch to legacy UI after login
+    Run Keyword If  '${CM_VERSION}'>='700'  Wait Until Page Loaded
+    #Run Keyword If  '${CM_VERSION}'>='700'  Wait Until Page Contains Element  TEST-main-menu  2 minutes
+    Run Keyword If  '${CM_VERSION}'>='700'  Open Legacy UI
+    Run Keyword If  '${CM_VERSION}'>='700'  Wait Until Page Contains  LOGOUT  2 minutes
+
+Open Login Page
+    Open Browser  ${LOGIN URL}  ${GTAF_SEL_BROWSER}
+    Maximize Browser Window
+    Set Selenium Speed  ${DELAY}
+
+CM64_Login
+    Wait Until Page Loaded
+    Wait Until Page Contains   User ID:  1 minutes
+    Input Username  Administrator
+    Input Password  guiadmin
+    Submit Login
+
+CM65_Login
+    Set Selenium Timeout  300
+    Wait Until Page Loaded
+    Wait Until Page Contains   Username  1 minutes
+    Input Username65  Administrator
+    Input Password  guiadmin
+    Submit Login65
+
+CM70_Login
+    Set Selenium Timeout  300
+    Wait Until Page Loaded
+    Wait Until Page Contains   username  1 minutes
+    Input Username65  Administrator
+    Input Password  guiadmin
+    Submit Login70
+
+Open Legacy UI
+    Open Browser    ${LOGIN URL}/ui.php?group=TEST%20TEST&path=TEST  ${GTAF_SEL_BROWSER}
+    Maximize Browser Window
+    Set Selenium Speed  ${DELAY}
+
+Input Username  [Arguments]  ${username}
+    Input Text  userid    ${username}
+
+Input Username65  [Arguments]  ${username}
+    Input Text  username    ${username}
+
+Input Password  [Arguments]  ${password}
+    Input Text  password  ${password}
+
+Submit Login
+    Click Button   submit
+
+Submit Login65
+    Set Selenium Timeout  300
+    Click Button   Log in
+
+Submit Login70
+    Set Selenium Timeout  300
+    Click Button   Sign in
+
+Logout
+    Click Link  LOGOUT
+
+Get Node Diagnostics  [Arguments]     ${stream_name}  ${node_name}  ${robotDataDirectory}
+    Copy Query File and Source Profile  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    ${result}=  SQL - Get Node Diagnostics  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}
+    ${curr_diag}=  Set Variable If  '${result}'=='no rows selected'  '*,*,*'  ${result}
+    Start Command  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/decode_diagnostic_level.sh ${curr_diag}
+    ${new_diag}=  Read Command Output
+    [Return]   ${new_diag}
+
+
+Verify Node APP Package Version  [Arguments]   ${stream_name}   ${node_name}   ${compared_string}  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+    ## Delete Previous run of result file if any
+    Write  rm get_app_pkg_version.sql.result
+    Read Until Prompt
+    ${latest_stream_version}=   Tools Get Stream Latest Version   ${stream_name}
+    Should Not Be Empty  ${latest_stream_version}  Failed to get latest stream version from tools.pl
+
+    ${result}=  SQL - Get Node App Package Version  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}  ${latest_stream_version}
+    Should Match Regexp    ${result}   ${compared_string}
+
+
+#Documentation  Set a node diagnostics level for the given target ('diagint' for Node Internal, 'diagapp' for Node Applications and 'diaglib' for Libraries). Supported node diagnostics level are: Stream Default, None, Low, Medium and High. Use "Tools Set Diagnostic To Node" keyword if you want to set all three targets of diagnostic level of a node at once.
+Set Diagnostics  [Arguments]     ${stream_name}  ${node_name}  ${target}  ${level}  ${robotDataDirectory}
+    ${result}=  SQL - Get Node Diagnostics  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}
+    ${curr_diag}=  Set Variable If  '${result}'=='no rows selected'  '*,*,*'  ${result}
+
+    # Construct the node DiagnosticLevel
+    Run Keyword If  '${target}'=='diagint'  Start Command  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/get_nodediag.sh -i '${level}' -d '${curr_diag}'
+    Run Keyword If  '${target}'=='diagapp'  Start Command  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/get_nodediag.sh -a '${level}' -d '${curr_diag}'
+    Run Keyword If  '${target}'=='diaglib'  Start Command  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/get_nodediag.sh -l '${level}' -d '${curr_diag}'
+    ${new_diag}=  Read Command Output
+
+    # Insert the node's DiagnosticLevel, or
+    Run Keyword If  '${result}'=='no rows selected'  SQL - Insert Node Diag Setting  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}  ${new_diag}
+
+    # Update the node's DiagnosticLevel if there are existing node DiagnosticLevel found
+    Run Keyword Unless  '${result}'=='no rows selected'  SQL - Update Node Diag Setting  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${stream_name}  ${node_name}  ${new_diag}
+
+#Documentation  Retrieves the given stream operational statistics from last hour. statname should be: 'Reprocessed', 'Created', 'Duplicated', 'Retrieved', 'In', 'Out', 'Filtered', 'Stored', 'Reduced in merging' or 'Rejected' as in the old GUI.
+Get Stream Statistics  [Arguments]  ${stream_name}  ${statname}  ${robotDataDirectory}
+    Copy Query File and Source Profile  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+		
+	${result}=  SQL - Get Stream Statistics  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${statname}  ${stream_name}
+    Delete Robot Data  ${robotDataDirectory}
+    [Return]  ${result}
+
+#Documentation  Check a given stream operational statistics from last hour. statname should be: 'Reprocessed', 'Created', 'Duplicated', 'Retrieved', 'In', 'Out', 'Filtered', 'Stored', 'Reduced in merging' or 'Rejected' as in the old GUI.
+Check Stream Statistic Is  [Arguments]  ${stream_name}  ${statname}   ${value}  ${robotDataDirectory}
+    ${result}=  Get Stream Statistics  ${stream_name}  ${statname}  ${robotDataDirectory}
+    Should Be Equal As Integers  ${value}  ${result}
+
+#Documentation  Retrieves the given node operational statistics from last hour. statname should be: 'Reprocessed', 'Created', 'Duplicated', 'Retrieved', 'In', 'Out', 'Filtered', 'Stored', 'Reduced in merging' or 'Rejected' as in the GUI.
+Get Node Statistics  [Arguments]  ${stream_name}  ${nodename}  ${statname}  ${robotDataDirectory}
+    Copy Query File and Source Profile  ${robotDataDirectory}
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+    
+    ${result}=  SQL - Get Node Statistics  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${statname}  ${stream_name}  ${nodename}
+    Delete Robot Data  ${robotDataDirectory}
+    [Return]  ${result}
+
+#Documentation  Check a given node operational statistics from last hour. statname should be: 'Reprocessed', 'Created', 'Duplicated', 'Retrieved', 'In', 'Out', 'Filtered', 'Stored', 'Reduced in merging' or 'Rejected' as in the GUI.
+Check Node Statistic Is  [Arguments]  ${stream_name}  ${nodename}  ${statname}   ${value}  ${robotDataDirectory}
+    ${result}=  Get Node Statistics  ${stream_name}  ${nodename}  ${statname}  ${robotDataDirectory}
+    Should Be Equal As Integers  ${value}  ${result}
+
+#Documentation  Shows process stream notifications with given type from the latest version of given stream
+Show Stream Messages  [Arguments]     ${stream_name}  ${message_type}
+    Click Link  TEST TEST
+    Click Link  Process Streams
+    Click Link  ${stream_name}
+    Click Link  ${SV_LATEST_STREAM_VERSION_LINK}
+    Click Link  Process stream notifications
+    Click Link  SHOW SEARCH FORM
+    Select From List  type_nf  ${message_type}
+    Click Button  Show
+
+#Documentation  time period should be:  '1 hour', '4 hours', '12 hours', '1 day' or '2 days'
+Take Screenshot From Operational Statistics  [Arguments]  ${stream_name}  ${time_period}  ${screenshot_name}
+    Click Link  TEST TEST
+    Click Link  Process Streams
+    Click Link  ${stream_name}
+    Click Link  ${SV_LATEST_STREAM_VERSION_LINK}
+    Click Link  Operational statistics
+    Select From List  period  ${time_period}
+    Take Screenshot  ${screenshot_name}.jpg
+
+## Status will mapped to 'Running', 'Stopped', 'Failed'
+## Failed when host provided is not found
+Host Status Should be  [Arguments]   ${host_name}  ${wanted_status}  ${robotDataDirectory}
+    Copy Query File and Source Profile  ${robotDataDirectory}
+
+    Write    cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    Read Until Prompt
+
+    ${result}=  SQL - Get Host Status  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${host_name}
+
+    Should Not Be Empty    ${result}    Host '${host_name}' not found
+    Should Match Regexp    ${result}    (?i)(${wanted_status})    ${host_name} status is not ${wanted_status}
+
+    Write    cd -
+    Read Until Prompt
+
+    Delete Robot Data  ${robotDataDirectory}
+
+#Documentation  Please note that process stream might still in Pending state after this keyword is executed. Use keyword Wait Until Stream Is to check if the new stream is in Running state.
+Copy As New Process Stream   [Arguments]  ${stream_name}  ${new_stream_name}  ${robotDataDirectory}  ${start_stream_with_node}=1
+    ${stream_latest_version}  Tools Get Stream Latest Version    ${stream_name}
+    Copy Query File  ${robotDataDirectory}
+    Start Command   tools.pl -c exportstreamconfig -n ${stream_name} -v ${stream_latest_version} -t ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/exported_stream
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    Set Client Configuration  timeout=3
+    Login To Test Host
+    Write  cd ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/exported_stream
+    Read Until Prompt
+    Write  cat stream.xml | sed 's/<name>'${stream_name}'<\\\/name>/<name>'${new_stream_name}'<\\\/name>/g' > temp
+    Read Until Prompt
+    Write  mv temp stream.xml
+    Read Until Prompt
+
+    Start Command   tools.pl -c import ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/exported_stream
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+
+    ${start_stream_with_node}=    Set Variable If    ${start_stream_with_node} == 0    -s    ${EMPTY}
+    Start Command   tools.pl -c startstream -n ${new_stream_name} -v 1 ${start_stream_with_node}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    Delete Robot Data  ${robotDataDirectory}
+ 	
+#Documentation  Execution of DB script from the file provided
+Execute DB Script From File  [Arguments]  ${db_exec_script_location}  ${db_script_file_name}  ${db_specific}=${empty}  ${timeout}=1
+ 	Write  cd ${db_exec_script_location}
+ 	Read Until Prompt
+ 	Write  ./exec_query.ksh ${db_script_file_name} ${db_specific}
+ 	Wait Until Keyword Succeeds  ${timeout} min  5 sec  Read Until Regexp  OK
+ 	Read Until Prompt
+
+#Documentation  Extracts result returns by an SQL query
+Get SQL Result  [Arguments]  ${result_file}
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_ORACLE}'  Write  cat ${result_file} | tail -2 | head -1 | sed -e 's/^ *//g' -e 's/ *$//g'
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_DB2}'  Write  cat ${result_file} | tail -1 | sed -e 's/^ *//g' -e 's/ *$//g'
+    Run Keyword If   '${DB_VENDOR}' == '${DB_VENDOR_POSTGRESQL}'  Write  cat ${result_file} | tail -3 | head -1 | sed -e 's/^ *//g' -e 's/ *$//g'
+    ${output}=  Read Until Prompt
+    ${extracted_line}=   Get Line	${output}	0
+    [Return]  ${extracted_line}
+
+
+#### Stream Installation #######
+Copy Stream Installation Scripts And Update Scripts  [Arguments]  ${testing_host_location}  ${stream_name}
+	Put File  ${ROBOT_PATH}/streams/stream_installation_scripts/*  ${testing_host_location}
+	Write  cd ${testing_host_location}
+	Read Until Prompt
+	Write  sed 's%CHANGE_STREAM_NAME%${stream_name}%g' install_stream.sh > install_stream.sh_temp
+	Read Until Prompt
+	Write  mv install_stream.sh_temp install_stream.sh
+	Read Until Prompt
+	Write  sed 's%CHANGE_STREAM_NAME%${stream_name}%g' update_and_configure_streams.ksh > update_and_configure_streams.ksh_temp
+	Read Until Prompt
+	Write  mv update_and_configure_streams.ksh_temp update_and_configure_streams.ksh
+	Read Until Prompt
+	Write  chmod 755 *
+	Read Until Prompt
+
+
+Copy Stream XML  [Arguments]  ${stream_xml_from_repo}  ${stream_xml_to_testing_host}
+	Put File  ${stream_xml_from_repo}  ${stream_xml_to_testing_host}
+
+
+Perform Stream Installation  [Arguments]  ${stream_name}  ${stream_config_directory}  ${host_name}=${AUTO_EL_INST_NAME}	    
+        Write  cd ${stream_config_directory}
+		Read Until Prompt		
+		Write  ./install_stream.sh -u ${GTAF_SSH_USER} -p ${GTAF_SSH_PASS} -v ${NODE_PACKAGES_DIR} -h ${host_name}
+    	Wait Until Keyword Succeeds  180   5   el.Wait Until Stream Installation Complete   Installation Done
+		
+		${count}=  el.Is Stream Exists  ${stream_name}
+		Run Keyword If  '${count}' == '0' or '${count}' == ''  Fail   ${stream_name} is not installed, please check!
+		
+Wait Until Stream Installation Complete  [Arguments]  ${verificationText}
+		${result}=  Read
+	Log  ${result}   ${ROBOT_LOG_LEVEL}
+		${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Could not connect to url*
+        Run Keyword If  '${match[0]}'=='PASS'   Fatal Error  ${result}
+		
+		Should Match  ${result}  *${verificationText}*

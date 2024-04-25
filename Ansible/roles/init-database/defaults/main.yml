@@ -1,0 +1,8 @@
+---
+# Default variables for PostgreSQL database init
+login_db: "postgres"
+login_port: "{{ postgresql_server_port }}"
+db_encoding: "DEFAULT"
+db_lc_collate: "DEFAULT"
+db_lc_ctype: "DEFAULT"
+db_tablespace: "DEFAULT"

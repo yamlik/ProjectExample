@@ -1,0 +1,33 @@
+---
+# defaults file for TEST-httpd
+
+# httpd default port used to proxy requests to other services
+httpd_listening_port: "55000"
+
+# Hosts for services
+admintools_service:         "https://{{ admintools_fqdn | default(inventory_hostname) }}:{{ admintools_port | default('45080') }}"
+TEST_ui_service:       "https://{{ el_ui_fqdn | default(inventory_hostname) }}:{{ el_ui_http_port | default('55080') }}"
+reports_service:            "https://{{ reports_fqdn | default(inventory_hostname) }}:{{ reports_port | default('56080')}}"
+system_monitoring_service:  "https://{{ smr_fqdn | default(inventory_hostname) }}:{{ smr_port | default('49080') }}"
+devtool_ui_setting_service: "https://{{ devtool_ui_fqdn | default(inventory_hostname) }}:{{ devtool_ui_http_port | default('57080')}}"
+ui_config_service:          "https://{{ devtool_ui_fqdn | default(inventory_hostname) }}:{{ devtool_ui_http_port | default('57080')}}"
+devtool_ui_service:         "https://{{ devtool_ui_fqdn | default(inventory_hostname) }}:{{ devtool_ui_http_port | default('57080')}}"
+
+# This is Red Hat/CentOS specific
+httpd_base_dir: '/etc/httpd'
+httpd_conf_dir: '{{ httpd_base_dir }}/conf.d'
+httpd_config_file: '{{ httpd_base_dir }}/conf/httpd.conf'
+
+product_install_dir_TEST_ui: "{{ install_directory }}/TEST-ui"
+
+
+service_dictionary:
+  - {service_name: "TEST", service: "{{ TEST_ui_service }}" }
+  - {service_name: "admintools", service: "{{ admintools_service }}" }
+  - {service_name: "solution-config", service: "{{ TEST_ui_service }}" }
+  #- {service_name: "systemMonitoring", service: "{{ system_monitoring_service }}" }
+  - {service_name: "reports", service: "{{ reports_service }}" }
+  - {service_name: "settings/devtool-settings.json", service: "{{ devtool_ui_setting_service }}" }
+  - {service_name: "ui-config/ui-config.json", service: "{{ ui_config_service }}" }
+  - {service_name: "devtool", service: "{{ devtool_ui_service }}" }
+...

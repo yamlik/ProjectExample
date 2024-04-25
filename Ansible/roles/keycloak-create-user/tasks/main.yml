@@ -1,0 +1,145 @@
+---
+# tasks file for keycloak-create-user
+- assert:
+    that:
+      - "kc_realm_admin_user is defined"
+      - "kc_realm_admin_password is defined"
+      - "kc_user_username is defined"
+      - "kc_user_password is defined"
+      - "kc_user_firstname is defined"
+      - "kc_user_lastname is defined"
+      - "kc_user_email is defined"
+      - "role_set is defined"
+
+- name: "Authenticate"
+  changed_when: False
+  command: "bin/kcadm.sh config credentials --server {{ kc_https_url }} --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password {{ kc_realm_admin_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+  
+- name: "Verify existence of {{ kc_user_username }} user"
+  register: user_gotten
+  changed_when: False
+  command: "bin/kcadm.sh get users -r {{ kc_realm_name }} -q username={{ kc_user_username | lower }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  become: true
+  become_method: sudo
+
+- name: "Authenticate"
+  changed_when: False
+  command: "bin/kcadm.sh config credentials --server {{ kc_https_url }} --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password {{ kc_realm_admin_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Create {{ kc_user_username }} user in Keycloak"
+  when: user_gotten.stdout == '[ ]'
+  register: user_created
+  command: "bin/kcadm.sh create users -r {{ kc_realm_name }} -s username={{ kc_user_username }} -s enabled=true -i"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 30
+  until: user_created is not failed
+
+- name: "Get user ID"
+  set_fact:
+    userID: "{{ (user_gotten.stdout | from_json)[0].id if (user_created is skipped) else user_created.stdout }}"
+
+- name: "Authenticate"
+  changed_when: False
+  command: "bin/kcadm.sh config credentials --server {{ kc_https_url }} --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password {{ kc_realm_admin_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Update {{ kc_user_username }} user in Keycloak"
+  command: "bin/kcadm.sh update users/{{ userID }} -r {{ kc_realm_name }} -s firstName={{ kc_user_firstname }} -s lastName={{ kc_user_lastname }} -s email={{ kc_user_email }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 30
+  register: result
+  until: result is not failed
+  
+- name: "Authenticate"
+  changed_when: False
+  command: "bin/kcadm.sh config credentials --server {{ kc_https_url }} --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password {{ kc_realm_admin_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Update user's password"
+  command: "bin/kcadm.sh set-password -r {{ kc_realm_name }} --username {{ kc_user_username | lower }} --new-password {{ kc_user_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 30
+  register: result
+  until: result is not failed
+
+- name: "Generate list of role names"
+  set_fact:
+    permissions: "{{ permissions | default('') }} --rolename {{ item }}"
+  with_items: "{{ role_set }}"
+
+- name: "Authenticate"
+  changed_when: False
+  command: "bin/kcadm.sh config credentials --server {{ kc_https_url }} --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password {{ kc_realm_admin_password }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Apply list of roles to user"
+  command: "bin/kcadm.sh add-roles -r {{ kc_realm_name }} --uusername {{ kc_user_username | lower }} --cclientid {{ kc_TEST_ui_client_id }} {{ permissions }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  become: true
+  become_method: sudo
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Unset permissions fact"
+  set_fact:
+    permissions: ""

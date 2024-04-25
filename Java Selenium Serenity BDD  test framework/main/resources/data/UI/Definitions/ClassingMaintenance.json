@@ -1,0 +1,8 @@
+{
+  "Description": "Attribute1",
+  "TestData": "\"test\"",
+  "points": "50",
+"Desc": "Attribute2",
+"Values": "\"test\"",
+"Attributepoints": "1000"
+}

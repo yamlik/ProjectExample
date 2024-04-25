@@ -1,0 +1,8 @@
+\set AUTOCOMMIT on
+\set ON_ERROR_STOP on
+\set VERBOSITY terse
+\set ECHO all
+
+UPDATE lookup_servers SET ip_address='{{ lookup_server_ip }}', port_number={{ lookup_server_port }}, host='{{ lookup_server_host }}' WHERE lookupserver_name='{{ lookup_server_name }}';
+
+\q

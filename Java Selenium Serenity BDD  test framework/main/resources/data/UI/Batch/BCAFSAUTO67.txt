@@ -1,0 +1,6 @@
+<organisation>|<country>||TESTAUTO67001||||05/01/2023|CARD||||||||||||||||||||||||||||||||||||||A|AMFYD749HG|||||||||||||LOS ANGELES||||||||||SAN FRANSISCO||||||||||||||||||||||||||
+<organisation>|<country>||TESTAUTO67002||||05/01/2023|CARD||||||||||||||||||||||||||||||||||||||A|AMFYD749HG|||||||||||||NEW YORK||||||||||SAN FRANSISCO||||||||||||||||||||||||||
+<organisation>|<country>||TESTAUTO67003||||05/01/2023|CARD||||||||||||||||||||||||||||||||||||||A|AMFYD749HG|||||||||||||MELBOURNE||||||||||SYDNEY||||||||||||||||||||||||||
+<organisation>|<country>||TESTAUTO67004||||06/01/2023|LOAN||||||||||||||||||||||||||||||||||||||A||||||||||35 COOPER WAY|BRIDGE STREET||LANEWAY ONE|MELBOURNE||3856||||||||||||||||||||||||||||||||||
+<organisation>|<country>||TESTAUTO67005||||06/01/2023|MTGE||||||||||||||||||||||||||||||||||||||A||||||||||BRIDGE STREET|35 COOPER WAY||MELBOURNE|LANEWAY ONE||3856||||||||||||||||||||||||||||||||||
+<organisation>|<country>||TESTAUTO67006||||06/01/2023|OTH||||||||||||||||||||||||||||||||||||||A||||||||||BRIDGE STREET|35 COOPER WAY||MELBOURNE|LANEWAY ONE||3856||||||||||||||||||||||||||||||||||

@@ -1,0 +1,18 @@
+{
+  "SkipWorkflow": false,
+  "ServiceWorkflow": "FULL WORKFLOW",
+  "Application": {
+    "Organisation": "{{organisation}}",
+    "Country_Code": "{{country}}",
+    "Application_Number": "{{APPLICATION_NUMBER}}",
+    "Expiry_Date": "2064-01-20T00:00Z",
+    "Application_Date": "2022-01-01T00:00Z",
+    "Application_Type": "CARD"
+  },
+  "Applicant": [
+    {
+      "Id_Number1": "12345",
+      "Income": "{{INCOME}}"
+    }
+  ]
+}

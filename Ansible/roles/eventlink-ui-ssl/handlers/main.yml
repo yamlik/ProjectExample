@@ -1,0 +1,25 @@
+---
+- name: "Restart tomcat service"
+  systemd:
+    name: 'tomcat'
+    state: 'restarted'
+    daemon_reload: yes
+  become: true
+  become_method: sudo
+  listen: "Restart tomcat service"
+
+- name: "Restart ELUI service"
+  systemd:
+    name: 'tomcat@el-ui'
+    state: 'restarted'
+  become: true
+  become_method: sudo
+  listen: "Restart ELUI service"
+  
+- name: "Restart AdminTools service"
+  systemd:
+    name: 'tomcat@admintools'
+    state: 'restarted'
+  become: true
+  become_method: sudo
+  listen: "Restart AdminTools service"

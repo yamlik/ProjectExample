@@ -1,0 +1,1255 @@
+*** Settings ***
+
+Library        SeleniumLibrary
+Library        SSHLibrary
+Library        Collections
+Library        String
+Library        OperatingSystem
+
+Resource    ${KEYWORDS_PATH}/el_host.txt
+
+*** Variables ***
+${TIMESTEN_UNINSTALL_SCRIPT_REPO_DIR}     ${INSTALLERS_PATH}/CCACP/scripts
+${TIMESTEN_UNINSTALL_SCRIPT_INSTALL_DIR}  ${BASE_DIR}/utils
+${TIMESTEN_UNINSTALL_SCRIPT_NAME}         clean_tt.pl
+
+${GIVE_ADMIN_ACCESS_SCRIPT_REPO_DIR}     ${INSTALLERS_PATH}/CCACP/scripts
+${GIVE_ADMIN_ACCESS_SCRIPT_INSTALL_DIR}  ${BASE_DIR}/utils
+${GIVE_ADMIN_ACCESS_SCRIPT_NAME}         give_admin_access.sql
+
+${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_REPO_DIR}     ${INSTALLERS_PATH}/CCACP/scripts
+${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_INSTALL_DIR}  ${BASE_DIR}/utils
+${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}         give_admin_access_to_blt.sql
+
+${DELETE_SEC_HOST_SCRIPT_REPO_DIR}     ${INSTALLERS_PATH}/CCACP/scripts
+${DELETE_SEC_HOST_SCRIPT_INSTALL_DIR}  ${BASE_DIR}/utils
+${DELETE_SEC_HOST_SCRIPT_NAME}         delete_secondary_host.pl
+
+${DROP_DB2_OBJECTS_REPO_DIR}  	${INSTALLERS_PATH}/CCACP/scripts
+${DROP_DB2_OBJECTS_SCRIPT_INSTALL_DIR}  ${BASE_DIR}/utils
+${DROP_DB2_OBJECTS_SCRIPT_NAME}       drop_db2_objects.sql
+${DROP_DB2_OBJECTS_SCRIPT_NAME_2}     drop_db2_object.ksh
+
+${ODBCINI_FILE_DIR}   ${AUTO_EL_INST_DIR}
+${ODBCINI_FILE_NAME}  .odbc.ini
+
+${H2DB_VERSION}  2013.1-1
+
+# Optional Robot command line arguments
+# to give the installation pkg path on test host.
+# The latest one will be chosen
+${INSTALLATION_PKG_PATH_ON_TEST_HOST}   ${empty}
+
+*** Keywords ***
+
+##################
+#
+# PUBLIC KEYWORDS
+#
+Find Latest Installation Pkg  [Arguments]  ${release_version}
+	Log  Searching installation pkg ...  WARN
+	# Find latest installation pkg name
+	# Revert to original code, cpt2c3l, 20131204
+	Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  manage_releases.Find Latest Installation Pkg On Products Dir Host  ${release_version}
+	Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'!='${empty}'  manage_releases.Find Latest Installation Pkg On Test Host  ${release_version}
+
+
+Find Latest CM Installation Pkg  [Arguments]  ${release_version}
+	Log  Searching installation pkg ...  WARN
+	# Find latest installation pkg name
+
+	Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  manage_releases.Find Latest CM Installation Pkg On Products Dir Host  ${release_version}
+	Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'!='${empty}'  manage_releases.Find Latest CM Installation Pkg On Test Host  ${release_version}
+
+
+Find Latest SDK Installation Pkg  [Arguments]  ${release_version}
+        Log  Searching installation sdk pkg ...  WARN
+        # Find latest installation sdk pkg name
+    Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  manage_releases.Find Latest SDK Installation Pkg On Products Dir Host  ${release_version}
+    Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'!='${empty}'  manage_releases.Find Latest SDK Installation Pkg On Test Host  ${release_version}
+
+Find Latest RCT Installation Pkg  [Arguments]  ${release_version}
+        Log  Searching RCT installation pkg ...  WARN
+        # Find latest installation pkg name
+    Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  manage_releases.Find Latest RCT Installation Pkg On Products Dir Host  ${release_version}
+    Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'!='${empty}'  manage_releases.Find Latest RCT Installation Pkg On Test Host  ${release_version}
+
+Check Installation Errors
+	manage_releases.Login To Test Host1
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+
+	# Search ORA-errors in installdir
+
+	# ignore checking Smoke6DS.log as it is in binary format 
+	Write  find . -name "*log*" | grep -v admin/help/English | grep -v TEST/help/English | grep -v /BLT/help/TEST | grep -v Smoke6DS.log | xargs grep ORA-
+	${result}=  Read Until Prompt
+	${match}=  Run Keyword And Ignore Error  Should Not Match  ${result}  *ORA*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log  ${AUTO_EL_INST_DIR}/\n${result}  WARN
+
+
+	# Search errors in release area
+
+	Write  cd ${BASE_DIR}/${RELEASE_AREA}
+	Read Until Prompt
+
+	Write  grep "Package Body created with compilation errors" *log* |wc -l
+	${result}=  Read Until Prompt
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *0*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log  ${BASE_DIR}/${RELEASE_AREA}/*log*\n\"Package Body created with compilation errors\"  WARN
+
+	Write  find . -name "*log*" |xargs grep ORA-
+	${result}=  Read Until Prompt
+	${match}=  Run Keyword And Ignore Error  Should Not Match  ${result}  *ORA*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log  ${BASE_DIR}/${RELEASE_AREA}/\n${result}  WARN
+
+	#Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}'=='y'  manage_releases.Check If Encrypted
+
+	Close Connection
+
+
+
+Uninstall Release  [Arguments]  ${release_area_name}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+
+	Write  . ./.profile
+	Read Until Prompt
+
+	Write  cd ${BASE_DIR}/${RELEASE_AREA}
+	Read Until Prompt
+
+	Write  ./manage_releases -uninstall ./${release_area_name}
+	Read Until Regexp  Are you sure
+	Write  y
+	Wait Until Keyword Succeeds  60   0.3   manage_releases.Manage Releases Interaction
+
+	Write  rm -fr ./${release_area_name}
+	Read Until Prompt
+	Close Connection
+
+Install Release  [Arguments]  ${cpio_dir_and_pkg}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+
+	Write  . ./.profile
+	Read Until Prompt
+
+	Write  cd ${BASE_DIR}/${RELEASE_AREA}
+	Read Until Prompt
+
+	Write  ./manage_releases -install ${cpio_dir_and_pkg} ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Close Connection
+
+
+# Output:
+# PASS == Release is installed
+# FAIL == Not installed
+Is Release Installed  [Arguments]  ${area_dir}
+    manage_releases.Login To Test Host1
+    Set Client Configuration  timeout=60
+	Write  ls ${area_dir}
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  ${ROBOT_common_NOT_FOUND}
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}
+
+Is Release Pkg On Jenkins Host  [Arguments]  ${test_host_target_dir}  ${rel_pkg_name}
+    manage_releases.Login To Jenkins Host
+    Set Client Configuration  timeout=60
+    Write  ls ${test_host_target_dir}/${rel_pkg_name}
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  ${ROBOT_common_NOT_FOUND}
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}
+
+Is Release Pkg On Test Host  [Arguments]  ${test_host_target_dir}  ${rel_pkg_name}
+    manage_releases.Login To Test Host1
+    Set Client Configuration  timeout=60
+    Write  ls ${test_host_target_dir}/${rel_pkg_name}
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  ${ROBOT_common_NOT_FOUND}
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}
+
+Is Release Pkg On Cmci Host  [Arguments]  ${cmci_host_target_dir}  ${rel_pkg_name}
+    manage_releases.Login To Cmci Host
+    Write  echo ${rel_pkg_name}
+    Read Until Prompt
+    Set Client Configuration  timeout=60
+    Write  ls ${cmci_host_target_dir}/${rel_pkg_name}
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  ${ROBOT_common_NOT_FOUND}
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}
+
+Uninstall TimesTen
+	Log  Uninstalling TimesTen...  WARN
+    manage_releases.Copy Script From Repo To Install Dir  ${TIMESTEN_UNINSTALL_SCRIPT_REPO_DIR}  ${TIMESTEN_UNINSTALL_SCRIPT_INSTALL_DIR}  ${TIMESTEN_UNINSTALL_SCRIPT_NAME}
+    manage_releases.Login To Test Host1
+	Write  perl ${TIMESTEN_UNINSTALL_SCRIPT_INSTALL_DIR}/${TIMESTEN_UNINSTALL_SCRIPT_NAME} -i ${TIMESTEN_INSTANCE}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Uninstall CM TimesTen
+	Log  Uninstalling TimesTen...  WARN
+    manage_releases.Copy Script From Repo To Install Dir  ${TIMESTEN_UNINSTALL_SCRIPT_REPO_DIR}  ${TIMESTEN_UNINSTALL_SCRIPT_INSTALL_DIR}  ${TIMESTEN_UNINSTALL_SCRIPT_NAME}
+    manage_releases.Login To Test Host1
+	Write  perl ${TIMESTEN_UNINSTALL_SCRIPT_INSTALL_DIR}/${TIMESTEN_UNINSTALL_SCRIPT_NAME} -i ${TIMESTEN_INSTANCE}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Give Admin Access
+	Log  Give admin access...  WARN
+    	manage_releases.Copy Script From Repo To Install Dir  ${GIVE_ADMIN_ACCESS_SCRIPT_REPO_DIR}  ${GIVE_ADMIN_ACCESS_SCRIPT_INSTALL_DIR}  ${GIVE_ADMIN_ACCESS_SCRIPT_NAME}
+    	manage_releases.Login To Test Host1
+	manage_releases.Configure Sqlplus
+	Write  cd ${GIVE_ADMIN_ACCESS_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${GIVE_ADMIN_ACCESS_SCRIPT_NAME}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Give Admin Access To Blt
+	Log  Give admin access to BLT...  WARN
+    	manage_releases.Copy Script From Repo To Install Dir  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_REPO_DIR}  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_INSTALL_DIR}  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}
+    	manage_releases.Login To Test Host1
+	manage_releases.Configure Sqlplus
+	Write  cd ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Give Admin Access_74
+	Log  Give admin access...  WARN
+    	manage_releases.Copy Script From Repo To Install Dir  ${GIVE_ADMIN_ACCESS_SCRIPT_REPO_DIR}  ${GIVE_ADMIN_ACCESS_SCRIPT_INSTALL_DIR}  ${GIVE_ADMIN_ACCESS_SCRIPT_NAME}
+    	manage_releases.Login To Test Host1
+
+	Run Keyword If   '${DB_VENDOR}'=='1'  manage_releases.Configure Sqlplus
+	Write  cd ${GIVE_ADMIN_ACCESS_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='1'  Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${GIVE_ADMIN_ACCESS_SCRIPT_NAME}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 -tf ${GIVE_ADMIN_ACCESS_SCRIPT_NAME}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	#Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='1'  manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Give Admin Access To Blt_74
+	Log  Give admin access to BLT...  WARN
+    	manage_releases.Copy Script From Repo To Install Dir  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_REPO_DIR}  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_INSTALL_DIR}  ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}
+    	manage_releases.Login To Test Host1
+	Run Keyword If   '${DB_VENDOR}'=='1'  manage_releases.Configure Sqlplus
+	Write  cd ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='1'  Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 -tf ${GIVE_ADMIN_ACCESS_TO_BLT_SCRIPT_NAME}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+
+	#Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='1'  manage_releases.Check If Command Exit Is Zero
+	Close Connection
+
+Delete Secondary Host
+	manage_releases.Copy Script From Repo To Install Dir  ${DELETE_SEC_HOST_SCRIPT_REPO_DIR}  ${DELETE_SEC_HOST_SCRIPT_INSTALL_DIR}  ${DELETE_SEC_HOST_SCRIPT_NAME}
+    	manage_releases.Login To Test Host1
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile
+	Read Until Prompt
+	Write  cd ${DELETE_SEC_HOST_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Write  perl ${DELETE_SEC_HOST_SCRIPT_NAME} -h ${AUTO_EL_INST_NAME}
+	${result}=  Read Until Prompt
+	Log  ${result}  WARN
+	Close Connection
+
+Configure ODBCINI Environment Variable
+	Log  Configure ODBCINI Environment variable in to ${AUTO_EL_INST_DIR}/.profile ...  WARN
+	# This was done previously by the gtaf installer's "install_all.ksh"
+	manage_releases.Login To Test Host1
+	Write  echo "export ODBCINI=${ODBCINI_FILE_DIR}/${ODBCINI_FILE_NAME}" >> ${AUTO_EL_INST_DIR}/.profile
+	Read Until Prompt
+	Close Connection
+
+Drop DB2 Schema
+	Write  clpplus -nw ${DB2_USER}/${DB2_PASSWORD}@${DB2_HOST}:${DB2_PORT}/${DB2_ALIAS} @ txe_drop_schema.sql
+	Read Until Prompt
+
+Drop All Db User Objects
+    Log  Dropping all objects...  WARN
+	manage_releases.Do Drop All
+
+Drop All Db User Objects DB2
+    Log  Dropping all objects...  WARN
+	manage_releases.Do Drop All DB2
+
+Drop All Db User Objects POSTGRESQL
+	Log  Dropping all objects...  WARN
+	manage_releases.Do Drop All POSTGRESQL
+
+Drop RCT Db
+    Log  Dropping RCT Db tables ...  WARN
+	manage_releases.Do Drop RCT Script
+
+Drop RCT User Permission
+	Log  Dropping RCT User Permission...  WARN
+	manage_releases.Do Drop RCT H2
+
+Copy Release Package To Test Host  [Arguments]  ${rel_products_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+        Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  Run Keyword If  '${IS_CLOUD}'=='0'  manage_releases.Copy Release Package From Products Dir To Test Host  ${rel_products_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+        Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'=='${empty}'  Run Keyword If  '${IS_CLOUD}'!='0'  manage_releases.Copy Release Package To Test Host From Products Dir  ${rel_products_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+		Run Keyword If  '${INSTALLATION_PKG_PATH_ON_TEST_HOST}'!='${empty}'  manage_releases.Copy Release Package In Test Host To Another Dir  ${INSTALLATION_PKG_PATH_ON_TEST_HOST}  ${test_host_target_dir}  ${rel_pkg_name}
+
+Execute Sql Script  [Arguments]  ${script_path}  ${script_name}  ${sed_cmd_attr}=${empty}
+    manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+
+	Run Keyword If  '${sed_cmd_attr}'!='${empty}'  manage_releases.Execute Sed Command  ${script_path}  ${script_name}  ${sed_cmd_attr}
+
+	manage_releases.Configure Sqlplus
+	Write  cd ${script_path}
+	Read Until Prompt
+	Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${script_name}
+	${command_result}=  Read Until Prompt
+	Write  echo $?
+	${exit_val}=  Read Until Prompt
+	Close Connection
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${exit_val}  0*
+#	Run Keyword If  '${match[0]}'=='FAIL'  	Fail  cd ${script_path}\n${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${script_name}\n${command_result}
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log   cd ${script_path}\n${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${script_name}\n${command_result}	WARN
+
+
+Execute TimesTen Script  [Arguments]  ${script_path}  ${script_name}  ${data_store_name}
+    manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  . ./.profile
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  cd ${script_path}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  ttisql -f ${script_name} ${data_store_name}
+	${command_result}=  Read Until Prompt
+	Close Connection
+
+	${match}=  Run Keyword And Ignore Error  Should Not Match  ${command_result}  *The command failed*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Fail  cd ${AUTO_EL_INST_DIR}\n. .profile\ncd ${script_path}\nttisql -f ${script_name} ${data_store_name}\n${command_result}
+#	Run Keyword If  '${match[0]}'=='FAIL'  	Log   cd ${AUTO_EL_INST_DIR}\n. .profile\ncd ${script_path}\nttisql -f ${script_name} ${data_store_name}\n${command_result}	WARN
+
+
+Destroy TimesTen Tables  [Arguments]  ${data_store_name}
+    manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  . ./.profile
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+    Write  ttDestroy -connStr DSN=${data_store_name}
+	${command_result}=  Read Until Prompt
+	Write  echo $?
+	${exit_val}=  Read Until Prompt
+	Close Connection
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${exit_val}  0*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Fail  cd ${AUTO_EL_INST_DIR}\n. .profile\nttDestroy -connStr DSN=${data_store_name}\n${command_result}
+#	Run Keyword If  '${match[0]}'=='FAIL'  	Log   cd ${AUTO_EL_INST_DIR}\n. .profile\nttDestroy -connStr DSN=${data_store_name}\n${command_result}	WARN
+
+Import Package  [Arguments]  ${package_name}  ${package_dir}=${AUTO_EL_INST_DIR}  ${stream_xml_dir}=${empty}
+
+	# If package name may contain asterisk(*). Better to find the latest one on the test host
+
+	Log  ${package_name}
+
+	manage_releases.Login To Test Host1
+	Write  cd ${package_dir}
+	Read Until Prompt
+	Write  ls ${package_name} | xargs ls -t | head -1
+	${package_name_latest}=  Read Until Regexp  \.el|\.xml
+	Close Connection
+
+	Log  ${package_name}
+
+	Run Keyword If  '${stream_xml_dir}'!='${empty}'  Replace Package Names In Stream Xml  ${package_name_latest}  ${stream_xml_dir}
+
+    manage_releases.Login To Test Host1
+    Set Client Configuration  timeout=60
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile
+	Read Until Prompt
+	Write  cd ${package_dir}
+	Read Until Prompt
+	# If package_name is exactly *, then use the package_dir in the import command
+	Run Keyword If  '${package_name}'=='*'  Write  tools.pl -c import -r ${package_dir}
+	# Else import the package_name
+	Run Keyword If  '${package_name}'!='*'  Write  tools.pl -c import -r ${package_name_latest}
+
+	${result}=  Read Until Prompt
+	Should Match Regexp  ${result}  successfully
+	Close Connection
+
+Replace Package Names In Stream Xml  [Arguments]  ${package_name}  ${stream_xml_dir}
+
+    manage_releases.Login To Test Host1
+	Write  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${stream_xml_dir}/stream.xml ${JAVANODE_LIB_FILE}
+    ${result}=  Read Until Prompt
+	Should Match Regexp  ${result}  successfully
+	Write  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${stream_xml_dir}/stream.xml ${DIAMETER_SERVER_NODE}
+    ${result}=  Read Until Prompt
+	Should Match Regexp  ${result}  successfully
+	Write  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${stream_xml_dir}/stream.xml ${RELAY_BLN_NODE}
+    ${result}=  Read Until Prompt
+	Should Match Regexp  ${result}  successfully
+	Write  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${stream_xml_dir}/stream.xml ${package_name}
+    ${result}=  Read Until Prompt
+	Should Match Regexp  ${result}  successfully
+	Close Connection
+
+Copy Script From Repo To Install Dir  [Arguments]  ${repo_dir}  ${install_dir}  ${script_name}  ${sed_cmd_attr}=${empty}
+
+	manage_releases.Login To Test Host1
+
+	# Delete old version if exists.
+	Write  rm -f ${install_dir}/${script_name}
+	Read Until Prompt
+
+	# The copy the newer version
+	manage_releases.Send File To Host   ${repo_dir}/${script_name}  ${install_dir}/
+
+	# Execute sed command if given in test host
+	Run Keyword If  '${sed_cmd_attr}'!='${empty}'  manage_releases.Execute Sed Command  ${install_dir}  ${script_name}  ${sed_cmd_attr}
+
+	Close Connection
+
+Edit Script In Install Dir  [Arguments]  ${install_dir}  ${script_name}  ${sed_cmd_attr}=${empty}
+
+	manage_releases.Login To Test Host1
+
+	# Execute sed command if given in test host
+	Run Keyword If  '${sed_cmd_attr}'!='${empty}'  manage_releases.Execute Sed Command  ${install_dir}  ${script_name}  ${sed_cmd_attr}
+
+	Close Connection
+
+Copy Script From Build To Install Dir  [Arguments]  ${repo_dir}  ${install_dir}  ${script_name}  ${sed_cmd_attr}=${empty}
+
+	#1. Get script from build host's dir to jenkins host
+	#2. Put script from jenkins host in to the test host's install dir
+	#3. Cleaup temp-directory in the jenkins host
+
+	#1.
+    manage_releases.Login To Build Host
+	Log          Getting ${repo_dir}/${script_name}
+	SSHLibrary.Get File  ${repo_dir}/${script_name}  ./temp/
+	Close Connection
+
+	#2.
+	manage_releases.Login To Test Host1
+	Write  rm -f ${install_dir}/${script_name}
+	Read Until Prompt
+	manage_releases.Send File To Host  ./temp/${script_name}  ${install_dir}/
+
+	# Execute sed command if given in test host
+	Run Keyword If  '${sed_cmd_attr}'!='${empty}'  manage_releases.Execute Sed Command  ${install_dir}  ${script_name}  ${sed_cmd_attr}
+
+	Close Connection
+
+	#3.
+    Remove Files      ./temp/*
+    Remove Directory  ./temp
+
+###################
+#
+# PRIVATE KEYWORDS
+#
+
+Execute Sed Command  [Arguments]  ${script_dir}  ${script_name}  ${sed_cmd_attr}
+	Write  cd ${script_dir}
+	Read Until Prompt
+	Write  sed '${sed_cmd_attr}' ./${script_name} > ./${script_name}.new
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  mv ./${script_name}.new ./${script_name}
+	Read Until Prompt
+
+Set Global Variable cm_inst_pkg  [Arguments]  ${pkg_name}
+	${cm_inst_pkg}  Set Variable  ${pkg_name}
+    Set Global Variable  ${cm_inst_pkg}
+
+Set Global Variable CM_6.4.0_PRODUCTS_PKG_DIR  [Arguments]  ${new_products_pkg_dir}
+	${CM_6.4.0_PRODUCTS_PKG_DIR}  Set Variable  ${new_products_pkg_dir}
+    Set Global Variable  ${CM_6.4.0_PRODUCTS_PKG_DIR}
+
+Set Global Variable ccacp_inst_pkg  [Arguments]  ${pkg_name}
+	${ccacp_inst_pkg}  Set Variable  ${pkg_name}
+    Set Global Variable  ${ccacp_inst_pkg}
+
+
+Set Global Variable CCACP_7.2.0_PRODUCTS_PKG_DIR  [Arguments]  ${new_products_pkg_dir}
+	${CCACP_7.2.0_PRODUCTS_PKG_DIR}  Set Variable  ${new_products_pkg_dir}
+    Set Global Variable  ${CCACP_7.2.0_PRODUCTS_PKG_DIR}
+
+Set Global Variable sdk_inst_pkg  [Arguments]  ${pkg_name}
+        ${sdk_inst_pkg}  Set Variable  ${pkg_name}
+    Set Global Variable  ${sdk_inst_pkg}
+
+Set Global Variable SDK_6.4.0_PRODUCTS_PKG_DIR  [Arguments]  ${new_products_pkg_dir}
+        ${SDK_6.4.0_PRODUCTS_PKG_DIR}  Set Variable  ${new_products_pkg_dir}
+    Set Global Variable  ${SDK_6.4.0_PRODUCTS_PKG_DIR}
+
+Set Global Variable rct_inst_pkg  [Arguments]  ${pkg_name}
+	${rct_inst_pkg}  Set Variable  ${pkg_name}
+    Set Global Variable  ${rct_inst_pkg}
+
+Set Global Variable RCT_1.0.3_PRODUCTS_PKG_DIR  [Arguments]  ${new_products_pkg_dir}
+	${RCT_1.0.3_PRODUCTS_PKG_DIR}  Set Variable  ${new_products_pkg_dir}
+    Set Global Variable  ${RCT_1.0.3_PRODUCTS_PKG_DIR}
+
+Copy Release Package In Test Host To Another Dir  [Arguments]  ${test_host_source_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=1800
+
+	Write  mkdir -p ${test_host_target_dir}
+	Read Until Prompt
+
+	Write  cd "${test_host_source_dir}"
+	Read Until Prompt
+
+	Write  cp ${rel_pkg_name} ${test_host_target_dir}
+	Read Until Prompt
+
+	Close Connection
+
+Copy Release Package From Products Dir To Test Host  [Arguments]  ${rel_products_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=1800
+
+	Write  mkdir -p ${test_host_target_dir}
+	Read Until Prompt
+
+	Write  cd ${test_host_target_dir}
+	Read Until Prompt
+
+	#Write  "scp ${CMCI_SSH_USER}@${EL_CMCI_HOST}:${rel_products_dir}/${rel_pkg_name} ."
+        # Statement above commented due to whole statement will append with \n,
+        # causing file created 
+        Write  scp ${CMCI_SSH_USER}@${EL_CMCI_HOST}:${rel_products_dir}/${rel_pkg_name} $PWD
+	Wait Until Keyword Succeeds  600   1   manage_releases.Manage Releases Interaction
+	Close Connection
+
+Copy Release Package To Test Host From Products Dir  [Arguments]  ${rel_products_dir}  ${test_host_target_dir}  ${rel_pkg_name}
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=1800
+
+	Write  mkdir -p ${test_host_target_dir}
+	Read Until Prompt
+	Close Connection
+
+	manage_releases.Login To Cmci Host
+        Set Client Configuration  timeout=1800
+        Write  cd ${rel_products_dir}
+	Read Until Prompt
+
+	Write  "scp -i ${KEY_FILE} ${rel_pkg_name} ${GTAF_SSH_USER}@${EL_TEST_HOST}:${test_host_target_dir}/"
+        Read Until Prompt
+	Close Connection
+
+
+Find Latest Installation Pkg On Products Dir Host  [Arguments]  ${release_version}
+
+    # Check first if the release pkg is in the official dir
+    ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${CCACP_${release_version}_PRODUCTS_PKG_DIR}  ${CCACP_${release_version}_INSTALL_PACKAGE}
+
+	# If not, then it might be in the testing dir under the official dir
+	Run Keyword If  '${release_pkg_found}'=='FAIL'  Run Keyword If  '${release_version}'=='7.2.0'  Set Global Variable CCACP_7.2.0_PRODUCTS_PKG_DIR  ${CCACP_${release_version}_PRODUCTS_PKG_DIR}/testing
+
+    # Finally search the testing dir or the official dir one more time
+    # And report error if not found
+	Log  Searching CMCI host dir ${CCACP_${release_version}_PRODUCTS_PKG_DIR} ...  WARN
+    ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${CCACP_${release_version}_PRODUCTS_PKG_DIR}  ${CCACP_${release_version}_INSTALL_PACKAGE}
+
+	Run Keyword If  '${release_pkg_found}'=='FAIL'  Fatal Error  Did not find installation pkg
+
+	# The pkg found - the variable ...INSTALL_PACKAGE might contain wild cards.
+	# Therefore just to be safe get the latest pkg name
+
+    manage_releases.Login To Cmci Host
+	Set Client Configuration  timeout=10
+	Write  cd ${CCACP_${release_version}_PRODUCTS_PKG_DIR}
+	Read Until Prompt
+	Write  ls ${CCACP_${release_version}_INSTALL_PACKAGE} | xargs ls -t | head -1
+	${ccacp_inst_pkg}=  Read Until Regexp  tar
+	Close Connection
+	Set Global Variable ccacp_inst_pkg  ${ccacp_inst_pkg}
+
+
+Find Latest Installation Pkg On Test Host  [Arguments]  ${release_version}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=10
+	Write  cd "${INSTALLATION_PKG_PATH_ON_TEST_HOST}"
+	${testDP_b} 	Read Until Prompt
+	Log  Searching test host dir ${INSTALLATION_PKG_PATH_ON_TEST_HOST} ...  WARN
+	Write    pwd *
+	${testDP_a}   Read Until Prompt
+	Write    ls *
+	${testDP}   Read Until Prompt
+	Write  ls *${release_version}* | xargs ls -t | head -1
+	${ccacp_inst_pkg}=  Read Until Regexp  tar
+	Close Connection
+	Set Global Variable ccacp_inst_pkg  ${ccacp_inst_pkg}
+
+Find Latest CM Installation Pkg On Products Dir Host  [Arguments]  ${release_version}
+
+   		# Check first if the release pkg is in the official dir
+   		${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${CM_${release_version}_PRODUCTS_PKG_DIR}  ${CM_${release_version}_INSTALL_PACKAGE}
+
+ 		# If not, then it might be in the testing dir under the official dir
+		Run Keyword If  '${release_pkg_found}'=='FAIL'  Run Keyword If  '${release_version}'=='6.4.0'  Set Global Variable CM_6.4.0_PRODUCTS_PKG_DIR  ${CM_${release_version}_PRODUCTS_PKG_DIR}/testing
+
+   		# Finally search the testing dir or the official dir one more time
+    	# And report error if not found
+	Log  Searching CMCI host dir ${CM_${release_version}_PRODUCTS_PKG_DIR} ...  WARN
+    	${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${CM_${release_version}_PRODUCTS_PKG_DIR}  ${CM_${release_version}_INSTALL_PACKAGE}
+
+		Run Keyword If  '${release_pkg_found}'=='FAIL'  Fatal Error  Did not find installation pkg
+
+		# The pkg found - the variable ...INSTALL_PACKAGE might contain wild cards.
+		# Therefore just to be safe get the latest pkg name
+
+    	manage_releases.Login To Cmci Host
+		Set Client Configuration  timeout=10
+		Write  cd ${CM_${release_version}_PRODUCTS_PKG_DIR}
+		Read Until Prompt
+		Write  ls ${CM_${release_version}_INSTALL_PACKAGE} | xargs ls -t | head -1
+		${cm_inst_pkg}=  Read Until Regexp  tar
+		Close Connection
+		Set Global Variable cm_inst_pkg  ${cm_inst_pkg}
+
+
+Find Latest CM Installation Pkg On Test Host  [Arguments]  ${release_version}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=10
+	Write  cd "${INSTALLATION_PKG_PATH_ON_TEST_HOST}"
+	Read Until Prompt
+	Log  Searching test host dir ${INSTALLATION_PKG_PATH_ON_TEST_HOST} ...  WARN
+	Write  ls *${release_version}* | xargs ls -t | head -1
+	${cm_inst_pkg}=  Read Until Regexp  tar
+	Close Connection
+	Set Global Variable cm_inst_pkg  ${cm_inst_pkg}
+
+Find Latest SDK Installation Pkg On Products Dir Host  [Arguments]  ${release_version}
+
+        # Check first if the release pkg is in the official dir
+        ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${SDK_${release_version}_PRODUCTS_PKG_DIR}  ${SDK_${release_version}_INSTALL_PACKAGE}
+
+        # If not, then it might be in the testing dir under the official dir
+        Run Keyword If  '${release_pkg_found}'=='FAIL'  Run Keyword If  '${release_version}'=='6.4.0'  Set Global Variable SDK_6.4.0_PRODUCTS_PKG_DIR  ${SDK_${release_version}_PRODUCTS_PKG_DIR}/testing
+
+        # Finally search the testing dir or the official dir one more time
+        # And report error if not found
+        Log  Searching CMCI host dir ${SDK_${release_version}_PRODUCTS_PKG_DIR} ...  WARN
+        ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${SDK_${release_version}_PRODUCTS_PKG_DIR}  ${SDK_${release_version}_INSTALL_PACKAGE}
+
+        Run Keyword If  '${release_pkg_found}'=='FAIL'  Fatal Error  Did not find installation pkg
+
+        # The pkg found - the variable ...INSTALL_PACKAGE might contain wild cards.
+        # Therefore just to be safe get the latest pkg name
+
+        manage_releases.Login To Cmci Host
+        Set Client Configuration  timeout=10
+        Write  cd ${SDK_${release_version}_PRODUCTS_PKG_DIR}
+        Read Until Prompt
+        Write  ls ${SDK_${release_version}_INSTALL_PACKAGE} | xargs ls -t | head -1
+        ${sdk_inst_pkg}=  Read Until Regexp  tar
+        Close Connection
+        Set Global Variable sdk_inst_pkg  ${sdk_inst_pkg}
+
+Find Latest SDK Installation Pkg On Test Host  [Arguments]  ${release_version}
+        manage_releases.Login To Test Host1
+        Set Client Configuration  timeout=10
+        Write  cd "${INSTALLATION_PKG_PATH_ON_TEST_HOST}"
+        Read Until Prompt
+        Log  Searching test host dir ${INSTALLATION_PKG_PATH_ON_TEST_HOST} ...  WARN
+        Write  ls *${release_version}* | xargs ls -t | head -1
+        ${sdk_inst_pkg}=  Read Until Regexp  tar
+        Close Connection
+        Set Global Variable sdk_inst_pkg  ${sdk_inst_pkg}
+
+Find Latest RCT Installation Pkg On Products Dir Host  [Arguments]  ${release_version}
+		Log  Login test host dir ...  WARN
+        # Check first if the release pkg is in the official dir
+        ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${RCT_${release_version}_PRODUCTS_PKG_DIR}  ${RCT_${release_version}_INSTALL_PACKAGE}
+
+        # If not, then it might be in the testing dir under the official dir
+        Run Keyword If  '${release_pkg_found}'=='FAIL'  Run Keyword If  '${release_version}'=='1.0.3'  Set Global Variable RCT_1.0.3_PRODUCTS_PKG_DIR  ${RCT_${release_version}_PRODUCTS_PKG_DIR}/testing
+
+        # Finally search the testing dir or the official dir one more time
+        # And report error if not found
+        Log  Searching CMCI host dir ${RCT_${release_version}_PRODUCTS_PKG_DIR} for RCT_${release_version} package ...  WARN
+        ${release_pkg_found}=  manage_releases.Is Release Pkg On Cmci Host  ${RCT_${release_version}_PRODUCTS_PKG_DIR}  ${RCT_${release_version}_INSTALL_PACKAGE}
+
+        Run Keyword If  '${release_pkg_found}'=='FAIL'  Fatal Error  Did not find installation pkg
+
+        # The pkg found - the variable ...INSTALL_PACKAGE might contain wild
+        # cards.
+        # Therefore just to be safe get the latest pkg name
+
+        manage_releases.Login To Cmci Host
+        Set Client Configuration  timeout=60
+		Log  cd ${RCT_${release_version}_PRODUCTS_PKG_DIR}  WARN
+        Write  cd ${RCT_${release_version}_PRODUCTS_PKG_DIR}
+        Read Until Prompt
+        Write  ls ${RCT_${release_version}_INSTALL_PACKAGE} | xargs ls -t | head -1
+        ${rct_inst_pkg}=  Read Until Regexp  tar
+        Close Connection
+        Set Global Variable rct_inst_pkg  ${rct_inst_pkg}
+
+Find Latest RCT Installation Pkg On Test Host  [Arguments]  ${release_version}
+		Log  Login test host dir ...  WARN
+        manage_releases.Login To Test Host1
+        Set Client Configuration  timeout=60
+        Write  cd "${INSTALLATION_PKG_PATH_ON_TEST_HOST}"
+        Read Until Prompt
+        Log  Searching test host dir ${INSTALLATION_PKG_PATH_ON_TEST_HOST} ...  WARN
+        Write  ls *${release_version}* | xargs ls -t | head -1
+        ${rct_inst_pkg}=  Read Until Regexp  tar
+        Close Connection
+        Set Global Variable rct_inst_pkg  ${rct_inst_pkg}
+
+Manage Releases Interaction
+	# Reads whatever received so far
+	${result}=  Read
+
+	# Checks if the remove-sentence was received from the manage_releases
+	# If so, then write y for manage_releases to remove the file
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *remove*
+	Run Keyword If  '${match[0]}'=='PASS'  Write  y
+
+	# If scp asks for a password. Note scp is executed as CMCI_SSH_USER
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *assword*
+	Run Keyword If  '${match[0]}'=='PASS'  Write  ${CMCI_SSH_PASS}
+
+	# If the test host scp is being executed doesn't know about the EL_CMCI_HOST
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *${EL_CMCI_HOST}*Are you sure you want to continue connecting*
+	Run Keyword If  '${match[0]}'=='PASS'  Write  yes
+
+	# When this kw returns PASS, then the calling function will exit
+	Should Match  ${result}  *${HOST_PROMPT}*
+
+Is Sqlplus Found
+    manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile
+	Read Until Prompt
+	Write  which sqlplus
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  no sqlplus
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}
+
+
+Configure Sqlplus
+    ##${ORACLE_CONNECT_TYPE_INSTALLATION_OPTION} variable derived from env file having 3 mean SERVICE_NAME    
+    Run Keyword If  '${ORACLE_CONNECT_TYPE_INSTALLATION_OPTION}'!='3'  Write  export TWO_TASK=${ORACLE_NAME}
+    Run Keyword If  '${ORACLE_CONNECT_TYPE_INSTALLATION_OPTION}'=='3'  Write  export TWO_TASK=//${ORACLE_HOST}:${DB_PORT}/${ORACLE_NAME}
+	#Read Until Prompt
+	Write  export ORACLE_HOME=${ORACLE_HOME}
+	Read Until Prompt
+
+Add RCT User Permission H2
+    manage_releases.Login To Test Host1
+    Log   Copy scripts to ${AUTO_EL_INST_DIR}/TEST/rct/  WARN
+    Put File  ${ROBOT_PATH}/installers/RCT/scripts/*  ${AUTO_EL_INST_DIR}/TEST/rct/  0755
+    Log   Stopping Daemontools service monitor and TEST UI  WARN
+    Write  ctl_control -f stop > /dev/null
+    Read Until Prompt
+    Log   Adding RCT user permission  WARN
+    Write  ${AUTO_EL_INST_DIR}/common/current/java6/bin/java -cp ${AUTO_EL_INST_DIR}/modules/h2db/${H2DB_VERSION}/bin/h2*.jar org.h2.tools.RunScript -url jdbc:h2:${AUTO_EL_INST_DIR}/modules/h2db/${H2DB_VERSION}/service/h2/ccpDB -user SA -password SA -script ${AUTO_EL_INST_DIR}/TEST/rct/add_er_user_permission_h2.sql -showResults
+    Read Until Prompt
+
+
+Do Drop RCT Script
+	manage_releases.Login To Test Host1
+	Log   Copy scripts to ${AUTO_EL_INST_DIR}/TEST/rct/  WARN
+	Put File  ${ROBOT_PATH}/installers/RCT/scripts/*  ${AUTO_EL_INST_DIR}/TEST/rct/  0755
+	Write  cd ${AUTO_EL_INST_DIR}
+	Write  . ./.profile
+	Read Until Prompt
+	Write  cd ${AUTO_EL_INST_DIR}/TEST/rct/
+	Read Until Prompt
+	Write  ./exec_query.ksh drop_rct_tbl.sql
+	Read Until Regexp  OK
+	Log  rm -rf ${AUTO_EL_INST_DIR}/TEST/rct/  WARN
+	Write  rm -rf ${AUTO_EL_INST_DIR}/TEST/rct/
+	Read Until Prompt
+	Close Connection
+
+Do Drop RCT H2
+	manage_releases.Login To Test Host1
+	Log   Copy scripts to ${AUTO_EL_INST_DIR}/TEST/rct/  WARN
+	Put File  ${ROBOT_PATH}/installers/RCT/scripts/drop_er_permission_h2.sql  ${AUTO_EL_INST_DIR}/TEST/rct/  0755
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile
+	Read Until Prompt
+	Write  ${AUTO_EL_INST_DIR}/common/current/java6/bin/java -cp ${AUTO_EL_INST_DIR}/modules/h2db/${H2DB_VERSION}/bin/h2*.jar org.h2.tools.RunScript -url jdbc:h2:${AUTO_EL_INST_DIR}/modules/h2db/${H2DB_VERSION}/service/h2/ccpDB -user SA -password SA -script ${AUTO_EL_INST_DIR}/TEST/rct/drop_er_permission_h2.sql -showResults
+	Read Until Prompt
+	Log  rm -rf ${AUTO_EL_INST_DIR}/TEST/rct/  WARN
+	Write  rm -rf ${AUTO_EL_INST_DIR}/TEST/rct/
+	Read Until Prompt
+	Close Connection
+
+Do Drop RCT
+	manage_releases.Login To Test Host1
+	manage_releases.Configure Sqlplus
+
+	Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD}
+	Read Until Regexp  SQL>
+	Write  drop table er_correction_rule_codes;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop table er_execution_files;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop table er_execution_hours;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop table er_execution_results;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop table er_correction_executions;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop table er_correction_rules;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop sequence ER_CORRECTIONRULEID_SEQ;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  drop sequence ER_EXECUTIONID_SEQ;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  delete from gui_modules where id = 'er';
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  commit;
+	${result}=  Read Until Regexp  SQL>
+	Log  ${result}  WARN
+	Write  /
+	${result}=  Read Until Regexp  SQL>
+
+	Write  exit
+        Read Until Prompt
+        Close Connection
+
+Do Drop All
+    Do Drop All EL Tables
+    Do Drop All Reporter Tables
+#	Close Connection
+
+Do Drop All EL Tables
+	manage_releases.Login To Test Host1
+	manage_releases.Configure Sqlplus
+	
+	Run Keyword If  '${EL_TEST_HOST_SHORT}'=='hhpv3tst'  Set Client Configuration  timeout=300
+	Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD}
+	Read Until Regexp  SQL>
+	Write  set serveroutput on
+	Read Until Regexp  SQL>
+	Write  alter table el_Stream_Metadata drop column Metadata;
+	Read Until Regexp  SQL>
+	Write  alter table el_Work_Stream_Metadata drop column Metadata;
+	Read Until Regexp  SQL>
+	Write  begin
+	Read Until Regexp  2
+	Write  for a in (select table_name from user_tables) loop
+	Read Until Regexp  3
+	Write  execute immediate ('drop table '||a.table_name||' cascade constraints');
+	Read Until Regexp  4
+	Write  end loop;
+	Read Until Regexp  5
+	Write  dbms_output.put_line ('Dropping views...');
+	Read Until Regexp  6
+	Write  for b in (select view_name from user_views) loop
+	Read Until Regexp  7
+	Write  execute immediate ('drop view '||b.view_name);
+	Read Until Regexp  8
+	Write  end loop;
+	Read Until Regexp  9
+	Write  dbms_output.put_line ('Dropping sequences...');
+	Read Until Regexp  10
+	Write  for c in (select sequence_name from user_sequences) loop
+	Read Until Regexp  11
+	Write  execute immediate ('drop sequence '||c.sequence_name);
+	Read Until Regexp  12
+	Write  end loop;
+	Read Until Regexp  13
+	Write  end;
+	Read Until Regexp  14
+	Write  /
+	Read Until Regexp  SQL>
+
+	Write  EXEC DBMS_SCHEDULER.DROP_JOB('OE_TRANSACTION_STATS_AGGREGATE');
+	Read Until Regexp  SQL>
+	Write  drop package oe_stats;
+	Read Until Regexp  SQL>
+
+	Write  exit
+	Read Until Prompt
+	Close Connection
+
+Do Drop All Reporter Tables
+	manage_releases.Login To Test Host1
+	#manage_releases.Configure Sqlplus
+
+	Run Keyword If  '${EL_TEST_HOST_SHORT}'=='hhpv3tst'  Set Client Configuration  timeout=300
+	#Write  export TWO_TASK=//${CREP_DB_HOST}:${CREP_DB_PORT}/${ORACLE_NAME}
+	#Read Until Prompt
+	Write  export ORACLE_HOME=${ORACLE_HOME}
+	Read Until Prompt
+
+	Write  ${ORACLE_HOME}/bin/sqlplus ${CREP_DB_USER}/${CREP_DB_PASSWD}@//${CREP_DB_HOST}:${CREP_DB_PORT}/${CREP_DB_NAME}
+	Read Until Regexp  SQL>
+	Write  set serveroutput on
+	Read Until Regexp  SQL>
+	Write  begin
+	Read Until Regexp  2
+	Write  for a in (select table_name from user_tables) loop
+	Read Until Regexp  3
+	Write  execute immediate ('drop table '||a.table_name||' cascade constraints');
+	Read Until Regexp  4
+	Write  end loop;
+	Read Until Regexp  5
+	Write  dbms_output.put_line ('Dropping views...');
+	Read Until Regexp  6
+	Write  for b in (select view_name from user_views) loop
+	Read Until Regexp  7
+	Write  execute immediate ('drop view '||b.view_name);
+	Read Until Regexp  8
+	Write  end loop;
+	Read Until Regexp  9
+	Write  dbms_output.put_line ('Dropping sequences...');
+	Read Until Regexp  10
+	Write  for c in (select sequence_name from user_sequences) loop
+	Read Until Regexp  11
+	Write  execute immediate ('drop sequence '||c.sequence_name);
+	Read Until Regexp  12
+	Write  end loop;
+	Read Until Regexp  13
+	Write  end;
+	Read Until Regexp  14
+	Write  /
+	Read Until Regexp  SQL>
+
+	Write  exit
+	Read Until Prompt
+	Close Connection
+
+Do Drop All DB2
+	manage_releases.Copy Script From Repo To Install Dir  ${DROP_DB2_OBJECTS_REPO_DIR}  ${DROP_DB2_OBJECTS_SCRIPT_INSTALL_DIR}  ${DROP_DB2_OBJECTS_SCRIPT_NAME}
+	manage_releases.Copy Script From Repo To Install Dir  ${DROP_DB2_OBJECTS_REPO_DIR}  ${DROP_DB2_OBJECTS_SCRIPT_INSTALL_DIR}  ${DROP_DB2_OBJECTS_SCRIPT_NAME_2}
+    	manage_releases.Login To Test Host1
+	Write  cd ${DROP_DB2_OBJECTS_SCRIPT_INSTALL_DIR}
+	Read Until Prompt
+	Set Client Configuration  timeout=300
+	Write  export PATH=$PATH:${DB2_HOME}/sqllib/bin
+	Read Until Prompt
+
+	Write  ./drop_db2_object.ksh ${DB2_USER}/${DB2_PASSWORD}@${DB2_HOST}:${DB2_PORT}/${DB2_ALIAS}
+	Read Until Prompt
+
+	Write  ./drop_db2_object.ksh ${CREP_DB_USER}/${CREP_DB_PASSWD}@${CREP_DB_HOST}:${CREP_DB_PORT}/${CREP_DB_NAME}
+	Read Until Prompt
+
+#        Start Command  cd ${AUTO_EL_INST_DIR}/TEST/base/sql/db2\n echo $?
+#        ${command_result}=  Read Command Output
+
+#	Write  cd ${AUTO_EL_INST_DIR}/TEST/base/sql/db2
+#        Read Until Prompt
+
+#	Run Keyword If  '${command_result}'=='0'  Drop DB2 Schema
+	#Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	#Read Until Prompt
+	#Write  db2 -tf ${DROP_DB2_OBJECTS_SCRIPT_NAME}
+	#Read Until Prompt
+
+	Close Connection
+
+Do Drop All POSTGRESQL
+	manage_releases.Login To Test Host1
+	Write  export PGPASSWORD=${DB_PASSWORD}
+	Read Until Prompt
+		
+	Write  psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "select 'drop table if exists \\"' || tablename || '\\" cascade;' from pg_tables where schemaname='public'" | psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}
+	Read Until Prompt
+	
+	Write  psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t -c "SELECT 'drop sequence if exists \\"' || relname || '\\" cascade;' FROM pg_class WHERE relkind='S'" | psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}
+	Read Until Prompt
+	
+	Write  echo "DROP VIEW IF EXISTS el_v_Sortable_Events cascade;" > file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP view IF EXISTS el_v_host_nm_status cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS EL_V_ORDER_AFFECTED_HOSTS cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS EL_V_ORDER_AFFECTED_HOSTS cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_Process_Streams cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_Pending_Orders cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS EL_V_LEGACY_NODE_STATUS cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS EL_V_NEMO_ALL_NODES cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_stream_versions cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_latest_buffer_statistics cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_input_buffer_statistics cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP VIEW IF EXISTS el_v_enriched_orders cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP FUNCTION IF EXISTS el_custom_audittrail_fct1() CASCADE;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP FUNCTION IF EXISTS el_streams_fct1() CASCADE;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP FUNCTION IF EXISTS oe_stat_aggregate_trans() cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	Write  echo "DROP FUNCTION IF EXISTS oe_stat_clean() cascade;" >> file_created_by_robot_drop_postgres_table.sql
+	Read Until Prompt
+	
+	Write  psql -h ${DB_HOST} -p ${DB_PORT} -d postgres -U ${DB_USER} -f file_created_by_robot_drop_postgres_table.sql
+	
+	#Write  rm file_created_by_robot_recreate_postgres_db.sql
+	Read Until Prompt
+	
+	Do Drop All POSTGRESQL Reporter Tables
+	
+	#Close Connection
+	
+Do Drop All POSTGRESQL Reporter Tables
+
+	manage_releases.Login To Test Host1
+	Write  export PGPASSWORD=${DB_PASSWORD}
+	Read Until Prompt
+		
+	Write  psql -h ${CREP_DB_HOST} -p ${CREP_DB_PORT} -U ${CREP_DB_USER} -d ${CREP_DB_NAME} -t -c "select 'drop table if exists \\"' || tablename || '\\" cascade;' from pg_tables where schemaname='public'" | psql -h ${CREP_DB_HOST} -p ${CREP_DB_PORT} -U ${CREP_DB_USER} -d ${CREP_DB_NAME}
+	Read Until Prompt
+	
+	Write  psql -h ${CREP_DB_HOST} -p ${CREP_DB_PORT} -U ${CREP_DB_USER} -d ${CREP_DB_NAME} -t -c "SELECT 'drop sequence if exists \\"' || relname || '\\" cascade;' FROM pg_class WHERE relkind='S'" | psql -h ${CREP_DB_HOST} -p ${CREP_DB_PORT} -U ${CREP_DB_USER} -d ${CREP_DB_NAME}
+	Read Until Prompt
+	
+	Close Connection
+
+Check If Encrypted
+	Write  cd ${BASE_DIR}
+	Read Until Prompt
+        Set Client Configuration  timeout=300
+	Write  find . -name "*" |xargs grep ${DB_PASSWORD}
+	${result}=  Read Until Prompt
+	${match}=  Run Keyword And Ignore Error  Should Not Match  ${result}  *${DB_PASSWORD}*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log  ${BASE_DIR}/\n${result}  WARN
+
+Verify Disclaimer Year  [Arguments]  ${disclaimer_text}
+	# Get year including prompt
+	manage_releases.Login To Test Host1
+	Write  date +%Y
+	${year}=  Read Until Prompt
+	Close Connection
+
+	# Strip the prompt
+	${match}  ${year}=  Should Match Regexp  ${year}  (\\d+)
+
+	# Search the year from disclaimer text
+	${match}=  Run Keyword And Ignore Error  Should Match  ${disclaimer_text}  *${year}*
+	Run Keyword If  '${match[0]}'=='FAIL'  	Log  This year (${year}) was not in the disclaimer text.  WARN
+
+	[return]  PASS
+
+
+
+###################
+#
+# PUBLIC KEYWORDS
+#
+# Taken from team
+# facepalm's mcp-testing/keywords/el_host.txt
+
+Login To Cmci Host
+	Set Client Configuration  timeout=60
+    Open Connection  ${EL_CMCI_HOST}
+    Set Client Configuration  prompt=${EL_CMCI_HOST_PROMPT}
+    Login  ${CMCI_SSH_USER}   ${CMCI_SSH_PASS}
+	Write  pwd
+    Read Until Prompt
+
+Login To Test Host1
+    Open Connection  ${EL_TEST_HOST}
+    Set Client Configuration  prompt=${HOST_PROMPT}
+    Set Client Configuration  timeout=60
+    Run Keyword If  '${IS_CLOUD}'=='0'  Login  ${GTAF_SSH_USER}   ${GTAF_SSH_PASS}
+    Run Keyword If  '${IS_CLOUD}'=='1'  Login With Public Key  ${GTAF_SSH_USER}  ${KEY_FILE}  ${GTAF_SSH_PASS}
+	Write  pwd
+    Read Until Prompt
+	Set Suite Variable  ${BOOLEAN_SUITE_LOGIN_TO_TEST_HOST}  TRUE
+
+Login To Jenkins Host
+	Set Client Configuration  timeout=60
+	Open Connection  ${JENKINS_HOST}
+    Set Client Configuration  prompt=${JENKINS_HOST_PROMPT}
+    Login  ${JENKINS_USER}  ${JENKINS_PASS}
+	Set Client Configuration  timeout=60
+	Write  pwd
+    Read Until Prompt
+
+Login To Build Host
+	Open Connection  ${BUILD_HOST}
+    Set Client Configuration  prompt=${BUILD_HOST_PROMPT}
+    Login  jenkins  jenkins
+	Set Client Configuration  timeout=60
+	Write  pwd
+    Read Until Prompt
+
+Check If Command Exit Is Zero
+	 Write  echo $?
+	 ${command_result}=  Read Until Prompt
+	 Should Start With  ${command_result}  0
+
+Send File To Host   [Arguments]   ${filename}  ${target_dir}=${AUTO_EL_INST_DIR}/
+	Run Keyword If  '${IS_CLOUD}'=='0'  Put File   ${filename}   ${target_dir}
+
+        Run Keyword If  '${IS_CLOUD}'!='0'  manage_releases.Login To Test Host1
+        Run Keyword If  '${IS_CLOUD}'!='0'  Write  mkdir -p ${target_dir}
+        Run Keyword If  '${IS_CLOUD}'!='0'  Read Until Prompt
+    	Run Keyword If  '${IS_CLOUD}'!='0'  Close Connection
+	Run Keyword If  '${IS_CLOUD}'!='0'  manage_releases.Login To Cmci Host
+        Run Keyword If  '${IS_CLOUD}'!='0'  Set Client Configuration  timeout=240
+        Run Keyword If  '${IS_CLOUD}'!='0'  Write  scp -i ${KEY_FILE} ${filename} ${GTAF_SSH_USER}@${EL_TEST_HOST}:${target_dir}/
+        Run Keyword If  '${IS_CLOUD}'!='0'  Read Until Prompt
+     	Run Keyword If  '${IS_CLOUD}'!='0'  Close Connection
+
+#############################
+# Post Verification
+#############################
+
+Verify Password Encryption on Install Directory  [Arguments]  ${Password}
+	Log  Verify Password is Encrypted in Crypto Environment on Install Directory  WARN	
+		manage_releases.Login To Test Host1
+		${CM_Version}=  el_host.Get CM Version		
+		Run Keyword If  ${CM_Version}>=710  Start Command  cd ${AUTO_EL_INST_DIR} && find . -type f | xargs grep ${Password} 2>/dev/null | grep -v ${BASE_DIR} | grep -v "reports/META-INF/context.xml" | grep -v robot_automation | grep -v insert_lookup_selfconfig.sql.result | grep -v create_lookup_configtables.sql.result | grep -v "SDK_AuditRecord_Example_Stream/stream/stream.xml" | grep -v javacore | grep -i passw | wc -l
+		Run Keyword If  ${CM_Version}<710  Start Command  cd ${AUTO_EL_INST_DIR} && find . -type f | xargs grep ${Password} 2>/dev/null | grep -v ${BASE_DIR} | grep -v "reports/META-INF/context.xml" | grep -v robot_automation | grep -v insert_lookup_selfconfig.sql.result | grep -v create_lookup_configtables.sql.result | grep -v "SDK_AuditRecord_Example_Stream/stream/stream.xml" | grep -v TEST_REPORTS | grep -v javacore | grep -i passw | wc -l  
+		${result}=  Read Command Output
+		Should Match  ${result.strip()}  0
+		Close Connection 
+		
+Verify Password Encryption on Release Directory  [Arguments]  ${Password}  
+	Log  Verify Password is Encrypted in Crypto Environment on Release Directory  WARN
+		manage_releases.Login To Test Host1
+		${CM_Version}=  el_host.Get CM Version
+		Run Keyword If  ${CM_Version}>=710  Start Command  cd ${BASE_DIR}/${RELEASE_AREA} && find . -type f | xargs grep ${Password} 2>/dev/null | grep -v ${BASE_DIR} | grep -i passw | wc -l
+		Run Keyword If  ${CM_Version}<710   Start Command  cd ${BASE_DIR}/${RELEASE_AREA} && find . -type f | xargs grep ${Password} 2>/dev/null | grep -v ${BASE_DIR} | grep -v TEST_REPORTS | grep -i passw | wc -l
+		${result}=  Read Command Output
+		Should Match  ${result.strip()}  0
+		Close Connection
+
+Verify Package Version If RC or SNAPSHOT on Release Directory
+	Log  Verify RC Or SNAPSHOT on Release Directory  WARN
+		manage_releases.Login To Test Host1
+		## Using the search with pattern of RC[0-9] to avoid finding file with word RC in between e.g. RCT
+		
+		Start Command  cd ${BASE_DIR}/${RELEASE_AREA} && find . -type f \\( -name "*RC[0-9]*" -o -name "*RC_[0-9]*" -o -name "*SNAPSHOT*" \\) | grep -v 'php-tar-5.3.29.1-SNAPSHOT' | grep -v 'php-tar-5.3.29-SNAPSHOT' | grep -v 'apache-tar-2.2.29.1-SNAPSHOT' | grep -v 'apache-tar-2.2.29-SNAPSHOT' | grep -v 'php-extra-modules-tar-1.0.0-SNAPSHOT' | grep -v 'apache-extra-modules-tar-1.0.0-SNAPSHOT' | wc -l
+		${count}=  Read Command Output
+		
+	Log  =====================================================================                                      WARN
+	Log  Note: if following found are known issue for EL710 onward which could ignore;                          	WARN
+	Log  ./PHP_REL_5.3.29.1/common/php53_11g/pkg/php-tar-5.3.29.1-SNAPSHOT-LINUXintel.tar.Z              			WARN
+	Log  ./APACHE_REL_2.2.29.1/common/apache22_11g/pkg/apache-tar-2.2.29.1-SNAPSHOT-LINUXintel.tar.Z     			WARN
+	Log  Note: if following found are known issue for EL720 onward which could ignore;                          	WARN
+	Log  ./PHP_REL_5.3.29.2/common/php53_11g/pkg/php-extra-modules-tar-1.0.0-SNAPSHOT-LINUXintel.tar.Z              WARN
+	Log  ./APACHE_REL_2.2.29.2/common/apache22_11g/pkg/apache-extra-modules-tar-1.0.0-SNAPSHOT-LINUXintel.tar.Z     WARN
+	Log  |                                                                                                          WARN
+	Log  Note: if following found are known issue for EL721 onward which could ignore;                          	WARN
+	Log  ./TEST_REPORTS_REL_7.2.1/TEST-reports/resources/report-package-7.2.1-RC1.cpio                    WARN
+	Log  ======================================================================                                     WARN
+		
+		
+		Run Keyword If  ${count.strip()} >= 1  Display Search Result for RC or SNAPSHOT found on Release Directory
+		
+		Should Match  ${count.strip()}  0  
+		Close Connection
+
+Verify Package Version If RC or SNAPSHOT in Template File
+	Log  |                                       WARN
+	Log  Verify RC Or SNAPSHOT on Template file  WARN
+		manage_releases.Login To Test Host1
+		## Using the search with pattern of RC[0-9] to avoid finding file with word RC in between e.g. RCT
+		Start Command  cd ${CM_${release_version}_PACKAGE_DIR} && egrep "RC[0-9]|RC_[0-9]|SNAPSHOT" el-solution.config-*.template | wc -l
+		${count}=  Read Command Output
+		
+		Run Keyword If  ${count.strip()} >= 1   Display Search Result for RC or SNAPSHOT found on Template File 
+		
+		Should Match  ${count.strip()}  0
+		Close Connection
+	
+Display Search Result for RC or SNAPSHOT found on Release Directory
+		Start Command  cd ${BASE_DIR}/${RELEASE_AREA} && find . -type f \\( -name "*RC[0-9]*" -o -name "*RC_[0-9]*" -o -name "*SNAPSHOT*" \\) | grep -v 'php-tar-5.3.29.1-SNAPSHOT' | grep -v 'php-tar-5.3.29-SNAPSHOT' | grep -v 'apache-tar-2.2.29.1-SNAPSHOT' | grep -v 'apache-tar-2.2.29-SNAPSHOT' | grep -v 'php-extra-modules-tar-1.0.0-SNAPSHOT' | grep -v 'apache-extra-modules-tar-1.0.0-SNAPSHOT'
+		${output_result}=  Read Command Output
+		Log  |                                                                          WARN
+		Log  **********************************************************************     WARN
+		Log  **********************************************************************     WARN
+		Log  RC or SNAPSHOT package detected as following!                              WARN
+	    Log  ${output_result}                                                           WARN
+	    Log  **********************************************************************     WARN
+	    Log  **********************************************************************     WARN		
+
+
+Display Search Result for RC or SNAPSHOT found on Template File
+		Start Command  cd ${CM_${release_version}_PACKAGE_DIR} && egrep "RC[0-9]|RC_[0-9]|SNAPSHOT" el-solution.config-*.template
+		${output_result}=  Read Command Output
+		Log  |                                                                          WARN
+		Log  **********************************************************************     WARN
+		Log  **********************************************************************     WARN
+		Log  RC or SNAPSHOT package detected as following!                              WARN
+	    Log  ${output_result}                                                           WARN
+	    Log  **********************************************************************     WARN
+	    Log  **********************************************************************     WARN

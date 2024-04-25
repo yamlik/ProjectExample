@@ -1,0 +1,13 @@
+---
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+TEST_home: /opt/TEST/TEST/base
+rcfile: /opt/TEST/TEST/.mds.rc
+
+ls_agent_jmx_port: 61112
+ls_agent_monitoring_interval: 5
+ls_agent_shutdown_timeout: 60
+ls_agent_max_thread: 100
+...

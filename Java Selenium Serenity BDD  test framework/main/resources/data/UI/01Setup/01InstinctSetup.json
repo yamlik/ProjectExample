@@ -1,0 +1,20 @@
+{
+  "TC-12345": {
+    "createAUser1": {
+      "UserId": "NONADMIN",
+      "UserName": "NONADMIN",
+      "ProfileName": "NONADMIN",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@1",
+      "ReEnterPassword": "productUnderTest@1"
+    },
+    "NONADMIN": {
+      "password": "productUnderTest@1",
+      "database": "Default",
+      "newPassword": "productUnderTest@2"
+    }
+  }
+}

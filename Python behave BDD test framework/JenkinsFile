@@ -1,0 +1,70 @@
+#! groovy
+@Library('AADO/jenkins/libs') _
+pipeline {
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl.alcatel-lucent.com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+
+    parameters {
+        choice(name: 'Invoke_Parameters', choices:"No\nYes", description: "Do you whish to do a dry run to grab parameters?" )
+        choice(name: 'TEST_CONFIG', choices: [ 'daily-fi-712-cbam21','daily-fi-712-cbam195sp2', 'daily-fi-712-cbam21-v6', 'daily-fi-712-cbam21-v6-epc', 'daily-fi-712-cbam195sp2-epc', 'pl-036-cbam195sp2','fi-712-cbam195sp2'], description: 'Definition of the config file used for writing values, these files are located under ')
+        string(name: 'BRANCH', defaultValue: 'develop', description: '', trim: true)
+        choice(name: 'Tags', choices: [ '--tags=debug_feature', '--tags=delete', '--tags=Scale', '--tags=rebuild', '--tags=failoverTest', '--tags=ScaleVz', '--tags=rebuildVz', '--tags=failoverTestVz','--tags=zoTESTification', '--tags=zoTESTificationVz'], description: '')
+        choice(name: 'use_generator', choices: ['No','Yes'], description: 'Do you want to use generator?')
+    }
+
+    environment {
+        vnfdId = "tester${BUILD_NUMBER}"
+        use_generator = "${use_generator}"
+    }
+
+    stages {
+
+        stage("Parameterizing") {
+            steps {
+                script {
+                    if ("${params.Invoke_Parameters}" == "Yes") {
+                        currentBuild.result = 'ABORTED'
+                        error('DRY RUN COMPLETED. JOB PARAMETERIZED.')
+                    }
+                }
+            }
+        }
+
+        stage('Run Test') {
+            steps {
+              container('builder') {
+                echo "Trying to activate env"
+                sh 'pwd'
+                sh 'ls -la'
+                dir('$WORKSPACE/products/data_refinery/vnf/test_automation'){
+                  sh '''
+                      export PYTHONWARNINGS="ignore:Unverified HTTPS request"
+                      sudo chmod +x ./scripts/*
+                      sudo chmod +x *.sh
+                      ls -la ./scripts/
+                      . $WORKSPACE/products/data_refinery/vnf/test_automation/yamlFiles/$TEST_CONFIG/$TEST_CONFIG.rc
+                      source /env/bin/activate
+                      sed -i "s#WORKSPACE#$WORKSPACE#g" yamlFiles/$TEST_CONFIG/$TEST_CONFIG.yaml
+                      echo "running behave"
+                      behave --stop $Tags --no-skipped
+                  '''
+                }
+
+              }
+            }
+        }
+    }
+}

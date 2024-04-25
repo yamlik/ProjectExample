@@ -1,0 +1,37 @@
+---
+- name: Create configuration file
+  template: 
+    src: keepalived.conf.j2 
+    dest: /etc/keepalived/keepalived.conf 
+    mode: 'u=rw,g=r,o=r'
+
+- name: Add ha_vip to hosts
+  lineinfile:
+    regexp: .*ha_vip.*
+    line: "{{ip_groups[0].ha_vip}} ha_vip"
+    dest: /etc/hosts
+    state: present
+
+- name: Increase timeout to 600 seconds
+  replace:
+    regexp: timeout=8
+    replace: "timeout=600"
+    path: /usr/libexec/keepalived/ha-keepalived-notify
+
+- name: Copy a modified keepalived service file
+  copy:
+    src: keepalived.service
+    dest: /etc/systemd/system/keepalived.service
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r    
+
+- include: ha/add-firewalld-rules.yml
+  with_items: '{{ ip_groups }}'
+  loop_control:
+    loop_var: outer_item
+  when: outer_item.ha_interface == ansible_local.interfaces.devices.oam_interface
+
+- name: Reload firewalld to apply changes
+  shell: firewall-cmd --reload
+...

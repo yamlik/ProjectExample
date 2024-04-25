@@ -1,0 +1,5 @@
+---
+
+solution_config_dir: /opt/TEST/solution-config
+add_solution_config_entry: false
+deploy_solution_config: false

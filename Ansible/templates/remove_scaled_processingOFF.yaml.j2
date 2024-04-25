@@ -1,0 +1,68 @@
+---
+{% raw %}
+- name: Remove scaled node hostname when scaling down processingOFF pair
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  max_fail_percentage: 50
+  vars_files:
+    - vars/processing_offline_var.yml
+  tasks:
+    - name: call el-remove-host role for first processingOFF node
+      include_role:
+        name: el-remove-host
+      vars:
+        scaled_in_group: "vdu-processingOFF-{{ outer_item }}"
+        instance_host_name: "{{ hostvars[groups[scaled_in_group][0]]['fqdn_host'] }}"
+        txe_host: "{{ hostvars[groups[scaled_in_group][0]]['inventory_hostname'] }}"
+        operation: "scale-in"
+      with_sequence: start="{{ vnf_context_data.nfv_model.aspects.processingOFFAspect.count - vnf_context_data.operation_params.numberOfSteps }}" end="{{ vnf_context_data.nfv_model.aspects.processingOFFAspect.count - 1 }}"
+      loop_control:
+        loop_var: outer_item
+
+    - name: call el-remove-host role for second processingOFF node
+      include_role:
+        name: el-remove-host
+      vars:
+        scaled_in_group: "vdu-processingOFF-{{ outer_item }}"
+        instance_host_name: "{{ hostvars[groups[scaled_in_group][1]]['fqdn_host'] }}"
+        txe_host: "{{ hostvars[groups[scaled_in_group][1]]['inventory_hostname'] }}"
+        operation: "scale-in"
+      with_sequence: start="{{ vnf_context_data.nfv_model.aspects.processingOFFAspect.count - vnf_context_data.operation_params.numberOfSteps }}" end="{{ vnf_context_data.nfv_model.aspects.processingOFFAspect.count - 1 }}"
+      loop_control:
+        loop_var: outer_item
+
+- name: Remove lookup server (if needed) when scaling down processingOFF pair
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  vars:
+    group_name: "{{ hostvars[inventory_hostname].group_names | difference(['vdu-processingOFF']) | first }}"
+  tasks:
+    - set_fact:
+        lookup_server_port: 51260
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name }}-OFF-{{ group_name.split('-')[-1] }}"
+      when: vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name != ""
+
+    - name: call lookup-server-remove role when scaling down processingOFF pair
+      include_role:
+        name: lookup-server-remove-server
+      when: vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name != ""
+
+- name: Main play to update prometheus scrape targets in vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+    - vars/alarm_var.yml
+  vars:
+    dr_server_lists: ""
+    dr_proc_server_lists: ""
+    post_scaling: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cpro-server }
+
+{% endraw %}

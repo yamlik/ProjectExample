@@ -1,0 +1,13 @@
+---
+- name: Ensure ha verbose to is set to false
+  replace:
+    path: /etc/ha/ha.conf
+    regexp: '\"enable-verbose\": true'
+    replace: '"enable-verbose": false'
+  ignore_errors: true
+
+- name: Restart rsyslog incase timezone is reconfigured
+  systemd:
+    state: restarted
+    name: rsyslog
+  ignore_errors: true

@@ -1,0 +1,122 @@
+{
+  "TC-48723": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_48723",
+      "Application Date": "26/09/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "ID1",
+      "Id Number 2": "ID2",
+      "Id Number 3": "ID3",
+      "First Name": "Henry"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_48723MTGE"
+    }
+  },
+  "TC-61416": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_61416",
+      "Application Date": "26/09/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "ID1",
+      "Id Number 2": "ID2",
+      "Id Number 3": "ID3",
+      "First Name": "Henry"
+    },
+    "searchWatchlist": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "Automation_61416",
+      "value2": ""
+    },
+    "modifyWatchlist": {
+      "Application": {
+        "Organisation": "{{organisation}}",
+        "Application Number": "Automation_61416",
+        "Application Date": "26/09/2022",
+        "Application Type": "MTGE"
+      },
+      "Applicant": {
+        "Home Address 1": "ADD1",
+        "Home Address 2": "ADD2",
+        "Home Address 3": "ADD3",
+        "Home Address 4": "ADD4",
+        "Home Address 5": "ADD5",
+        "Home Address 6": "ADD6"
+      }
+    },
+    "verifyWatchlist": {
+        "Amount/Limit": "5000",
+        "Savings Amount": "1000"
+      }
+  },
+  "TSNT-6198":  {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "26/09/2022"
+    },
+    "searchWatchlist": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "Like",
+      "value1": "NEGATIVE%",
+      "value2": ""
+    }
+  },
+  "TC-61476_2":{
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST_61476_1",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "SecondApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST_61476_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "searchWatchlist": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "Test_61476_1",
+      "value2": ""
+    },
+    "searchWatchlist2": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "TEST_61476_2",
+      "value2": ""
+    },
+    "verifyWatchlist": {
+      "Application Number": "TEST_61476_2"
+    }
+  }
+}

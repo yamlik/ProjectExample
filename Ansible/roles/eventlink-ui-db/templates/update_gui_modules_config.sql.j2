@@ -1,0 +1,12 @@
+--liquibase formatted sql
+
+UPDATE gui_module_config SET value='{{ db_el_name }}' WHERE moduleid='TEST' AND parameter='db_id';
+UPDATE gui_module_config SET value='{{ encrypted_db_passwd.stdout }}' WHERE moduleid='TEST' AND parameter='db_passwd';
+UPDATE gui_module_config SET value='{{ db_el_user }}' WHERE moduleid='TEST' AND parameter='db_user';
+UPDATE gui_module_config SET value='{{ db_el_user }}' WHERE moduleid='lookup' AND parameter='db_user';
+UPDATE gui_module_config SET value='{{ encrypted_db_passwd.stdout }}' WHERE moduleid='lookup' AND parameter='db_passwd';
+UPDATE gui_module_config SET value='{{ db_el_name }}' WHERE moduleid='lookup' AND parameter='db';
+UPDATE gui_module_config SET value='{{ db_el_user }}' WHERE moduleid='lookup_admin' AND parameter='db_user';
+UPDATE gui_module_config SET value='{{ encrypted_db_passwd.stdout }}' WHERE moduleid='lookup_admin' AND parameter='db_passwd';
+UPDATE gui_module_config SET value='{{ db_el_name }}' WHERE moduleid='lookup_admin' AND parameter='db';
+UPDATE gui_module_config SET value='{{ lookup_server_bin }}/ls_admin' WHERE moduleid='lookup_admin' AND parameter='ls_admin';

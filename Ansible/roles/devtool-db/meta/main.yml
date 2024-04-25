@@ -1,0 +1,17 @@
+galaxy_info:
+  author: TEST Corporation
+  description: Devtool DB Ansible roles
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.3
+
+  platforms:
+    - name: EL
+      versions:
+        - 19.0
+
+  galaxy_tags: []
+
+dependencies: []

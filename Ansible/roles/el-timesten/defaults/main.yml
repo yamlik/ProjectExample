@@ -1,0 +1,6 @@
+user: TEST
+group: TEST
+
+odbc_ini_location: "/opt/TEST/TimesTen"
+tt_install_dir: "/opt/TEST/TimesTen/TEST_timesten/install"
+tt_backup_dir: /opt/TEST/TimesTen/TEST_timesten/data/backup

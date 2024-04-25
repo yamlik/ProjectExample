@@ -1,0 +1,32 @@
+---
+- name: "Install keycloak-psql module"
+  register: psql_module_installed
+  yum:
+    name: keycloak-psql
+    state: "{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo
+
+- name: "Vault Datasource password"
+  when: psql_module_installed|success
+  register: ds_password_vaulted
+  command: "csf/ckeyadm vault addv {{ kc_vault_name }} {{ kc_vault_password }} {{ kc_vault_alias }} {{ kc_vault_salt }} {{ kc_vault_iterations }} {{ kc_db_password }} datasource {{ kc_db_password_attribute }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  become: true
+  become_method: sudo
+  
+- name: "Update Keycloak configuration"
+  when: ds_password_vaulted|success
+  register: config_updated
+  lineinfile:
+    path: "{{ kc_csf_conf }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  become: true
+  become_method: sudo
+  with_items:
+    - regexp: "^externalDB:.*$"
+      line: "externalDB:1"
+    - regexp: "^DBlink:.*$"
+      line: "DBlink:{{ kc_db_info }}"

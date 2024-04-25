@@ -1,0 +1,144 @@
+# Set variable if inventory hostname is defined as IPv4 or IPv6 address
+- set_fact:
+    extensions_content: DNS={{ hostvars[inventory_hostname]['inventory_hostname'] }}
+  when: not ( hostvars[inventory_hostname]['inventory_hostname'] | ipaddr )
+
+- set_fact:
+    extensions_content: IP={{ hostvars[inventory_hostname]['inventory_hostname'] }}
+  when: hostvars[inventory_hostname]['inventory_hostname'] | ipaddr
+
+- set_fact:
+    fqdn_temp: "{{ hostvars[inventory_hostname]['fqdn_host'] }}"
+  when: host_type != "ui"
+
+- name: Get ui hostname
+  shell: "hostname"
+  register: hostname_output
+  when: host_type == "ui"
+
+- set_fact: 
+    fqdn_temp: "{{ hostname_output.stdout }}"
+  when: host_type == "ui"
+
+- name: Remove existing certs
+  shell: "rm {{ fluentd_cert_dir }}/*"
+  become: true
+  become_method: sudo
+  ignore_errors: yes
+ 
+- name: Create directory if not exist
+  file:
+    path: "{{ fluentd_cert_dir }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: Create ca serial file
+  copy:
+    content: "01"
+    dest: "{{ fluentd_cert_dir }}/index.txt"
+    force: no
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+
+- name: Create tls config extensions file
+  template:
+    src: extensions.j2
+    dest: "{{ fluentd_cert_dir }}/extensions.txt"
+    mode: 0755
+
+- name: create folder to store ca backup
+  file:
+    path:  "{{ ca_key_backup_dir }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  when: operation == "instantiate" or ( host_type == "ui" and ( groups['vdu-ui'].index(inventory_hostname) == 1 ))
+
+- name: create files folder for current role
+  local_action: shell mkdir -p {{ role_path }}/files
+  when: operation == "instantiate" or operation == "rebuild" or operation == "scale"
+  become: no
+
+- name: generate ca key if not exist
+  local_action: command openssl genrsa -out {{ role_path }}/files/fluentd.key 2048
+  when: operation == "instantiate" and ( host_type == "ui" and groups['vdu-ui'].index(inventory_hostname) == 0 )
+  become: no
+
+- name: Copy el-fluentd ca private key to role directory
+  local_action: copy src={{ playbook_dir }}/fluentd.key dest={{ role_path }}/files/fluentd.key
+  when: operation == "rebuild" or operation == "scale"
+  become: no
+
+- name: Copy ca key to ui host
+  copy:
+    src: "files/fluentd.key"
+    dest: "{{ ca_key_backup_dir }}/fluentd.key"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0600
+  when: host_type == "ui"
+
+- name: Check that the Fluentd server private key exists
+  stat:
+    path: "{{ fluentd_cert_dir }}/fluentd.key"
+  register: fluentd_key_stat_result
+
+# openssl genrsa -out /etc/td-agent/ssl/fluentd.key 2048
+- name: "Generate Fluentd Server key"
+  shell: "openssl genrsa -out {{ fluentd_cert_dir }}/fluentd.key 2048"
+  register: key_generated
+  failed_when: key_generated.rc != 0
+  when: not fluentd_key_stat_result.stat.exists
+
+
+- name: Check that the Fluentd server tls csr exists
+  stat:
+    path: "{{ fluentd_cert_dir }}/fluentd.csr"
+  register: fluentd_csr_stat_result
+
+# openssl req -new -sha256 -key /etc/td-agent/ssl/fluentd.key -subj '/CN=FluentdServerCA' -out /etc/td-agent/ssl/fluentd.csr
+- name: "Generate Fluentd Server Cert"
+  shell: "openssl req -new -sha256 -key {{ fluentd_cert_dir }}/fluentd.key -subj '/CN=FluentdServerCA' -out {{ fluentd_cert_dir }}/fluentd.csr"
+  register: csr_generated
+  failed_when: csr_generated.rc != 0
+  when: not fluentd_csr_stat_result.stat.exists
+  become: true
+  become_method: sudo
+
+- name: "Copy RabbitMQ CA crt (Ansible host) to Fluentd ssl directory (current processing host)"
+  copy:
+    src: "{{ playbook_dir }}/rabbitmq_ca.crt"
+    dest: "{{ fluentd_cert_dir }}/rabbitmq_ca.crt"
+  become: true
+  become_method: sudo
+
+- name: "Copy RabbitMQ CA key (Ansible host) to Fluentd ssl directory (current processing host)"
+  copy:
+    src: "{{ playbook_dir }}/rabbitmq_ca.key"
+    dest: "{{ fluentd_cert_dir }}/rabbitmq_ca.key"
+  become: true
+  become_method: sudo
+
+- name: Check that the Fluentd server tls cert exists
+  stat:
+    path: "{{ fluentd_cert_dir }}/fluentd.crt"
+  register: fluentd_crt_stat_result
+  become: true
+  become_method: sudo
+
+# openssl x509 -req -sha256 -CA /etc/rabbitmq/ssl/rabbitmq_ca.crt -CAkey /etc/rabbitmq/ssl/rabbitmq_ca.key -CAserial /etc/td-agent/ssl/index.txt -CAcreateserial -in /etc/td-agent/ssl/fluentd.csr -days 3650 -extensions v3_req -extfile /etc/td-agent/ssl/extensions.txt -out /etc/td-agent/ssl/fluentd.crt
+- name: "Generate Fluentd Server Cert"
+  shell: "openssl x509 -req -sha256 -CA {{ fluentd_cert_dir }}/rabbitmq_ca.crt -CAkey {{ fluentd_cert_dir }}/rabbitmq_ca.key -CAserial {{ fluentd_cert_dir }}/index.txt -CAcreateserial -in {{ fluentd_cert_dir }}/fluentd.csr -days 3650 -extensions v3_req -extfile {{ fluentd_cert_dir }}/extensions.txt -out {{ fluentd_cert_dir }}/fluentd.crt"
+  register: cert_generated
+  failed_when: cert_generated.rc != 0
+  when: not fluentd_crt_stat_result.stat.exists
+  become: true
+  become_method: sudo
+

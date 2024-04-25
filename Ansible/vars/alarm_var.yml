@@ -1,0 +1,97 @@
+amq_host: "{{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+cmdb_host: "{{ db_oam_hostname }}"
+snmp_northbound_listening_ip: "{{ vnf_context_data.stack_params.cbam.extensions.snmp_northbound_listening_ip }}"
+
+# Alarm management
+alarm_version: "{{ vnf_context_data.stack_params.cbam.extensions.alarm_version }}"
+
+# Enable Alarm SMS and email notifications
+sms_email_enabled: "{{ vnf_context_data.stack_params.cbam.extensions.sms_email_enabled }}"
+
+# EMAIL notification server
+smtp_server_username: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_server_username }}"
+smtp_server_password: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_server_password | default(vnf_context_data.vnf_attributes.extensions.smtp_server_password) }}"
+smtp_server_host: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_server_host }}"
+smtp_sender: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_sender }}"
+smtp_recipient: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_recipient }}"
+smtp_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.smtp_server_port }}"
+
+#alarm rabbitmq user
+mq_username: alma_mquser
+mq_password: alma_mqpasswd
+mq_passphrase: mypassphrase
+
+#alarm mariadb
+jpa_jdbc_user: alma_dbuser
+jpa_jdbc_password: alma_dbpasswd
+jpa_jdbc_passphrase: mypassphrase
+
+# cmdb replication
+cmdb_replication_username: replicator
+cmdb_replication_password: replicator_passwd
+mariadb_port: 3306
+
+# SMS notification server
+smpp_server_username: "{{ vnf_context_data.stack_params.cbam.extensions.smpp_server_username }}"
+smpp_server_password: "{{ vnf_context_data.stack_params.cbam.extensions.smpp_server_password | default(vnf_context_data.vnf_attributes.extensions.smpp_server_password) }}"
+smpp_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.smpp_server_port }}"
+smpp_server_primary_host: "{{ vnf_context_data.stack_params.cbam.extensions.smpp_server_primary_host }}"
+smpp_server_secondary_host: "{{ vnf_context_data.stack_params.cbam.extensions.smpp_server_secondary_host }}"
+source_mobile_number: "{{ vnf_context_data.stack_params.cbam.extensions.source_mobile_number }}"
+
+##### Netact server configurations #####
+# netact snmpv3 user
+snmpv3UserConfiguration: "{{ vnf_context_data.stack_params.cbam.extensions.snmpv3UserConfiguration }}"
+
+# netact snmpv2 user
+snmpv2cUserConfiguration: "{{ vnf_context_data.stack_params.cbam.extensions.snmpv2cUserConfiguration }}"
+
+groupConfiguration: "{{ vnf_context_data.stack_params.cbam.extensions.groupConfiguration }}"
+
+notificationParametersConfiguration: "{{ vnf_context_data.stack_params.cbam.extensions.notificationParametersConfiguration }}"
+
+notificationTargetsConfiguration: "{{ vnf_context_data.stack_params.cbam.extensions.notificationTargetsConfiguration }}"
+
+viewConfiguration: [{
+  "viewName": "fullReadView",
+  "oid": "1.3",
+  "context": "contextv3"
+}, {
+   "viewName": "fullWriteView",
+   "oid": "1.3",
+   "context": "contextv3"
+}, {
+   "viewName": "fullNotifyView",
+    "oid": "1.3",
+    "context": "contextv3"
+}, {
+    "viewName": "fullReadView",
+    "oid": "1.3",
+    "context": "contextv2"
+}, {
+    "viewName": "fullWriteView",
+    "oid": "1.3",
+    "context": "contextv2"
+}, {
+    "viewName": "fullNotifyView",
+    "oid": "1.3",
+    "context": "contextv2"
+}]
+
+accessConfiguration: [{
+   "groupName": "v3group1",
+   "securityModel": "USM",
+   "securityLevel": "authPriv",
+   "readView": "fullReadView",
+   "writeView": "fullWriteView",
+   "notifyView": "fullNotifyView",
+   "context": "contextv3"
+}, {
+   "groupName": "v2cgroup1",
+   "securityModel": "SNMPv2c",
+   "securityLevel": "noAuthNoPriv",
+   "readView": "fullReadView",
+   "writeView": "fullWriteView",
+   "notifyView": "fullNotifyView",
+   "context": "contextv2"
+}]

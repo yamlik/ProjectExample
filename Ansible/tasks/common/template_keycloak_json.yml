@@ -1,0 +1,15 @@
+---
+ - name: Grep for keycloak client secret in /tmp/ansible_tmp/.mds.rc
+   shell: grep keycloak_client_secret /tmp/ansible_tmp/.mds.rc
+   register: grep_output
+   delegate_to: localhost
+
+ - name: Save  grep output to variable
+   set_fact:
+     keycloak_client_secret: "{{ grep_output.stdout.split(':')[1] | replace('\n', '') | replace(' ', '')}}"
+   delegate_to: localhost
+
+ - name: Template TEST-ui-keycloak.json.j2 to /tmp/ansible_tmp/TEST-ui-keycloak.json
+   template: src="{{ playbook_dir }}/templates/TEST-ui-keycloak.json.j2" dest="/tmp/ansible_tmp/TEST-ui-keycloak.json"
+   delegate_to: localhost
+...

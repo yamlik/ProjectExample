@@ -1,0 +1,36 @@
+---
+- name: Check and install nfs packages
+  yum:
+    name: "{{ item }}"
+    state: "installed"
+  with_items:
+   - 'nfs-utils'
+   
+- name: Create mountpoints for nfs
+  file:
+    path: "{{ item.mount_point }}"
+    state: "directory"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ nfs_mounts }}"
+
+- name: Update fstab and mount nfs share
+  mount:
+    name: "{{ item.mount_point }}"
+    src: "{{ vnf_context_data['resource_model']['resources']['oam_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['allowed_address_pairs'][0]['ip_address'] }}:{{ item.export_dir }}"
+    fstype: "nfs"
+    opts: "defaults,rw,bg"
+    dump: "0"
+    passno: "2"
+    state: "mounted"
+  with_items: "{{ nfs_mounts }}"
+
+- name: Verify ownership of mount_point
+  file:
+    path: "{{ item.mount_point }}"
+    state: directory
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ nfs_mounts }}"

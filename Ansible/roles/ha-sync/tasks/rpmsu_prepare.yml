@@ -1,0 +1,2 @@
+- name: backup files
+  include: ha-sync/backup.yml

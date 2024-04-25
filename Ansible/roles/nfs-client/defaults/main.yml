@@ -1,0 +1,6 @@
+---
+ui_ip: "{{ ui_oam_vip }}"
+oam_ip: "{{ oam_oam_vip }}"
+appdata_mount: "/appdata"
+ganglia_rrd_mount: "/appdata/ganglia/rrds"
+ganglia_rrd_mount_ui: "/var/lib/ganglia/rrds"

@@ -1,0 +1,26 @@
+---
+dependencies:
+  - role: keycloak
+
+  - role: check-variables
+    check_variables:
+      - "db_admin_user"
+      - "db_admin_password"
+      - "kc_db_user"
+      - "kc_db_password"
+
+  - role: init-database
+    login_user: "{{ db_admin_user }}"
+    login_password: "{{ db_admin_password }}"
+    login_host: "{{ kc_db_host }}"
+    login_db: "postgres"
+    login_port: "{{ kc_db_port }}"
+    db_name: "{{ kc_db_name }}"
+    db_encoding: "{{ kc_db_encoding }}"
+    db_lc_collate: "{{ kc_db_lc_collate }}"
+    db_lc_ctype: "{{ kc_db_lc_ctype }}"
+    db_tablespace: "{{ kc_db_tablespace }}"
+    user_name: "{{ kc_db_user }}"
+    user_password: "{{ kc_db_password }}"
+    user_role_attrs: "{{ kc_db_user_role_attrs }}"
+    when: (reconfigure is not defined) or (reconfigure != True)

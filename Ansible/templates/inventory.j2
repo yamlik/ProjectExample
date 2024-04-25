@@ -1,0 +1,84 @@
+{% for n in range(vnf_context_data.nfv_model.aspects.cgfAspect.count) %}
+[vdu-cgf-{{ loop.index0 }}]
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-cgf-{{ (loop.index) * 2 - 2 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 2].ip }}' fqdn_host='cgf{{ (loop.index) * 2 -2 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 2].ip }}' ansible_user=TEST vnfcId=cgf_aspect_group.{{ loop.index0 }}.cgf_node.0.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-cgf-{{ (loop.index) * 2 - 1 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' fqdn_host='cgf{{ (loop.index) * 2 - 1 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' ansible_user=TEST vnfcId=cgf_aspect_group.{{ loop.index0 }}.cgf_node.1.server
+{% endif %}
+
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}cgf{{ (loop.index) * 2 - 2 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 2].ip }}' fqdn_host='cgf{{ (loop.index) * 2 - 2 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_OAM_IPv4_virtual_ECP.addresses[(loop.index) * 2 - 2].ip }}' ansible_user=TEST vnfcId=cgf_aspect_group.{{ loop.index0 }}.cgf_node.0.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}cgf{{ (loop.index) * 2 - 1 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' fqdn_host='cgf{{ (loop.index) * 2 -1 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.cgf_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' ansible_user=TEST vnfcId=cgf_aspect_group.{{ loop.index0 }}.cgf_node.1.server
+{% endif %}
+{% endfor %}
+
+[vdu-cgf:children]
+{% for n in range(vnf_context_data.nfv_model.aspects.cgfAspect.count) %}
+vdu-cgf-{{ loop.index0 }}
+{% endfor %}
+
+[vdu-processingON]
+{% for n in range(vnf_context_data.nfv_model.aspects.processingONAspect.count) %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-processingon-{{ loop.index0 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_oam_ecp.addresses[loop.index0].ip }}' fqdn_host='processing_online{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_oam_ecp.addresses[loop.index0].ip }}' ansible_user=TEST
+{% endif %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}processingon{{ loop.index0 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_oam_ecp.addresses[loop.index0].ip }}' fqdn_host='processing_online{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingON_oam_ecp.addresses[loop.index0].ip }}' ansible_user=TEST
+{% endif %}
+{% endfor %}
+
+[vdu-crdb]
+{% for n in range(vnf_context_data.nfv_model.aspects.crdbAspect.count) %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-crdb-{{ loop.index0 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[loop.index0].ip }}' fqdn_host='crdb{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[loop.index0].ip }}' ansible_user=TEST
+{% endif %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}crdb{{ loop.index0 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[loop.index0].ip }}' fqdn_host='crdb{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.crdb_oam_ecp.addresses[loop.index0].ip }}' ansible_user=TEST
+{% endif %}
+{% endfor %}
+
+{% for n in range(vnf_context_data.nfv_model.aspects.processingOFFAspect.count) %}
+[vdu-processingOFF-{{ loop.index0 }}]
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-processingoff-{{ (loop.index) * 2 - 2 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_oam_ecp.addresses[(loop.index) * 2 - 2].ip }}' fqdn_host='processing_offline{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_OAM_IPv4_virtual_ECP.addresses[loop.index0].ip }}' ansible_user=TEST vnfcId=processingOFF_aspect_group.{{ loop.index0 }}.processingOFF_node.0.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-processingoff-{{ (loop.index) * 2 - 1 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' fqdn_host='processing_offline{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_OAM_IPv4_virtual_ECP.addresses[loop.index0].ip }}' ansible_user=TEST vnfcId=processingOFF_aspect_group.{{ loop.index0 }}.processingOFF_node.1.server
+{% endif %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}processingoff{{ (loop.index) * 2 - 2 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_oam_ecp.addresses[(loop.index) * 2 - 2].ip }}' fqdn_host='processing_offline{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_OAM_IPv4_virtual_ECP.addresses[loop.index0].ip }}' ansible_user=TEST vnfcId=processingOFF_aspect_group.{{ loop.index0 }}.processingOFF_node.0.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}processingoff{{ (loop.index) * 2 - 1 }}{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_oam_ecp.addresses[(loop.index) * 2 - 1].ip }}' fqdn_host='processing_offline{{ loop.index0 }}' host_address='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.processingOFF_OAM_IPv4_virtual_ECP.addresses[loop.index0].ip }}' ansible_user=TEST vnfcId=processingOFF_aspect_group.{{ loop.index0 }}.processingOFF_node.1.server
+{% endif %}
+{% endfor %}
+
+[vdu-processingOFF:children]
+{% for n in range(vnf_context_data.nfv_model.aspects.processingOFFAspect.count) %}
+vdu-processingOFF-{{ loop.index0 }}
+{% endfor %}
+
+[vdu-db]
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-db-0{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}'  fqdn_host='db_host0' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[0].ip }}' ansible_user=TEST vnfcId=db_aspect_group.0.server1.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-db-1{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}'  fqdn_host='db_host1' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[1].ip }}' ansible_user=TEST vnfcId=db_aspect_group.0.server2.server
+{% endif %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}db0{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[0].ip }}'  fqdn_host='db_host0' ansible_user=TEST vnfcId=db_aspect_group.0.server1.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}db1{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.db_oam_ecp.addresses[1].ip }}'  fqdn_host='db_host1' ansible_user=TEST vnfcId=db_aspect_group.0.server2.server
+{% endif %}
+
+[vdu-ui]
+'{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[0].ip }}' fqdn_host='ui-host-0' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[0].ip }}' ansible_user=TEST vnfcId=ui_aspect_group.0.server
+'{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[1].ip }}' fqdn_host='ui-host-1' ansible_port=22 ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_oam_ecp.addresses[1].ip }}' ansible_user=TEST vnfcId=ui_aspect_group.1.server
+
+[ui-vip]
+{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.ui_OAM_IPv4_virtual_ECP.addresses[0].ip }}
+
+[vdu-oam]
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == true %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-oam-0{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[0].ip }}' ansible_user=TEST vnfcId=oam_aspect_group.0.server1.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}{{ vnf_context_data.stack_params.cbam.vnfId | lower }}-oam-1{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[1].ip }}' ansible_user=TEST vnfcId=oam_aspect_group.0.server2.server
+{% endif %}
+{% if vnf_context_data.stack_params.cbam.extensions.use_cbam_id == false %}
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}oam0{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[0].ip }}' ansible_user=TEST vnfcId=oam_aspect_group.0.server1.server
+'{{ vnf_context_data.stack_params.cbam.extensions.hostname_prefix | lower }}oam1{{ vnf_context_data.stack_params.cbam.extensions.hostname_postfix | lower }}' ansible_host='{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.oam_ecp.addresses[1].ip }}' ansible_user=TEST vnfcId=oam_aspect_group.0.server2.server
+{% endif %}
+
+[oam-vip]
+{{ vnf_context_data.stack_params.cbam.externalConnectionPoints.OAM_IPv4_virtual_ECP.addresses[0].ip }} ansible_user=TEST

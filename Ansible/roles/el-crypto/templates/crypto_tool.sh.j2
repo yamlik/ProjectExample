@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+## Needed for passing ${el_jdbcDriver} & ${DB_CONFIG}
+. {{ TEST_home }}/bin/db_tools.sh
+init_db_configs
+
+BUILD_CP=$(which build-classpath)
+
+
+SYSTEM_JARS=$(${BUILD_CP} el-crypto el-common c3p0 mchange-commons-java commons-validator 2> /dev/null)
+CONNECTION_CONF_FILE=${DB_CONFIG}
+CRYPTO_KEY_FILE={{ install_dir }}/etc/crypto/TEST.txt
+
+
+JAVACMD=$(which java)
+if [[ -n "${JAVA_HOME}" ]]; then
+    JAVACMD=${JAVA_HOME}/bin/java
+fi
+
+if [[ -z ${EL_CRYPTO_GCOPTS} ]]; then
+   EL_CRYPTO_GCOPTS="-XX:+UseParallelGC -XX:ParallelGCThreads=16"
+fi
+
+if [[ -z ${EL_CRYPTO_MEMOPTS} ]]; then
+   EL_CRYPTO_MEMOPTS="-Xmx256m -Xms128m"
+fi
+
+
+RESULT=$(${JAVACMD} ${EL_CRYPTO_MEMOPTS} ${EL_CRYPTO_GCOPTS} \
+-Ddb.conn.file=${CONNECTION_CONF_FILE} \
+-Dcrypto.file=${CRYPTO_KEY_FILE} \
+-classpath ${SYSTEM_JARS}:${el_dbJdbcDriver} \
+com.TEST.TEST.core.common.crypto.Crypto $@)
+
+EXIT_STATUS=$?
+
+echo "${RESULT}"
+exit ${EXIT_STATUS}
+

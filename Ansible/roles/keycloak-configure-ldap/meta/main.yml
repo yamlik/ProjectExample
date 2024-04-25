@@ -1,0 +1,11 @@
+---
+dependencies:
+  - role: check-variables
+    check_variables:
+      - "ldap_storage_name"
+      - "ldap_users_dn"
+      - "ldap_bind_dn"
+      - "ldap_bind_credentials"
+      - "ldap_connection_url"
+
+  - role: keycloak-configure

@@ -1,0 +1,24 @@
+---
+
+- name: Get target host index
+  set_fact:
+    target_host_idx: "{{ host.split('.')[2].split('server')[-1]|int-1 }}"
+  become: true
+  become_method: sudo
+
+- name: Get replication host IP
+  set_fact:
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+  become: true
+  become_method: sudo
+  when: target_host_idx|int == 0
+
+- name: Get replication host IP
+  set_fact:
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+  become: true
+  become_method: sudo
+  when: target_host_idx|int == 1
+
+- debug:
+    msg: "cmdb_replication_host: {{ cmdb_replication_host }}"

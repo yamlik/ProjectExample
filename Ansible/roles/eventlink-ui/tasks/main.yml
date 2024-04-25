@@ -1,0 +1,124 @@
+---
+# tasks file for TEST-ui
+- name: "Replace tomcat server.xml."
+  template:
+    src: server.xml.j2
+    dest: "{{ server_xml_file_location }}"
+    owner: "{{ el_ui_user }}"
+    group: "{{ el_ui_group }}"
+    mode: 0644
+
+- name: Create directory for Postgresql DB connection check script
+  file:
+    path: /var/lib/scripts
+    state: directory
+    mode: 0755
+  become: yes
+  become_method: sudo
+
+- name: Template Postgresql DB connection check script to /var/lib/scripts
+  template:
+    src: db_conn.sh.j2
+    owner: root
+    group: root
+    dest: /var/lib/scripts/db_conn.sh
+    mode: 0777
+  become: yes
+  become_method: sudo
+
+- name: replace tomcat service file
+  copy:
+    src: tomcat.service
+    owner: root
+    group: root
+    dest: /usr/lib/systemd/system/tomcat.service
+    mode: 0644
+  become: true
+  become_method: sudo
+  notify: "Restart tomcat service"
+
+- name: "Replace service conf in sysconfig."
+  template:
+    src: tomcat@el-ui.j2
+    dest: "{{ el_ui_tomcat_service_path }}"
+    owner: "{{ el_ui_user }}"
+    group: "{{ el_ui_group }}"
+    mode: 0644
+  become: true
+  become_method: sudo
+  notify: "Restart ELUI service"
+  
+- name: "Open ports for ELUI and notify for service restart."
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ el_ui_http_port }}"
+    - "{{ el_ui_ajp_port }}"
+#    - "{{ el_ui_redirect_port }}"    TO BE DONE -- this needs to be open only when https is used. To be handled in ELHKI-6012
+  notify: "Restart ELUI service"
+
+- assert:
+    that:
+      - "el_ui_cloud_cluster_base_url is defined"
+    msg: "'el_ui_cloud_cluster_base_url variable is not defined.'"
+
+- name: "Add/Update {{ TEST_ui_package_name }} section of RC file with provided details."
+  blockinfile:
+    block: |
+      program:      {{ rc_TEST_ui_program }}
+      ext_workspace_url:                   {{ el_ui_ext_workspace_url }}
+      oriserver_response_timeout:          {{ el_ui_oriserver_response_timeout }}
+      cloud_cluster_base_url:              {{ el_ui_cloud_cluster_base_url }}
+      cloud_cluster_response_timeout:      {{ el_ui_cloud_cluster_response_timeout }}
+      flink_max_number_of_task_managers:   {{ el_ui_flink_max_number_of_task_managers }}
+      flink_max_memory_per_task_manager:   {{ el_ui_flink_max_memory_per_task_manager }}
+      flink_max_slots_per_task_manager:    {{ el_ui_flink_max_slots_per_task_manager }}
+    dest: "{{ rc_file_location }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR {{ rc_TEST_ui_program }}"
+  become: true
+  become_method: sudo
+
+- include: solution-config.yml
+
+- name: "Configure audittrail for TEST UI webapp"
+  include_role:
+    name: configure-audittrail-mapping
+  vars:
+    product_moduleid: "{{ moduleid }}"
+    product_component_name: "{{ at_module_name_for_TEST_ui }}"
+    context_xml_file_src: "context.xml.j2"
+    context_xml_file_dest: "{{ context_xml_file_location }}"
+
+- name: "Configure Keycloak for TEST UI webapp"
+  include_role:
+    name: configure-webapp-with-keycloak
+  vars:
+    kc_client_id: "{{ kc_client_id_TEST_ui}}"
+    kc_client_name: "{{ kc_client_name_TEST_ui}}"
+    kc_client_description: "{{ kc_client_description_TEST_ui }}"
+    kc_client_conf_file: "{{ kc_client_conf_file_TEST_ui }}"
+    kc_client_scope_mappings: "{{ kc_client_scope_mappings_TEST_ui }}"
+    client_local_conf: "{{ client_local_conf_TEST_ui }}"
+    product_client_roles: "{{ client_roles_TEST_ui }}"
+    remove_product_client_roles: "{{ remove_client_roles_TEST_ui }}"
+    certificate_alias: "{{ certificate_alias_TEST_ui }}"
+    keystore_file_name: "{{ keystore_file_name_TEST_ui }}"
+    truststore_file_name: "{{ truststore_file_name_TEST_ui }}"
+    product_install_dir: "{{ product_install_dir_TEST_ui }}"
+    product_kc_http_port: "{{ el_ui_http_port }}"
+    product_kc_origins:
+      - "{{ product_kc_apache_origin_TEST_ui }}"
+      - "{{ product_kc_http_origin_TEST_ui }}"
+    product_redirect_uris:
+      - "{{ product_kc_apache_origin_TEST_ui }}/*"
+      - "{{ product_kc_http_origin_TEST_ui }}/*"
+    product_kc_base_url: "{{ product_kc_apache_origin_TEST_ui }}/TEST"
+    product_kc_admin_url: "{{ product_kc_apache_origin_TEST_ui }}/TEST"
+    product_service_name: "{{ product_service_name_TEST_ui }}"
+    product_fqdn: "{{ el_ui_fqdn }}"

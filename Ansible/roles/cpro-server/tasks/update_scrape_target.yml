@@ -1,0 +1,111 @@
+---
+
+- name: "Resolve DR servers hostname in hosts file ."
+  blockinfile:
+    block: |
+      {{ hostvars[item]['ansible_host'].encode('UTF-8') + ' ' + hostvars[item]['fqdn_host'].encode('UTF-8') }}
+    dest: "/etc/hosts"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR DR-HOSTS {{ hostvars[item]['fqdn_host'] }}"
+  become: true
+  become_method: sudo
+  with_items:
+  - "{{ groups['vdu-ui'] }}"
+  - "{{ groups['vdu-db'] }}"
+  - "{{ groups['vdu-processingON'] }}"
+
+- name: "Resolve DR servers processingOFF and CGF host type hostname in hosts file ."
+  blockinfile:
+    block: |
+      {{ hostvars[item]['host_address'].encode('UTF-8') + ' ' + hostvars[item]['fqdn_host'].encode('UTF-8') }}
+    dest: "/etc/hosts"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR DR-HOSTS {{ hostvars[item]['fqdn_host'] }}"
+  become: true
+  become_method: sudo
+  with_items:
+  - "{{ lookup('inventory_hostnames', 'vdu-processingOFF:children', wantlist=True)}}"
+  - "{{ lookup('inventory_hostnames', 'vdu-cgf:children', wantlist=True)}}"
+
+- name: "Concatenate DR servers list for node-exporter scrape job."
+  set_fact:
+    dr_server_lists: "{{ hostvars[item]['fqdn_host'].encode('UTF-8') + ',' +  dr_server_lists  }}"
+  become: true
+  become_method: sudo
+  with_items:
+  - "{{ groups['vdu-ui'] }}"
+  - "{{ groups['vdu-db'] }}"
+  - "{{ groups['vdu-processingON'] }}"
+  - "{{ lookup('inventory_hostnames', 'vdu-processingOFF:children', wantlist=True)}}"
+  - "{{ lookup('inventory_hostnames', 'vdu-cgf:children', wantlist=True)}}"
+
+- name: "Format server list for node-exporter scrape job setup."
+  set_fact:
+    prometheus_scrape_job_node_targets: "{{ dr_server_lists[:-1].split(',') | map('regex_replace', '^', '\"')  | map('regex_replace', '$', ':9100\"') | list | unique | join(',') }}"
+  become: true
+  become_method: sudo
+
+- debug:
+    msg: "prometheus_scrape_job_node_targets: {{ prometheus_scrape_job_node_targets }}"
+
+- name: "Concatenate processing servers list for fluentd scrape job."
+  set_fact:
+    dr_proc_server_lists: "{{ hostvars[item]['fqdn_host'].encode('UTF-8') + ',' +  dr_proc_server_lists  }}"
+  become: true
+  become_method: sudo
+  with_items:
+  - "{{ groups['vdu-processingON'] }}"
+  - "{{ lookup('inventory_hostnames', 'vdu-processingOFF:children', wantlist=True)}}"
+  - "{{ lookup('inventory_hostnames', 'vdu-cgf:children', wantlist=True)}}"
+
+- name: "Format server list for fluentd jobs setup."
+  set_fact:
+    prometheus_scrape_job_fluentd_targets: "{{ dr_proc_server_lists[:-1].split(',') | map('regex_replace', '^', '\"') | map('regex_replace', '$', ':24231\"') | list | unique | join(',') }}"
+  become: true
+  become_method: sudo
+
+- debug:
+    msg: "prometheus_scrape_job_fluentd_targets: {{ prometheus_scrape_job_fluentd_targets }}"
+
+- name: place rule-template.yml file
+  template:
+    src: rule-template.yml.j2
+    dest: "/etc/prometheus/rule-template.yml"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo 
+
+- name: update prometheus.yml files
+  template:
+    src: prometheus.yml.j2
+    dest: "/etc/prometheus/prometheus.yml"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: reload service prometheus-server
+  systemd:
+    name: prometheus-server
+    enabled: no
+    daemon_reload: yes
+  become: true
+  become_method: sudo
+
+- name: Check if prometheus-server is running
+  shell: "systemctl is-active prometheus-server"
+  ignore_errors: True
+  register: running_services_output
+
+# Reload prometheus config
+- name: Reload prometheus config
+  command: "curl -X POST http://localhost:9090/-/reload"
+  args:
+    warn: False
+  when: running_services_output.stdout == "active"
+...

@@ -1,0 +1,57 @@
+- name: check if ha-sync file list already deployed
+  command: sdcctl get system config/ha/group/{{ ha_group }}/sync-list
+  ignore_errors: yes
+  register: ha_result
+  run_once: yes
+
+- fail: msg='sdc error ha_result={{ ha_result }}'
+  when:
+    - ha_result|failed
+    - '"Key not found" not in ha_result.stdout'
+  run_once: yes
+
+- name: init sync list in sdc if not exists
+  shell: sdcctl set system config/ha/group/{{ ha_group }}/sync-list "`cat /etc/ha-sync/sync-list`"
+  when: '"Key not found" in ha_result.stdout'
+  run_once: yes
+
+- name: check if ha-sync exclude list already deployed
+  command: sdcctl get system config/ha/group/{{ ha_group }}/exclude-list
+  ignore_errors: yes
+  register: ha_result
+  run_once: yes
+
+- fail: msg='sdc error ha_result={{ ha_result }}'
+  when:
+    - ha_result|failed
+    - '"Key not found" not in ha_result.stdout'
+  run_once: yes
+
+- name: init exclude list in sdc if not exists
+  shell: sdcctl set system config/ha/group/{{ ha_group }}/exclude-list "`cat /etc/ha-sync/exclude-list`"
+  when: '"Key not found" in ha_result.stdout'
+  run_once: yes
+
+- name: add directory to confd
+  file: path=/etc/confd/{{ item }}/ha-sync state=directory mode=0755
+  with_items:
+    - conf.d
+    - templates
+
+- name: add sync-list toml to confd
+  template: src=sync-list.toml.j2 dest=/etc/confd/conf.d/ha-sync/sync-list.toml
+
+- name: add sync-list tmpl to confd
+  template: src=sync-list.tmpl.j2 dest=/etc/confd/templates/ha-sync/sync-list.tmpl
+
+- name: add exclude-list toml to confd
+  template: src=exclude-list.toml.j2 dest=/etc/confd/conf.d/ha-sync/exclude-list.toml
+
+- name: add exclude-list tmpl to confd
+  template: src=exclude-list.tmpl.j2 dest=/etc/confd/templates/ha-sync/exclude-list.tmpl
+
+- name: restart confd
+  service: name=confd state=restarted
+
+- name: register ha-sync as HA plugin
+  command: ha add ha-sync /usr/bin/ha-sync

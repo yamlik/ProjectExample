@@ -1,0 +1,83 @@
+# Automatically generated playbook from a template in ansible/templates/configure_scaled_crdb.yaml.j2
+---
+- name: "Prepare playbook for {{ scaled_node }} node"
+  hosts: {{ scaled_node }}{% raw %}
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  become_method: sudo
+  remote_user: TEST
+  vars_files:
+    - vars/global_var.yml
+  gather_facts: yes
+  tasks:
+    - include: tasks/common/relate_fqdn_to_floating_ip.yml
+    - include: tasks/common/generic_tasks.yml
+    - include: tasks/common/update_etc_hosts.yml
+
+
+{% endraw %}
+- name: "Main play for {{ scaled_node}} nodes."
+  hosts: {{ scaled_node }}{% raw %}
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/crdb_var.yml
+    - vars/optional_volumes.yml
+  vars:
+    ha_master: "{{ inventory_hostname }}"
+    reconfigure: False
+  gather_facts: "{{ vnf_gather_facts }}"
+
+  post_tasks:
+    - name: make sure CRDB is started  & daemon reloaded
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: redisio
+        enabled: yes
+    - name: make sure Sentinel is started  & daemon reloaded
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: redis-sentinel
+        enabled: yes
+    - name: Open ports for the CRDB and Sentinel 
+      firewalld:
+        zone: public
+        port: "{{ item.port }}/{{ item.protocol }}"
+        permanent: true
+        immediate: true
+        state: enabled
+      with_items:
+       - { port: 6379, protocol: tcp }
+       - { port: 26379, protocol: tcp }
+  roles:
+    - { role: user-and-access-management }
+    - { role: ntp }
+    - { role: dns }
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: configure-logrotate }
+    - { role: crdb-server }
+
+- name: Configure all vdu nodes with new SSH keys
+  hosts: vdu-db:vdu-cgf:vdu-ui:vdu-processingOFF:vdu-processingON:vdu-oam:vdu-crdb
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  pre_tasks:
+    - name: Fetch public key to Ansible container
+      fetch: 
+        src: ~TEST/.ssh/id_rsa.pub
+        dest: "{{ inventory_dir }}/public_keys/id_rsa-{{ inventory_hostname }}.pub"
+        flat: yes
+      register: download_result
+      until: download_result | success
+      retries: 3
+      delay: 1
+  roles:
+    - { role: bootstrap-servers }
+{% endraw %}

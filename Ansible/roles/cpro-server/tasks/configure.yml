@@ -1,0 +1,35 @@
+---
+
+- name: "Ensure group {{ group }} exists"
+  group:
+    name: "{{ group }}"
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: Add user and group "{{ user }}"
+  user: name={{ user }} group={{ group }} createhome=no
+  become: yes
+  become_method: sudo
+
+- name: replace prometheus-server.service
+  template:
+    src: prometheus-server.service.j2
+    dest: "/etc/systemd/system/prometheus-server.service"
+    mode: 0644
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: open ports for prometheus server.
+  firewalld:
+    zone: public
+    port: "9090/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+
+...

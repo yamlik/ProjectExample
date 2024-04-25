@@ -1,0 +1,21 @@
+##Variables:
+CDF_Stream= CMCC_STREAM_VoLTE_CDF-1.0.0-Linux.el
+SimulatorHost= 
+CDF_CollectionDir=/opt/TEST/TEST/C3_data/input
+CDF_BackupDir=/opt/TEST/TEST/C3_data/backup
+CGF_OutputDir=/opt/TEST/TEST/C3_data/output
+
+
+##Command details:	
+Start Transaction Engine ='tools.pl -c startstream -n  TransactionEngine -v 1'
+Import CDF Stream ='tools.pl -r -c import $CDF_Stream -H TransactionEngineHost'
+CDF Files to Check = $CDF_CollectionDir
+##Directories:
+mkdir -p $CDF_CollectionDir
+mkdir -p $CDF_BackupDir
+mkdir -p $CGF_OutputDir
+
+#Before starting seagull, edit the client.xml line to match to host address:
+#open-args="mode=client;dest=dl91.n30.epc.hpecic.net:3870">
+
+Seagull start command = seagull -conf client.xml -dico dict_cts_cdf_cmcc.xml -scen cmcc_session_input-start.xml -log logs/client.log -llevel ETM

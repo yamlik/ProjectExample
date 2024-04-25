@@ -1,0 +1,752 @@
+{
+  "extVirtualLinks": [
+    {
+      "resourceId": "floating_network", 
+      "virtualLinkDescId": "Public", 
+      "vimConnectionId": "cbis", 
+      "id": "Public", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "type": "IPV4", 
+                        "numDynamicAddresses": 1
+                      }
+                    ]
+                  }, 
+                  "layerProtocol": "IP_OVER_ETHERNET"
+                }
+              ]
+            }
+          ], 
+          "cpdId": "ui_0_oam_FloatingECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "oam_v6", 
+      "vimConnectionId": "cbis", 
+      "id": "oam_v6", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::131", 
+                          "3010:a:b:c::132", 
+                          "3010:a:b:c::133", 
+                          "3010:a:b:c::134", 
+                          "3010:a:b:c::135", 
+                          "3010:a:b:c::136", 
+                          "3010:a:b:c::137", 
+                          "3010:a:b:c::138", 
+                          "3010:a:b:c::139", 
+                          "3010:a:b:c::13a"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingON_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::141", 
+                          "3010:a:b:c::142"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_oam_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::143"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_oam_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::144", 
+                          "3010:a:b:c::145"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_db_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::146"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_db_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::121", 
+                          "3010:a:b:c::122", 
+                          "3010:a:b:c::123", 
+                          "3010:a:b:c::124", 
+                          "3010:a:b:c::125", 
+                          "3010:a:b:c::126", 
+                          "3010:a:b:c::127", 
+                          "3010:a:b:c::128", 
+                          "3010:a:b:c::129", 
+                          "3010:a:b:c::12a"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingOFF_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::110", 
+                          "3010:a:b:c::111", 
+                          "3010:a:b:c::112"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingOFF_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::151", 
+                          "3010:a:b:c::152", 
+                          "3010:a:b:c::153", 
+                          "3010:a:b:c::154", 
+                          "3010:a:b:c::155", 
+                          "3010:a:b:c::156"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_cgf_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::157", 
+                          "3010:a:b:c::158", 
+                          "3010:a:b:c::159"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_cgf_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::147", 
+                          "3010:a:b:c::148"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_ui_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::149"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_ui_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:c::162", 
+                          "3010:a:b:c::163", 
+                          "3010:a:b:c::164"
+                        ], 
+                        "subnetId": "oam_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_crdb_0_ECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "charging_dual", 
+      "vimConnectionId": "cbis", 
+      "id": "charging_dual", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:e::131", 
+                          "3010:a:b:e::132", 
+                          "3010:a:b:e::133", 
+                          "3010:a:b:e::134", 
+                          "3010:a:b:e::135", 
+                          "3010:a:b:e::136", 
+                          "3010:a:b:e::137", 
+                          "3010:a:b:e::138", 
+                          "3010:a:b:e::139", 
+                          "3010:a:b:e::13a"
+                        ], 
+                        "subnetId": "charging_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingON_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:e::121", 
+                          "3010:a:b:e::122", 
+                          "3010:a:b:e::123", 
+                          "3010:a:b:e::124", 
+                          "3010:a:b:e::125", 
+                          "3010:a:b:e::126", 
+                          "3010:a:b:e::127", 
+                          "3010:a:b:e::128", 
+                          "3010:a:b:e::129", 
+                          "3010:a:b:e::12a"
+                        ], 
+                        "subnetId": "charging_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingOFF_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:e::110", 
+                          "3010:a:b:e::111", 
+                          "3010:a:b:e::112"
+                        ], 
+                        "subnetId": "charging_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingOFF_1_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:e::151", 
+                          "3010:a:b:e::152", 
+                          "3010:a:b:e::153", 
+                          "3010:a:b:e::154", 
+                          "3010:a:b:e::155", 
+                          "3010:a:b:e::156"
+                        ], 
+                        "subnetId": "charging_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_cgf_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:e::157", 
+                          "3010:a:b:e::158", 
+                          "3010:a:b:e::159"
+                        ], 
+                        "subnetId": "charging_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_cgf_1_MovingECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "billing_dual", 
+      "vimConnectionId": "cbis", 
+      "id": "billing_dual", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:d::131", 
+                          "3010:a:b:d::132", 
+                          "3010:a:b:d::133", 
+                          "3010:a:b:d::134", 
+                          "3010:a:b:d::135", 
+                          "3010:a:b:d::136", 
+                          "3010:a:b:d::137", 
+                          "3010:a:b:d::138", 
+                          "3010:a:b:d::139", 
+                          "3010:a:b:d::13a"
+                        ], 
+                        "subnetId": "billing_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingON_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:d::121", 
+                          "3010:a:b:d::122", 
+                          "3010:a:b:d::123", 
+                          "3010:a:b:d::124", 
+                          "3010:a:b:d::125", 
+                          "3010:a:b:d::126", 
+                          "3010:a:b:d::127", 
+                          "3010:a:b:d::128", 
+                          "3010:a:b:d::129", 
+                          "3010:a:b:d::12a"
+                        ], 
+                        "subnetId": "billing_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingOFF_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:d::110", 
+                          "3010:a:b:d::111", 
+                          "3010:a:b:d::112"
+                        ], 
+                        "subnetId": "billing_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingOFF_2_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:d::151", 
+                          "3010:a:b:d::152", 
+                          "3010:a:b:d::153", 
+                          "3010:a:b:d::154", 
+                          "3010:a:b:d::155", 
+                          "3010:a:b:d::156"
+                        ], 
+                        "subnetId": "billing_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_cgf_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "3010:a:b:d::157", 
+                          "3010:a:b:d::158", 
+                          "3010:a:b:d::159"
+                        ], 
+                        "subnetId": "billing_ipv6", 
+                        "type": "IPV6"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_cgf_2_MovingECP"
+        }
+      ]
+    }
+  ], 
+  "grantlessMode": true, 
+  "softwareImages": [
+    {
+      "vnfdSoftwareImageId": "processingON", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "oam", 
+      "vimSoftwareImageId": "REPLACE_OAM", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "db", 
+      "vimSoftwareImageId": "REPLACE_DB", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "processingOFF", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "cgf", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "ui", 
+      "vimSoftwareImageId": "REPLACE_UI", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "crdb", 
+      "vimSoftwareImageId": "REPLACE_CRDB", 
+      "vimConnectionId": "cbis"
+    }
+  ], 
+  "vimConnectionInfo": [
+    {
+      "interfaceInfo": {
+        "endpoint": "https://10.11.203.68:13000/v3"
+      }, 
+      "vimType": "OPENSTACK_V3", 
+      "accessInfo": {
+        "username": "cb0930sa", 
+        "userDomain": "Default", 
+        "region": "regionOne", 
+        "project": "CB0930", 
+        "projectDomain": "Default", 
+        "password": ""
+      }, 
+      "id": "cbis"
+    }
+  ], 
+  "extManagedVirtualLinks": [], 
+  "flavourId": "default", 
+  "apiVersion": "4.0", 
+  "zones": [
+    {
+      "vimConnectionId": "cbis", 
+      "id": "zone2", 
+      "zoneId": "Zone_2"
+    }, 
+    {
+      "vimConnectionId": "cbis", 
+      "id": "zone1", 
+      "zoneId": "Zone_1"
+    }
+  ], 
+  "computeResourceFlavours": [
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "processingON", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "oam", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "db", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "processingOFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "cgf", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.large", 
+      "vnfdVirtualComputeDescId": "ui", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.medium", 
+      "vnfdVirtualComputeDescId": "crdb", 
+      "vimConnectionId": "cbis"
+    }
+  ]
+}

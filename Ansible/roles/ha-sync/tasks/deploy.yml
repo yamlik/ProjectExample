@@ -1,0 +1,1 @@
+- include: ha-sync/scaleout.yml

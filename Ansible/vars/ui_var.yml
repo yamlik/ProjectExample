@@ -1,0 +1,54 @@
+---
+vnf_serial: 1
+host_type: ui
+ip_groups:
+  - ha_interface: "{{ ansible_local.interfaces.devices.oam_interface }}"
+    ha_vrid: 73
+    ha_vip: "{{ ui_oam_vip }}"
+    ip0: "{{ ui_oam_0 }}"
+    ip1: "{{ ui_oam_1 }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.oam_network_netmask }}"
+
+ha_master: "{{groups['vdu-ui'][0]}}"
+ha_mode: "active-passive"
+admintools_protocol: "http"
+
+cinder_volumes:
+  - name: ui_certs
+    filesystem: xfs
+    label: certs
+    opts: '-b size=4096 -L certs'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['ui']['certs_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/certs
+    mount_point_dash: opt-TEST-certs
+    owner: TEST
+    group: TEST
+    mode: "0700"
+
+  - name: docker_reg
+    filesystem: xfs
+    label: docker_reg
+    opts: '-b size=4096 -L docker_reg'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['ui']['docker_registry_mount_id'][0:20] }}"
+    mount_point: /var/lib/registry
+    mount_point_dash: var-lib-registry
+    owner: root
+    group: root
+    mode: "0755"
+persistent_mount: "/opt/TEST/certs"
+docker_mount: "/var/lib/registry"
+
+solution_name: "{{ vnf_context_data.stack_params.cbam.extensions.solution_name }}"
+product_name: "{{ vnf_context_data.stack_params.cbam.extensions.product_name }}"
+copyright_text: "{{ vnf_context_data.stack_params.cbam.extensions.copyright_text }}"
+um_deploy_solution_config: "{{ vnf_context_data.stack_params.cbam.extensions.um_deploy_solution_config }}"
+admintools_deploy_solution_config: "{{ vnf_context_data.stack_params.cbam.extensions.admintools_deploy_solution_config }}"
+reports_deploy_solution_config: "{{ vnf_context_data.stack_params.cbam.extensions.reports_deploy_solution_config }}"
+um_admin_fullname: "{{ vnf_context_data.stack_params.cbam.extensions.um_admin_fullname }}"
+
+rrd_files_location: "/var/lib/ganglia/rrds/"
+sync_directory: "{{ docker_mount }}/fmpm"
+
+nfs_mounts:
+
+alert_manager_http_port: 9093

@@ -1,0 +1,90 @@
+pipeline {
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl.alcatel-lucent.com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+    parameters {
+        choice(name: 'Invoke_Parameters', choices:"No\nYes", description: "Do you whish to do a dry run to grab parameters?" )
+        choice(name: 'TEST_CONFIG', choices: ['ipv4', 'ipv4_2', 'ipv6', 'cbis19', 'cbam19mp1', 'cbam19mp1_2', 'cbam19mp1_3', 'pl-024-cbam195', 'pl-024-cbam195_v4', 'pl-024-cbam195_v4_2'], description: 'Definition of the config file used for writing values, these files are located under ')
+        string(name: 'BRANCH', defaultValue: 'cinder_vnf', description: '', trim: true)
+        choice(name: 'Tags', choices: ['--tags=instantiate', '--tags=smoketest', '--tags=heal', '--tags=delete', '--tags=test', '--tags=runCustomAnsible', '--tags=updatePasswords','--tags=rpmUpdate'], description: '')
+        choice(name: 'Delete', choices: ['False','True'], description: '')
+    }
+    environment {
+        vnfdId = "tester${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage("Parameterizing") {
+            steps {
+                script {
+                    if ("${params.Invoke_Parameters}" == "Yes") {
+                        currentBuild.result = 'ABORTED'
+                        error('DRY RUN COMPLETED. JOB PARAMETERIZED.')
+                    }
+                }
+            }
+        }
+
+        stage('Instantiate VNF') {
+            steps {
+              container('builder') {
+                echo "Trying to activate env"
+                sh 'pwd'
+                sh 'ls -la'
+                dir('$WORKSPACE/products/data_refinery/vnf/test_automation'){
+                  sh '''
+                      export PYTHONWARNINGS="ignore:Unverified HTTPS request"
+                      sudo chmod +x ./scripts/*
+                      ls -la ./scripts/
+                      source /env/bin/activate
+                      echo "running behave"
+                      instantiated=$(python $WORKSPACE/products/data_refinery/vnf/test_automation/checkInstantiation.py)
+                      
+                      if [ $instantiated = "true" ]; then
+                        behave --stop --tags=instantiate --no-skipped
+                      else
+                        echo "Test Stack was already instantiated, if this is not wanted, run delete action"
+                      fi
+                  '''
+                }
+
+              }
+            }
+        }
+
+        stage('Run tests on vnf'){
+            steps{
+              echo "Running tests"
+              dir('$WORKSPACE/products/data_refinery/vnf/test_automation'){
+                sh '''
+                export PYTHONWARNINGS="ignore:Unverified HTTPS request"
+                sudo chmod +x ./scripts/*
+                ls -la ./scripts/
+                source /env/bin/activate
+                echo "running behave"
+                behave --stop $Tags --no-skipped
+                '''              
+              }
+            }
+        }
+
+        stage('Delete vnf if wanted'){
+            steps{
+                echo "Delete step"
+            }
+        }
+    }
+}

@@ -1,0 +1,49 @@
+---
+
+- assert:
+    that:
+      - "component_name is defined"
+      - "package_name is defined"
+      - "service_name is defined"
+      - "ports is defined"
+      - "wait_for_port is defined"
+      - "wait_for_fqdn is defined"
+      - "wait_for_timeout is defined"
+
+- name: "Install {{ component_name }}"
+  register: package_installed
+  yum:
+    name: "{{ package_name }}"
+    state: "{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo
+
+- name: "Open ports for {{ component_name }}"
+  when: package_installed|success
+  register: firewalld_ports_opened
+  firewalld:
+    zone: "public"
+    port: "{{ item.port | default(item) }}/{{ item.protocol | default('tcp') }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ ports }}"
+
+- name: "Restart {{ component_name }} service"
+  when: restart_webapp is not defined or restart_webapp
+  service:
+    name: "{{ service_name }}"
+    state: restarted
+  become: true
+  become_method: sudo
+
+- name: "Wait for {{ component_name }} service to start"
+  when: restart_webapp is not defined or restart_webapp
+  wait_for:
+    host: "{{ wait_for_fqdn }}"
+    port: "{{ wait_for_port }}"
+    state: started
+    timeout: "{{ wait_for_timeout }}"

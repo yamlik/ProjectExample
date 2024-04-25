@@ -1,0 +1,61 @@
+---
+# tasks file for TEST-ui db installation
+- assert:
+    that:
+        - "db_el_user is defined"
+        - "db_el_password is defined"
+    msg: "'EL DB parameters db_el_user and db_el_password are not defined'"
+
+- name: "Install liquibase-core"
+  register: liquibase_installed
+  yum:
+    name: liquibase-core
+    state: present
+  become: true
+  become_method: sudo
+
+- name: "Install PostgreSQL driver module"
+  when: liquibase_installed| success
+  pip:
+    name: psycopg2
+    state: present 
+  become: true
+  become_method: sudo
+
+- name: "Generate random number"
+  shell: echo $(( RANDOM % (10000 + 1 ) + 1 ))
+  register: random_number
+
+- name: Check if changelog already exists
+  stat:
+    path: "{{ install_directory }}/TEST-ui/createTables-ui-db.xml"
+  register: changelog_stat
+
+- name: "Copy liquibase changelog"
+  register: changelog_copied
+  template:  src="templates/createTables-ui-db.xml.j2" dest="{{ install_directory }}/TEST-ui/createTables-ui-db.xml"
+  when: changelog_stat.stat.exists == False
+
+- name: "Encrypt TEST database password"
+  shell: "{{ TEST_bin }}/el_crypto.ksh ENC '{{ db_el_password }}'"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  register: encrypted_db_passwd
+  changed_when: False
+  when: changelog_stat.stat.exists == False
+
+- name: "Copy Template insert sql script parameters"
+  template:  src="templates/insert_gui_modules_config.sql.j2" dest="{{ install_directory }}/TEST-ui/insert_gui_modules_config.sql"
+  when: changelog_stat.stat.exists == False
+
+- name: "Copy Template update sql script parameters"
+  template:  src="templates/update_gui_modules_config.sql.j2" dest="{{ install_directory }}/TEST-ui/update_gui_modules_config.sql"
+  when: changelog_stat.stat.exists == False
+
+- name: "Initialize database"
+  command: java -jar /usr/share/java/liquibase-core/liquibase-core.jar --driver=org.postgresql.Driver --classpath=/usr/share/java/postgresql-jdbc.jar --changeLogFile={{ item | quote }} --url={{ el_db_jdbc_url | quote }} --username={{ db_el_user | quote }} --password={{ db_el_password | quote }} migrate
+  no_log: "{{ hide_sensitive_debug_info }}"
+  args:
+    chdir: "{{ install_directory }}/TEST-ui/"
+  with_items:
+    - 'createTables-ui-db.xml'
+  when: (changelog_stat.stat.exists == False) and (changelog_copied | success) 

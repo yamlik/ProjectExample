@@ -1,0 +1,6 @@
+---
+# Default variables for install-webapp
+package_state: present
+wait_for_fqdn: "{{ inventory_hostname }}"
+wait_for_timeout: 60
+restart_webapp: true

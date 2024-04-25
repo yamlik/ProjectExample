@@ -1,0 +1,8 @@
+---
+
+cluster_name: cluster1
+files_3gppxml_location: /appdata/ganglia/meas/
+rrd_files_location: /var/lib/ganglia/rrds/
+file_3gppxml_expiry_interval_day: 1
+
+...

@@ -1,0 +1,41 @@
+---
+# tasks file for devtool-db
+- assert:
+    that:
+        - "db_el_user is defined"
+        - "db_el_password is defined"
+        - "db_el_host is defined"
+    msg: "'EL DB parameters db_el_user, db_el_password and db_el_host are not defined'"
+
+- name: "Install liquibase-core"
+  register: liquibase_installed
+  package:
+    name: liquibase-core
+    state: present
+  become: true
+  become_method: sudo
+
+- name: "Install PostgreSQL driver module"
+  when: liquibase_installed | success
+  pip:
+    name: psycopg2
+    state: present 
+  become: true
+  become_method: sudo
+
+- name: "Copy liquibase changelogs"
+  when: liquibase_installed | success
+  register: changelog_copied
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - "{{ dt_db_changelog_files_dict }}"
+
+# Output hidden because password is visible
+- name: "Add Devtool db objects to database"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  when: changelog_copied | success
+  command: java -jar /usr/share/java/liquibase-core/liquibase-core.jar --driver=org.postgresql.Driver --classpath=/usr/share/java/postgresql-jdbc.jar --changeLogFile="{{ devtool_install_dir }}/{{ xml_db_filename }}" --url={{ el_db_jdbc_url | quote }} --username={{ db_el_user | quote }} --password={{ db_el_password | quote }} update
+  args:
+    chdir: "{{ devtool_install_dir }}"

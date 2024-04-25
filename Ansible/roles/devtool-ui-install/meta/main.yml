@@ -1,0 +1,17 @@
+galaxy_info:
+  author: TEST Corporation
+  description: Devtool UI Ansible roles
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - 18.6
+
+  galaxy_tags: []
+
+dependencies: []

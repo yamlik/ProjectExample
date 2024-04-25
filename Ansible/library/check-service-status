@@ -1,0 +1,94 @@
+#!/bin/bash
+
+DOCUMENTATION="
+---
+module: check-service-status
+short_description: Checks the status of a service
+description:
+  - Reads the status of a given service using 'service' command
+  - Checks if the status matches the expected status
+  - If the status does not match after retries, exits with status 1, otherwise 0
+author: TEST Corporation
+options:
+  name:
+    description:
+      - Name of the service
+    required: true
+  expected:
+    description:
+      - Expected status, e.g. active, failed
+    default: active
+    required: false
+  retries:
+    description:
+      - Number of retries before failing
+    default: 5
+    required: false
+  wait:
+    description:
+      - Wait duration in seconds between retries
+    default: 1
+    required: false
+"
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "ERROR: ${variable_name} is not defined"
+  done
+}
+
+function log {
+  log_lines="${log_lines}$*\n"
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'"
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "$1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+  exit 1
+}
+
+log_lines=""
+failed=true
+changed=false
+
+# Default parameter values
+name=
+expected=active
+retries=5
+wait=1 # seconds
+
+# Source parameters (possibly overwriting defaults)
+source "$1"
+log_variables name expected retries wait
+check_variables name expected retries wait
+
+log "Checking '${name}' service status"
+for i in $(seq 1 $retries) ; do
+    # Grep the line from systemctl output:
+    #
+    #   Active: failed (Result: exit-code) since pe 2017-10-06 08:57:51 UTC; 1min 34s ago
+    #
+    # Only grep the matching part with -o (Active: failed) and cut it by delimiter ':' and retrieve the second field i.e. status
+    # Last remove whitespace by reassigining the variable without quotes
+    status=$(sudo service "$name" status | grep -o -e "^ *Active: [^ ]*" | cut -d : -f 2); status=$(echo $status)
+
+    [ "$status" = "$expected" ] && { failed=false; break; }
+    sleep "$wait"
+done
+
+[ "$failed" = false ] || fail "'${name}' service status was '${status}'. Expected: '${expected}'"
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+exit 0

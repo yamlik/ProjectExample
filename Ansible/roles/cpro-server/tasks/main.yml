@@ -1,0 +1,10 @@
+---
+
+- name: Setup Prometheus server
+  include: configure.yml
+  when: post_scaling is not defined
+
+- name: Update Prometheus scrape target
+  include: update_scrape_target.yml
+
+...

@@ -1,0 +1,129 @@
+---
+
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - gen3gppxml_sftp_user
+    - gen3gppxml_sftp_password
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "gen3gppxml_sftp_user", value: "{{ gen3gppxml_sftp_user }}" }
+    - { name: "gen3gppxml_sftp_password", value: "{{ gen3gppxml_sftp_password }}" }
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: "Ensure group {{ group }} exists"
+  group:
+    name: "{{ group }}"
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: Add user and group "{{ user }}"
+  user: name={{ user }} group={{ group }} createhome=no
+  become: yes
+  become_method: sudo
+
+- name: "check if directory /appdata/meas exists."
+  stat:
+    path: "{{ gen3gppxml_report_location }}"
+  register: data_dir_check
+
+- name: create gen3gppxml report directories
+  file:
+    path: "{{ gen3gppxml_report_location }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+  when: not data_dir_check.stat.exists
+
+- name: update Gen3GPPXML.json files
+  template:
+    src: Gen3GPPXML.json.j2
+    dest: "/usr/local/etc/Gen3GPPXML.json"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+    
+- name: open port for 3gppxml https
+  firewalld:
+    zone: public
+    port: "{{ gen3gppxml_https_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: gen3gppxml_enable_https
+  become: true
+  become_method: sudo
+
+- name: open port for 3gppxml http
+  firewalld:
+    zone: public
+    port: "{{ gen3gppxml_http_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: allow_external_access
+  become: true
+  become_method: sudo
+
+- name: start service gen3gppxml
+  systemd:
+    name: gen3gppxml
+    enabled: no
+    state: restarted
+    daemon_reload: yes
+  register: gen3gppxml_status
+  until: "gen3gppxml_status is defined and gen3gppxml_status.state is defined and gen3gppxml_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: "Setup SFTP user using password for client access"
+  shell: "echo {{ gen3gppxml_sftp_password }} | /usr/local/bin/setup_sftp.sh {{ gen3gppxml_sftp_user }} {{ gen3gppxml_report_location }}"
+  register: sftp_setup_user
+  failed_when: sftp_setup_user.rc != 0 and not 'sftp_setup_user.stderr in "already existed"'
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: Update SSH daemon config (append gen3gppxml_sftp_user user to AllowUsers)
+  lineinfile:
+    backrefs: yes
+    path: /etc/ssh/sshd_config
+    regexp: "(^AllowUsers.*)"
+    line: '\1 {{ gen3gppxml_sftp_user }}'
+  become: yes
+  become_method: sudo
+
+- name: "Enable {{ gen3gppxml_sftp_user }} user password access in sshd_config"
+  blockinfile:
+    block: |
+      Match User {{ gen3gppxml_sftp_user }}
+          PubkeyAuthentication no
+          PasswordAuthentication yes
+    dest: "/etc/ssh/sshd_config"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR GEN3GPPXML"
+  become: true
+  become_method: sudo
+
+- name: Restart service sshd
+  systemd:
+    name: sshd
+    state: restarted
+  become: true
+  become_method: sudo
+
+...

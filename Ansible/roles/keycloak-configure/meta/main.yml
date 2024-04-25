@@ -1,0 +1,16 @@
+---
+dependencies:
+  - role: keycloak
+  - role: ui-keycloak-ha
+  - role: configure-webapp
+    component_name: "Keycloak Web SSO"
+    service_name: "{{ kc_service_name }}"
+    configuration_files:
+      - src: "{{ kc_realm_template }}"
+        dest: "{{ kc_realm_file }}"
+      - src: "{{ kc_client_template_template }}"
+        dest: "{{ kc_client_template_file }}"
+      - src: "{{ kc_allowed_client_templates_template }}"
+        dest: "{{ kc_allowed_client_templates_file }}"
+    wait_for_port: "{{ kc_http_port }}"
+    wait_for_timeout: "{{ kc_start_wait_timeout }}"

@@ -1,0 +1,19 @@
+{
+  "TC-58782": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1"
+    },
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||587820001||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|AMFYD749HG|||||EDGAR||||||||||||||||||||||||||||||||||||||||||||"
+    },
+    "applicationToSelect" : "TESTAUTO68003",
+    "applicationToAutoCheck": {
+      "Application Number": "587820001"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  }
+}

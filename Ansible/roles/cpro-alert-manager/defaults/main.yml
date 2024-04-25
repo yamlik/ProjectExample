@@ -1,0 +1,5 @@
+---
+webhook4fluentd_listening_ip: localhost
+webhook4fluentd_listening_port: 5061
+alert_manager_http_port: 9093
+...

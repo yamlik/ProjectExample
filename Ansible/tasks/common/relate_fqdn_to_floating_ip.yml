@@ -1,0 +1,18 @@
+---
+- name: Set ui_fqdn to floating IP value when needed
+  set_fact:
+    kc_fqdn: "{{ ui_floating_ip }}"
+    reports_fqdn: "{{ ui_floating_ip }}"
+    smr_fqdn: "{{ ui_floating_ip }}"
+    gmetad_fqdn: "{{ ui_floating_ip }}"
+    devtool_ui_fqdn: "{{ ui_floating_ip }}"
+    devtool_backend_fqdn: "{{ ui_floating_ip }}"
+    admintools_fqdn: "{{ ui_floating_ip }}"
+    el_ui_fqdn: "{{ ui_floating_ip }}"
+    el_ui_URL: "http://{{ ui_floating_ip }}:55080/TEST"
+    wait_for_fqdn: "{{ ui_floating_ip }}"
+    product_fqdn: "{{ ui_floating_ip }}"
+  when:
+    - vnf_context_data.stack_params.cbam.extensions.ui_fqdn |lower == "floating"
+    - vnf_context_data.stack_params.cbam.extensions.use_floating_ip == 1
+...

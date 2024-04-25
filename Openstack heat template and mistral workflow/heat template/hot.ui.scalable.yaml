@@ -1,0 +1,199 @@
+heat_template_version: 2016-10-14
+
+parameters:
+  cbam:
+    type: json
+  prefix:
+    type: string
+  resources:
+    type: json
+  node_index:
+    type: string
+  el_common_security_group_id:
+    type: string
+  ui_security_group_id:
+    type: string
+  internal_network_security_group_id:
+    type: string
+  key_name:
+    type: string
+  ui_moving_ip:
+    type: string
+    description: The IP address of moving IP
+    default: invalid
+  internal_network:
+    type: string
+  internal_subnet:
+    type: string
+  ui_server_group_id:
+    type: string
+
+conditions:
+  cbam_id: { equals: [ { get_param: [ cbam, extensions, use_cbam_id ] }, true ] }
+  custom_vm_name: { equals: [ { get_param: [ cbam, extensions, use_custom_vm_name ] }, false ] }
+
+resources:
+  oam_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: [ cbam, externalConnectionPoints, ui_oam_ecp, networkId ] }
+      name: { list_join: [ "-", [ {get_param: prefix}, ui, {get_param: node_index}, oam ] ] }
+      fixed_ips: [{
+         "subnet": { get_param: [ cbam, externalConnectionPoints, ui_oam_ecp, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, subnetId ] },
+         "ip_address": { get_param: [ cbam, externalConnectionPoints, ui_oam_ecp, addresses, { get_param: [ resources, { get_param: node_index }, _mappedIndexNumeric ] }, ip ] },
+         }]
+      allowed_address_pairs: [ { "ip_address": { list_join: ["/", [ { get_param: ui_moving_ip }, "32"]]} } ]
+      binding:vnic_type: { get_param: [ cbam, extensions, vnic_type ] } 
+      security_groups: [ { get_param: ui_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  internal_port:
+    type: OS::Neutron::Port
+    properties:
+      admin_state_up: true
+      name: { list_join: [ "-", [ { get_param: prefix }, ui, { get_param: node_index }, internal ] ] }
+      network: { get_param: internal_network }
+      fixed_ips: [{
+          "subnet": { get_param: internal_subnet },
+          "ip_address": { list_join: [ "", [ { get_param: [ cbam, extensions, internal_net_prefix ] }, ".3", { get_param: node_index } ] ] }
+          }]
+      security_groups: [ { get_param: internal_network_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  el_base_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      config:
+        str_replace:
+          template: |
+            #cloud-config
+            hostname: $hostname
+            fqdn: $hostname
+            manage_etc_hosts: false
+            timezone: $timezone
+            disable_root: false
+            write_files:
+            - path: /var/tmp/ifcfg-oam
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth0addr
+                PREFIX=$eth0prefix
+                DEFROUTE=yes
+                ZONE=public
+                GATEWAY=$defaultgateway0
+                MTU=$MTU
+                IPV6INIT=yes
+            - path: /var/tmp/ifcfg-internal
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth1addr
+                PREFIX=$eth1prefix
+                DEFROUTE=no
+                ZONE=public
+                GATEWAY=$defaultgateway1
+                MTU=$MTU
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth0
+            - path: /etc/sysconfig/network-scripts/rule-eth0
+            - path: /etc/sysconfig/network-scripts/route-eth0
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth1
+            - path: /etc/sysconfig/network-scripts/rule-eth1
+            - path: /etc/sysconfig/network-scripts/route-eth1
+            - path: /etc/ansible/facts.d/interfaces.fact
+              content: |
+                [devices]
+            - path: /etc/ansible/facts.d/disks.fact
+              content: |
+                [ui]
+            runcmd:
+              - echo "my hostname is `hostname`" > /tmp/hostname
+              - interface0=$(ip a | grep -B1 $eth0hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface0 >> /var/tmp/ifcfg-oam
+              - interface1=$(ip a | grep -B1 $eth1hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface1 >> /var/tmp/ifcfg-internal
+              - echo oam_interface=$interface0 >> /etc/ansible/facts.d/interfaces.fact && echo internal_interface=$interface1 >> /etc/ansible/facts.d/interfaces.fact
+              - echo certs_mount_id=$certs_mount_id >> /etc/ansible/facts.d/disks.fact
+              - echo docker_registry_mount_id=$docker_registry_mount_id >> /etc/ansible/facts.d/disks.fact
+              - cat /var/tmp/ifcfg-oam > /etc/sysconfig/network-scripts/ifcfg-$interface0
+              - cat /var/tmp/ifcfg-internal > /etc/sysconfig/network-scripts/ifcfg-$interface1
+              - echo iif $interface0 table 100 >> /etc/sysconfig/network-scripts/rule-$interface0 && echo from $eth0addr table 100 >> /etc/sysconfig/network-scripts/rule-$interface0 && echo from $ui_oam_vip table 100 >> /etc/sysconfig/network-scripts/rule-$interface0
+              - echo iif $interface1 table 101 >> /etc/sysconfig/network-scripts/rule-$interface1 && echo from $eth1addr table 101 >> /etc/sysconfig/network-scripts/rule-$interface1
+              - echo $eth0cidr dev $interface0 table 100 >> /etc/sysconfig/network-scripts/route-$interface0 && echo default via $eth0gw dev $interface0 table 100 >> /etc/sysconfig/network-scripts/route-$interface0
+              - echo $eth1cidr dev $interface1 table 101 >> /etc/sysconfig/network-scripts/route-$interface1
+              - if [ $ipv6enabled == 'ipv6' ]; then echo IPV6_DEFAULTGW=$defaultgateway0%$interface0 >> /etc/sysconfig/network-scripts/ifcfg-$interface0; fi
+              - systemctl restart network
+            final_message: "The system is finally up, after $UPTIME seconds"
+          params:
+            $MTU: { get_param: [ cbam, extensions, MTU_size ] }
+            $timezone: { get_param: [ cbam, extensions, time_zone ]}
+            $ipv6enabled: { get_param: [ cbam, extensions, ip_protocol_version ] }
+            $hostname: { if: [ custom_vm_name, { list_join: [ "", [ { get_param: [ cbam, extensions, hostname_prefix ] }, { if: [ cbam_id,{ get_param: prefix }, "" ] }, { if: [ cbam_id,"-", "" ] }, ui-, { get_param: node_index }, { get_param: [ cbam, extensions, hostname_postfix ] } ] ] } , { list_join: [ "", [ { get_param: [ cbam, extensions, custom_vm_name_ui ] }, { get_param: node_index } ] ] } ] }
+
+            $eth0addr: { get_attr: [ oam_port, fixed_ips, 0, ip_address ] }
+            $eth1addr: { get_attr: [ internal_port, fixed_ips, 0, ip_address ] }
+
+            $eth0hwaddr: { get_attr: [ oam_port, mac_address ] }
+            $eth1hwaddr: { get_attr: [ internal_port, mac_address ] }
+
+            $eth0prefix: { get_param: [ cbam, extensions, oam_network_netmask ] }
+            # Following will be problematic after / if internal GFS network is also IPv6 network since the mask is assumed to be just two integers.
+            $eth1prefix: { list_join: [ '', [ { get_attr: [ internal_port, subnets, 0, cidr, -2 ] }, { get_attr: [ internal_port, subnets, 0, cidr, -1 ] } ] ] }
+
+            $defaultgateway0: { get_attr: [ oam_port, subnets, 0, gateway_ip ] }
+            $defaultgateway1: { get_attr: [ internal_port, subnets, 0, gateway_ip ] }
+
+            $eth0gw: { get_attr: [ oam_port, subnets, 0, gateway_ip ] }
+            $eth1gw: { get_attr: [ internal_port, subnets, 0, gateway_ip ] }
+
+            $eth0cidr: { get_attr: [ oam_port, subnets, 0, cidr ] }
+            $eth1cidr: { get_attr: [ internal_port, subnets, 0, cidr ] }
+
+            $ui_oam_vip: { get_param: ui_moving_ip }
+
+            $certs_mount_id: { get_resource: data_volume_1 }
+            $docker_registry_mount_id: { get_resource: data_volume_2 }
+
+  data_volume_1:
+    type: OS::Cinder::Volume
+    properties:
+      size: 5
+      name: { list_join: [ "-", [ { get_param: prefix }, ui, { get_param: node_index }, certs ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  data_volume_2:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: [ cbam, extensions, volume_size_docker_registry ] }
+      name: { list_join: [ "-", [ { get_param: prefix }, ui, { get_param: node_index }, docker_reg ] ] }
+      volume_type: { get_param: [ cbam, extensions, cinder_volume_backend ]}
+
+  server:
+    type: OS::Nova::Server
+    depends_on: [
+      oam_port,
+      internal_port,
+      data_volume_1,
+      data_volume_2
+    ]
+    properties:
+      name: { if: [ custom_vm_name, { list_join: [ "", [ { get_param: [ cbam, extensions, hostname_prefix ] }, { if: [ cbam_id,{ get_param: prefix }, "" ] }, { if: [ cbam_id,"-", "" ] }, ui-, { get_param: node_index }, { get_param: [ cbam, extensions, hostname_postfix ] } ] ] } , { list_join: [ "", [ { get_param: [ cbam, extensions, custom_vm_name_ui ] }, { get_param: node_index } ] ] } ] }
+      key_name: { get_param: key_name }
+      config_drive: true
+      image: { get_param: [ resources, { get_param: node_index }, server, imageId ] }
+      flavor: { get_param: [ resources, { get_param: node_index }, server, flavorId ] }
+      availability_zone: { get_param: [ cbam, extensions, availability_zones, { get_param: [ resources, {get_param: node_index}, _mappedIndexNumeric ] } ] }
+      scheduler_hints:
+        group: { get_param: ui_server_group_id }
+      block_device_mapping_v2:
+        - volume_id: { get_resource: data_volume_1 }
+          boot_index: 1
+        - volume_id: { get_resource: data_volume_2 }
+          boot_index: 2
+      networks: [
+        { "port": { get_resource: oam_port } },
+        { "port": { get_resource: internal_port } }
+            ]
+      user_data_format: RAW
+      user_data:
+        get_resource: el_base_config

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "project": {
+      "id": "21502"
+    },
+    "labels": [
+      "Automation"
+    ],
+    "summary": "Test Execution for Automated Test TODAYDATE",
+    "issuetype": {
+      "id": "10007"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+---
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - db_el_tablespace
+    - db_el_tablespace_index
+  tags: 
+    - always  
+
+    
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "db_el_tablespace", value: "{{ db_el_tablespace }}" }    
+    - { name: "db_el_tablespace_index", value: "{{ db_el_tablespace_index }}" }
+  tags: 
+    - always    
+    
+# Replace tablespace and tablespace index placeholder in sql scripts
+- name: execute modify_sql_script.sh
+  shell: ". {{ TEST_home }}/bin/modify_sql_script.sh
+                && modify_TEST_create_sql      {{ TEST_home }} {{ db_el_tablespace }} {{ db_el_tablespace_index }}
+                && modify_lookupserver_create_sql   {{ TEST_home }} {{ db_el_tablespace }}
+                && modify_mcp_create_sql            {{ TEST_home }} {{ db_el_tablespace }} {{ db_el_tablespace_index }}"
+  register: script_result_modify_sql_script
+  become: true
+  become_method: sudo
+  tags:
+    - install    
+
+# Execute TEST_create_db.sql 
+- name: create TEST tables
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db EL
+                && run_db_script {{ TEST_home }}/sql/TEST/TEST_create_db.sql {{ TEST_home }}/log/TEST_create_db.sql.log"
+  register: script_result_create_TEST_tables
+    
+# Fail the execution if script executed with error
+- name: fail when executing TEST_create_db.sql script has an error
+  fail: msg="Error found when executing script"
+  when: >
+   ( script_result_create_TEST_tables.stderr is defined ) 
+   and ( "error:" in item | lower )
+   or ( "could not connect" in item | lower )
+  with_items: "{{ script_result_create_TEST_tables.stderr.split('\n') }}"
+
+# Execute insert_default_templates.sql
+- name: insert default data
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db EL
+                && run_db_script {{ TEST_home }}/sql/TEST/insert_default_templates.sql {{ TEST_home }}/log/insert_default_templates.sql.log"
+  register: script_result_insert_default_data
+
+# Fail the execution if script executed with error
+- name: fail when executing insert_default_templates.sql script has an error
+  fail: msg="Error found when executing script"
+  when: >
+   ( script_result_insert_default_data.stderr is defined ) 
+   and ( "error:" in item | lower )
+   or ( "could not connect" in item | lower )
+  with_items: "{{ script_result_insert_default_data.stderr.split('\n') }}"
+
+# Execute lookup_server_create.sql 
+- name: create lookupserver tables
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db LS
+                && run_db_script {{ TEST_home }}/sql/lookupserver/lookup_server_create.sql {{ TEST_home }}/log/lookup_server_create.sql.log"
+  register: script_result_create_ls_tables
+    
+# Fail the execution if script executed with error
+- name: fail when executing lookup_server_create.sql script has an error
+  fail: msg="Error found when executing script"
+  when: >
+   ( script_result_create_ls_tables.stderr is defined ) 
+   and ( "error:" in item | lower )
+   or ( "could not connect" in item | lower )
+  with_items: "{{ script_result_create_ls_tables.stderr.split('\n') }}"
+
+# Execute txe_create_schema.sql 
+- name: create mcp tables
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db MCP
+                && run_db_script {{ TEST_home }}/sql/mcp/txe_create_schema.sql {{ TEST_home }}/log/txe_create_schema.sql.log"
+  register: script_result_create_mcp_tables
+
+# Fail the execution if script executed with error
+- name: fail when executing txe_create_schema.sql script has an error
+  fail: msg="Error found when executing script"
+  when: >
+   ( script_result_create_mcp_tables.stderr is defined ) 
+   and ( "error:" in item | lower )
+   or ( "could not connect" in item | lower )
+  with_items: "{{ script_result_create_mcp_tables.stderr.split('\n') }}"
+  
+...

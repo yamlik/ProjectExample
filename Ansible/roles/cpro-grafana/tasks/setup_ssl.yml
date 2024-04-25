@@ -1,0 +1,113 @@
+---
+
+- name: "create {{ dr_ca_cert_dir }} directory"
+  file:
+    path: "{{ dr_ca_cert_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+  become_method: sudo  
+
+- name: "create {{ dr_ca_cert_dir }}/private directory"
+  file:
+    path: "{{ dr_ca_cert_dir }}/private"
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+  become: true
+  become_method: sudo  
+
+- name: "create {{ dr_ca_cert_dir }}/certs directory"
+  file:
+    path: "{{ dr_ca_cert_dir }}/certs"
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+  become: true
+  become_method: sudo  
+
+- name: "create {{ dr_ca_cert_dir }}/serial file"
+  copy:
+    content: "01"
+    dest: "{{ dr_ca_cert_dir }}/serial"
+    force: no
+    owner: root
+    group: root
+    mode: 0700
+  become: true
+  become_method: sudo
+
+- name: "create {{ dr_ca_cert_dir }}/serial file"
+  copy:
+    content: ""
+    dest: "{{ dr_ca_cert_dir }}/index.txt"
+    force: no
+    owner: root
+    group: root
+    mode: 0700
+  become: true
+  become_method: sudo
+
+- name: "copy openssl.cnf file"
+  template:
+    src: openssl.cnf.j2
+    dest: "{{ dr_ca_cert_dir }}/openssl.cnf"
+    owner: root
+    group: root
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: "Generate self-signed CA cert for DR system monitoring usage"
+  shell: "openssl req -x509 -config {{ dr_ca_cert_dir }}/openssl.cnf -newkey rsa:2048 -days 3650 -out {{ dr_ca_cert_dir }}/ca_certificate.pem -outform PEM -subj /CN=DRAlarmCA/ -nodes"
+  register: ca_cert_generated
+  failed_when: ca_cert_generated.rc != 0
+  become: true
+  become_method: sudo
+
+- name: "create {{ grafana_ssl_dir }} directory"
+  file:
+    path: "{{ grafana_ssl_dir }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0700
+  become: true
+  become_method: sudo  
+
+- name: "Generate OpenSSL private key for grafana-server"
+  shell: "openssl genrsa -out {{ grafana_ssl_dir }}/private_key.pem 2048"
+  register: grafana_private_key_generated
+  failed_when: grafana_private_key_generated.rc != 0
+  become: true
+  become_method: sudo  
+  
+- name: "Generate OpenSSL Certificate Signing Request for grafana-server"
+  shell: "openssl req -new -key {{ grafana_ssl_dir }}/private_key.pem -out {{ grafana_ssl_dir }}/grafana_req.csr -subj /CN=$(hostname)/O=grafana_server/ -nodes"
+  register: grafana_crs_generated
+  failed_when: grafana_crs_generated.rc != 0
+  become: true
+  become_method: sudo
+  
+- name: "Generate OpenSSL certificate for grafana-server"
+  shell: "openssl ca -config {{ dr_ca_cert_dir }}/openssl.cnf -in {{ grafana_ssl_dir }}/grafana_req.csr -out {{ grafana_ssl_dir }}/grafana_server_certificate.crt -notext -batch -extensions server_ca_extensions"
+  register: grafana_cert_generated
+  failed_when: grafana_cert_generated.rc != 0
+  become: true
+  become_method: sudo
+
+- name: Recursively change ownership of a directory
+  file:
+    path: "{{ grafana_ssl_dir }}"
+    recurse: yes
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0700
+  become: true
+  become_method: sudo

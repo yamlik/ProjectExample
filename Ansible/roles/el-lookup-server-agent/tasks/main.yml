@@ -1,0 +1,204 @@
+---
+
+# check if lookup-server rpm is installed
+- name: check for lookup-server rpm
+  command: rpm -q lookup-server
+  args:
+    warn: no
+  register: rpm_check 
+  
+
+# fail if lookup-server rpm not installed
+- name: fail when lookup-server not installed
+  fail: msg="lookup-server not installed"
+  when: rpm_check.rc == 1
+  
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - ls_agent_zk_url
+    - ls_agent_namenodes
+    
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "ls_agent_zk_url", value: "{{ ls_agent_zk_url }}" }
+    - { name: "ls_agent_namenodes", value: "{{ ls_agent_namenodes }}" }   
+        
+    
+# Replace el-lookup-server-agent.service with template file 
+- name: update el-lookup-server-agent.service
+  template:
+    src: el-lookup-server-agent.service.j2
+    dest: "/etc/systemd/system/el-lookup-server-agent.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+
+
+# Update ls_agent_zk_url in RCFILE, if the line exists
+- name: Update ls_agent_zk_url in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_zk_url:{{ ls_agent_zk_url }}"
+    regexp  : "^ls_agent_zk_url:.*"
+    backup  : yes
+  register  : replace_ls_agent_zk_url
+
+# Add ls_agent_zk_url in RCFILE, if the line not exists
+- name: Add ls_agent_zk_url in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_zk_url:{{ ls_agent_zk_url }}"
+    insertafter: EOF
+  when: replace_ls_agent_zk_url.changed == false
+
+
+# Update ls_agent_namenodes in RCFILE, if the line exists
+- name: Update ls_agent_namenodes in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_namenodes:{{ ls_agent_namenodes }}"
+    regexp  : "^ls_agent_namenodes:.*"
+    backup  : yes
+  register  : replace_ls_agent_namenodes
+
+# Add ls_agent_namenodes in RCFILE, if the line not exists
+- name: Add ls_agent_namenodes in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_namenodes:{{ ls_agent_namenodes }}"
+    insertafter: EOF
+  when: replace_ls_agent_namenodes.changed == false
+  
+
+# Update ls_agent_jmx_port in RCFILE, if the line exists
+- name: Update ls_agent_jmx_port in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_jmx_port:{{ ls_agent_jmx_port }}"
+    regexp  : "^ls_agent_jmx_port:.*"
+    backup  : yes
+  register  : replace_ls_agent_jmx_port
+
+# Add ls_agent_jmx_port in RCFILE, if the line not exists
+- name: Add ls_agent_jmx_port in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_jmx_port:{{ ls_agent_jmx_port }}"
+    insertafter: EOF
+  when: replace_ls_agent_jmx_port.changed == false
+
+# Update ls_agent_monitoring_interval in RCFILE, if the line exists
+- name: Update ls_agent_monitoring_interval in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_monitoring_interval:{{ ls_agent_monitoring_interval }}"
+    regexp  : "^ls_agent_monitoring_interval:.*"
+    backup  : yes
+  register  : replace_ls_agent_monitoring_interval
+
+# Add ls_agent_monitoring_interval in RCFILE, if the line not exists
+- name: Add ls_agent_monitoring_interval in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_monitoring_interval:{{ ls_agent_monitoring_interval }}"
+    insertafter: EOF
+  when: replace_ls_agent_monitoring_interval.changed == false
+  
+# Update ls_agent_shutdown_timeout in RCFILE, if the line exists
+- name: Update ls_agent_shutdown_timeout in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_shutdown_timeout:{{ ls_agent_shutdown_timeout }}"
+    regexp  : "^ls_agent_shutdown_timeout:.*"
+    backup  : yes
+  register  : replace_ls_agent_shutdown_timeout
+
+# Add ls_agent_shutdown_timeout in RCFILE, if the line not exists
+- name: Add ls_agent_shutdown_timeout in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_shutdown_timeout:{{ ls_agent_shutdown_timeout }}"
+    insertafter: EOF
+  when: replace_ls_agent_shutdown_timeout.changed == false
+
+# Update ls_agent_max_thread in RCFILE, if the line exists
+- name: Update ls_agent_max_thread in RCFILE if the line exists
+  replace:
+    dest    : "{{ rcfile }}"
+    replace : "ls_agent_max_thread:{{ ls_agent_max_thread }}"
+    regexp  : "^ls_agent_max_thread:.*"
+    backup  : yes
+  register  : replace_ls_agent_max_thread
+
+# Add ls_agent_max_thread in RCFILE, if the line not exists
+- name: Add ls_agent_max_thread in RCFILE if the line not exists
+  lineinfile:
+    dest    : "{{ rcfile }}"
+    line    : "ls_agent_max_thread:{{ ls_agent_max_thread }}"
+    insertafter: EOF
+  when: replace_ls_agent_max_thread.changed == false
+  
+# Open firewall open base on configured port number
+- name: open ports for el-lookup-server-agent
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "{{ ls_agent_jmx_port }}"
+  become: true
+  become_method: sudo
+
+#- name: remove ports for el-lookup-server-agent
+#  firewalld:
+#    zone: public
+#    port: "{{ item }}/tcp"
+#    permanent: true
+#    immediate: true
+#    state: disabled 
+#  with_items:  
+#    - "{{ ls_agent_jmx_port }}"    
+#  become: true
+#  become_method: sudo
+#  tags: 
+#    - uninstall
+
+  
+# Enable service el-lookup-server-agent
+- name: enable service el-lookup-server-agent
+  systemd:
+    name: el-lookup-server-agent
+    daemon_reload: yes
+    enabled: yes
+    state: stopped
+  become: true
+  become_method: sudo
+   
+
+#- name: disable service el-lookup-server-agent
+#  systemd:
+#    name: el-lookup-server-agent
+#    enabled: no
+#    state: stopped
+#  become: true
+#  become_method: sudo
+#  tags: 
+#    - uninstall
+    
+ 
+...

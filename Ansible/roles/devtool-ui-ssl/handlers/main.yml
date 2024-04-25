@@ -1,0 +1,8 @@
+---
+- name: "Restart devtool service"
+  systemd:
+    name: 'tomcat@devtool'
+    state: 'restarted'
+  become: true
+  become_method: sudo
+  listen: "Restart devtool tomcat service"

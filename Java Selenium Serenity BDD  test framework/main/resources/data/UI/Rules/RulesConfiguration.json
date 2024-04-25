@@ -1,0 +1,1181 @@
+{
+  "TC-58853-1": {
+    "Rule Details": {
+      "RuleCode": "Auto1",
+      "ruleDescription": "AutomationRule1",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "0",
+      "Age of Applications (Days) - End": "366"
+    },
+    "Rule Conditions": {
+      "Application Value": {
+        "Application Category": "Applicant",
+        "Field": "Id Number 1",
+        "Operator": "FUZZY MATCH",
+        "Value": "pass1",
+        "Similarity": ""
+      }
+    }
+  },
+  "TC-58853-2": {
+    "Rule Details": {
+      "RuleCode": "Auto1",
+      "ruleDescription": "AutomationRule1",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "0",
+      "Age of Applications (Days) - End": "366"
+    },
+    "Rule Conditions": {
+      "Application Value": {
+        "Application Category": "Applicant",
+        "Field": "Id Number 1",
+        "Operator": "FUZZY MATCH",
+        "Value": "pass1",
+        "Similarity": "999"
+      }
+    }
+  },
+  "TC-58857": {
+    "TableDetails": {
+      "TableId": "99",
+      "TableName": "Test",
+      "FileType": "CSV"
+    },
+    "DataForZIP": {
+      "FieldName": "ZIP",
+      "ValueType": "int",
+      "CalSyntax": "Null",
+      "ActiveCheckBox": "Yes"
+    },
+    "DataForCal": {
+      "FieldName": "Calc",
+      "ValueType": "int",
+      "ActiveCheckBox": "No",
+      "CalSyntax": "select cast(ISNULL(Fraud_Rate, 0 ) as decimal(16,2)) from (select count(*)* 100.0 /NULLIF((select count(*) from A_Application AP (NOLOCK) INNER JOIN A_Applicant AT ON AP.AppKey = AT.AppKey where AT.Home_Postcode=ZIP AND DATEDIFF(MONTH, Load_Date, GETDATE()) <= 2),0) [Fraud_Rate] from A_Application AP(NOLOCK) INNER JOIN A_Applicant AT ON AP.AppKey = AT.AppKey where AT.Home_Postcode=ZIP AND Action_Taken in('K', 'S') and DATEDIFF(MONTH, Load_Date, GETDATE()) <= 2) as A"
+    },
+    "DataForXml": {
+      "FieldName": "WholeXML",
+      "ValueType": "nvarchar",
+      "CalSyntax": "Null",
+      "ActiveCheckBox": "Yes"
+    },
+    "verifyRow1": {
+      "Field Name": "ZIP",
+      "Value Type": "int",
+      "Description": "ZIP"
+    },
+    "verifyRow2": {
+      "Field Name": "Calc",
+      "Value Type": "int",
+      "Description": "Calc"
+    },
+    "verifyRow3": {
+      "Field Name": "WholeXML",
+      "Value Type": "nvarchar",
+      "Description": "WholeXML"
+    }
+  },
+  "TC-58853-3": {
+    "Rule Details": {
+      "RuleCode": "Fuzy001",
+      "ruleDescription": "AutomationRule1",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Date of Birth",
+        "Operator": "=",
+        "Database Category": "Applicant",
+        "DField": "Date of Birth",
+        "Logical Operator": "AND",
+        "Partial Definition": "0"
+      },
+      "Database Field 2": {
+        "Application Category": "Applicant",
+        "Field": "Surname",
+        "Operator": "FUZZY MATCH",
+        "Database Category": "Applicant",
+        "DField": "Surname",
+        "Logical Operator ": "",
+        "Partial Definition": "0"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Surname": "CASSIDI",
+      "Date of Birth": "20/10/2020"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54385MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Surname": "CASSIDI",
+      "Date of Birth": "20/10/2020"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54385MTGE"
+    }
+  },
+  "TC-58873-1": {
+    "Rule Details": {
+      "RuleCode": "PAR0001",
+      "ruleDescription": "AutomationRule02",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "999",
+      "Age of Applications (Days) - End": "999"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Id Number 1",
+        "Operator": "=",
+        "Database Category": "Applicant",
+        "DField": "Id Number 1",
+        "Logical Operator": "AND",
+        "Partial Definition": "0"
+      },
+      "Database Field 2": {
+        "Application Category": "Applicant",
+        "Field": "First Name",
+        "Operator": "=",
+        "Database Category": "Applicant",
+        "DField": "First Name",
+        "Logical Operator ": "",
+        "Partial Definition": "1",
+        "Start Position": "1",
+        "Length": "3"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58873",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "Suspol",
+      "Id Number 1": "1234"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58873MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58873",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "First Name": "Sustest",
+      "Id Number 1": "1234"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation58873MTGE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Sustest"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Suspol"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "1234",
+      "First Name": "Sustest"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "1234",
+      "First Name": "Suspol"
+    },
+    "verifyRowColorApplicant": {
+      "Id Number 1": "blue",
+      "First Name": "blue"
+    }
+  },
+  "TC-58873-2": {
+    "Rule Details": {
+      "RuleCode": "PAR0002",
+      "ruleDescription": "AutomationRule03",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "0",
+      "Age of Applications (Days) - End": "0",
+      "Match Application To Itself": "1"
+    },
+    "Rule Conditions": {
+      "Database Value 1": {
+        "Application Category": "Application",
+        "Field": "Application Date",
+        "Operator": "IS NOT NULL",
+        "Logical Operator": "AND"
+      },
+      "Database Value 2": {
+        "Application Category": "Application",
+        "Field": "Application Date",
+        "Operator": ">",
+        "Variable": "1",
+        "Value": "DATEADD(dd,-10,GETDATE())"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58873",
+      "Application Date": "31/01/2022",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58873MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58873",
+      "Application Date": "31/01/2022",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation58873MTGE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Sustest"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Suspol"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Application Date": "blue"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "1234",
+      "First Name": "Sustest"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "1234",
+      "First Name": "Suspol"
+    }
+  },
+  "TC-58873-3": {
+    "Rule Details": {
+      "RuleCode": "PAR0003",
+      "ruleDescription": "AutomationRule083",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "0",
+      "Age of Applications (Days) - End": "0",
+      "Match Application To Itself": "1"
+    },
+    "Rule Conditions": {
+      "Database Value 1": {
+        "Application Category": "Applicant",
+        "Field": "Home Address 1",
+        "Operator": "=",
+        "Value": "winter",
+        "Logical Operator": "AND",
+        "Partial Definition": "1",
+        "Start Position": "1",
+        "Length": "3",
+        "Variable": "1"
+      },
+      "Database Value 2": {
+        "Application Category": "Application",
+        "Field": "Application Date",
+        "Operator": ">",
+        "Variable": "1",
+        "Value": "DATEADD(dd,-10,GETDATE())"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58873",
+      "Application Date": "31/01/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "winas"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58873MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58873",
+      "Application Date": "31/01/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "winor"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation58873MTGE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Sustest"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "1234",
+      "First Name": "Suspol"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Application Date": "blue"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "winor"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "winas"
+    },
+    "verifyRowColorApplicant": {
+      "Home Address 1": "blue"
+    }
+  },
+  "TC-58878": {
+    "Rule Details": {
+      "RuleCode": "Fuzy001",
+      "ruleDescription": "AutomationRule1",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Date of Birth",
+        "Operator": "=",
+        "Database Category": "Applicant",
+        "DField": "Date of Birth",
+        "Logical Operator": "AND",
+        "Partial Definition": "0"
+      },
+      "Database Field 2": {
+        "Application Category": "Applicant",
+        "Field": "Surname",
+        "Operator": "FUZZY MATCH",
+        "Database Category": "Applicant",
+        "DField": "Surname",
+        "Logical Operator ": "",
+        "Partial Definition": "0"
+      }
+    }
+  },
+  "TC-52544": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_52544",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_52544LOAN"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_52544",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant1": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Organisation": "{{organisation}}"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Organisation": "{{organisation}}"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "verifyRowColorApplicant": {
+      "Id Number 1": "blue",
+      "Company Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_52544LOAN"
+    }
+  },
+  "TC-52545": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_52545",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_52545LOAN"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_52545",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant1": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Organisation": "{{organisation}}"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Organisation": "{{organisation}}"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "verifyRowColorApplicant": {
+      "Id Number 1": "blue",
+      "Company Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_52545LOAN"
+    }
+  },
+  "TC-52562": {
+    "Rule Details": {
+      "RuleCode": "IF00002",
+      "ruleDescription": "Index Fuzzy Match-Database Filed",
+      "RuleScore": "20",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Full Home Address",
+        "Operator": "INDEXED FUZZY MATCH NYSIIS",
+        "Similarity": "0.52",
+        "Database Category": "Applicant",
+        "DField": "Full Home Address",
+        "Partial Definition": "0"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_52562",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "Street1",
+      "Home Address 2": "Street2",
+      "Home Address 3": "Street3",
+      "Home Address 4": "Street4"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_52562MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_52562",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "Street1",
+      "Home Address 2": "Street2",
+      "Home Address 3": "Street3",
+      "Home Address 4": "Street4"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Full Home Address": "Street1 Street2 Street3 Street4"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Full Home Address": "Street1 Street2 Street3 Street4"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "Street1",
+      "Home Address 2": "Street2",
+      "Home Address 3": "Street3",
+      "Home Address 4": "Street4"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "Street1",
+      "Home Address 2": "Street2",
+      "Home Address 3": "Street3",
+      "Home Address 4": "Street4"
+    },
+    "verifyRowColorApplicant": {
+      "Full Home Address": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_52562MTGE"
+    }
+  },
+  "TC-58153": {
+    "Rule Details": {
+      "RuleCode": "IF00003",
+      "ruleDescription": "Index Fuzzy Match-Database Value",
+      "RuleScore": "20",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Value 1": {
+        "Application Category": "Applicant",
+        "Field": "Full Home Address",
+        "Operator": "INDEXED FUZZY MATCH NYSIIS",
+        "Value": "address1 address2",
+        "Variable": "0"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58153",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "address1",
+      "Home Address 2": "address2"
+    },
+    "SecondApplicant": {
+      "Home Address 1": "address1",
+      "Home Address 2": "address2"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58153MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58153",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "addres1",
+      "Home Address 2": "addres2"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Full Home Address": "address1 address2"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Full Home Address": "addres1 addres2"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Address 1": "addres1",
+      "Home Address 2": "addres2"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Address 1": "address1",
+      "Home Address 2": "address2"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_58153MTGE"
+    }
+  },
+  "TC-58154": {
+    "Rule Details": {
+      "RuleCode": "IF00004",
+      "ruleDescription": "Index Fuzzy Match-Application Value",
+      "RuleScore": "20",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Application Value 1": {
+        "Application Category": "Applicant",
+        "Field": "Full Home Address",
+        "Operator": "INDEXED FUZZY MATCH NYSIIS",
+        "Value": "address1 address2",
+        "Variable": "0"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58154",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "address1",
+      "Home Address 2": "address2"
+    },
+    "SecondApplicant": {
+      "Home Address 1": "address1",
+      "Home Address 2": "address2"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58154MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58154",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "addres1",
+      "Home Address 2": "addres2"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Full Home Address": "addres1 addres2"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Full Home Address": "address1 address2"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Full Home Address": "addres1 addres2"
+    },
+    "verifyRowColorApplicant": {
+      "Full Home Address": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_58154MTGE"
+    }
+  },
+  "TC-54401": {
+    "Rule Details": {
+      "RuleCode": "IF00001",
+      "ruleDescription": "Index Fuzzy Match- Surname – Firstname",
+      "RuleScore": "20",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Full Name",
+        "Operator": "INDEXED FUZZY MATCH NYSIIS",
+        "Database Category": "Applicant",
+        "DField": "Full Name",
+        "Partial Definition": "0"
+      }
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Surname": "SMITH",
+      "First Name": "DAVID"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54385MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54385",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Surname": "SMITH",
+      "First Name": "DAVID"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Full Name": "DAVID SMITH"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Full Name": "DAVID SMITH"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Surname": "SMITH",
+      "First Name": "DAVID"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Surname": "SMITH",
+      "First Name": "DAVID"
+    },
+    "verifyRowColorApplicant": {
+      "Full Name": "blue"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54385MTGE"
+    }
+  },
+  "TC-58875": {
+    "Rule Details": {
+      "RuleCode": "Fuzy001",
+      "ruleDescription": "AutomationRule1",
+      "RuleScore": "30",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Applicant",
+        "Field": "Date of Birth",
+        "Operator": "=",
+        "Database Category": "Applicant",
+        "DField": "Date of Birth",
+        "Logical Operator": "AND",
+        "Partial Definition": "0"
+      },
+      "Database Field 2": {
+        "Application Category": "Applicant",
+        "Field": "Surname",
+        "Operator": "FUZZY MATCH",
+        "Database Category": "Applicant",
+        "DField": "Surname",
+        "Logical Operator ": "",
+        "Partial Definition": "0"
+      }
+    }
+  },
+  "TC-58860": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    }
+  },
+  "TC-58860-2": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    }
+  },
+  "TC-58860-3": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    }
+  },
+  "TC-58788": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58788",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58788MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58788_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "EnterData": {
+      "KnownFraud": "KW"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FOR REFERENCE ONLY"
+    },
+    "ActionSettings": {
+      "KnownFraud": "KW",
+      "Suspicious": "Suspicious"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}TTest2_58788_2"
+    }
+  },
+  "TC-58895": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58895",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58895LOAN"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58895",
+      "Application Date": "07/12/2021",
+      "Application Type": "LOAN"
+    },
+    "Applicant1": {
+      "Id Number 1": " ABCDE",
+      "Company Name": "NESTLE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}TTest2_58895"
+    }
+  },
+  "TSNT-5182": {
+    "Rule Details": {
+      "RuleCode": "IF00005",
+      "ruleDescription": "Security Category",
+      "RuleScore": "120",
+      "Age of Applications (Days) - Start": "1",
+      "Age of Applications (Days) - End": "360"
+    },
+    "Rule Conditions": {
+      "Database Field 1": {
+        "Application Category": "Security",
+        "Field": "Id Number 1",
+        "Operator": "=",
+        "Database Category": "Security",
+        "DField": "Id Number 1",
+        "Logical Operator": "AND",
+        "Partial Definition": "0"
+      },
+      "Database Field 2": {
+        "Application Category": "Security",
+        "Field": "Id Number 2",
+        "Operator": "=",
+        "Database Category": "Security",
+        "DField": "Id Number 2",
+        "Logical Operator ": "",
+        "Partial Definition": "0"
+      }
+    },
+      "Application": {
+        "Organisation": "{{organisation}}",
+        "Application Number": "Test10_4",
+        "Application Date": "07/12/2022",
+        "Application Type": "CARD"
+      },
+      "Security": {
+        "Id Number 1": "REG111",
+        "Id Number 2": "ENG111"
+      },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test20_4",
+      "Application Date": "13/11/2022",
+      "Application Type": "CARD"
+    },
+    "Security1": {
+      "Id Number 1": "REG111",
+      "Id Number 2": "ENG111"
+    },
+    "Security2": {
+      "Id Number 1": "REG111",
+      "Id Number 2": "ENG222"
+    }
+  }
+  }
+
+
+
+
+
+

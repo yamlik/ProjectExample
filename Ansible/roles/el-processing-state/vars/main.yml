@@ -1,0 +1,15 @@
+---
+el_processing_state_user: TEST
+el_processing_state_group: TEST
+
+el_processing_state_install_directory: /usr/bin
+el_processing_state_base_path: /opt/TEST/el-processing-state
+TEST_install_dir: /opt/TEST/TEST
+TEST_home: /opt/TEST/TEST/base
+install_dir: /opt/TEST/TEST
+monitor_config_dir: /opt/TEST/TEST/data/monitor
+stream_file_directory: "{{ monitor_config_dir }}/stream_file_directory"
+tt_file_directory: "{{ monitor_config_dir }}/tt_file_directory"
+tt_sql_directory:  "{{ monitor_config_dir }}/tt_sql_directory"
+
+odbcini: "/opt/TEST/TimesTen/.odbc.ini"

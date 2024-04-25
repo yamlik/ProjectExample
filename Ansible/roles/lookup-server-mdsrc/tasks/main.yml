@@ -1,0 +1,55 @@
+---
+# tasks file for lookup-server-mdsrc
+
+- assert:
+    that:
+      - "db_el_user is defined"
+      - "db_el_password is defined"
+    msg: "'PostgreSQL database login parameters not defined'"
+
+- name: "Install {{ rcfile_package_name }}."
+  package:
+    name={{ rcfile_package_name }}
+    state=present
+  become: true
+  become_method: sudo
+
+- name: "Encrypt TEST database password"
+  shell: "{{ TEST_bin }}/el_crypto.ksh ENC '{{ db_el_password }}'"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  register: encrypted_db_passwd
+  changed_when: False
+
+- name: "Add/Update {{ lookup_server_package_name }} section of RC file with provided details."
+  blockinfile:
+    block: |
+      program:                      lookup_server
+      dbvendor:                     {{ db_el_vendor }}
+      dbtype:                       {{ db_el_type }}
+      dbname:                       {{ db_el_name }}
+      dbhost:                       {{ db_el_host }}
+      dbport:                       {{ db_el_port }}
+      dbuser:                       {{ db_el_user }}
+      dbpass:                       {{ encrypted_db_passwd.stdout }} # Database users password
+      pid_directory:                {{ ls_pid_directory }} # Location of the PID directory (path)
+      shmid_directory:              {{ ls_shmid_directory }} # Location of the SHMID directory (path)
+      log_directory:                {{ ls_log_directory }} # Location of the log directory (path)
+      dump_directory:               {{ ls_dump_directory }} # Location of the dump directory (path)
+      diagnostic_level:             {{ ls_diagnostic_level }} # LS diagnostic level (0-99)
+      log_roll_interval:            {{ ls_log_roll_interval }} # Time how long a log file is kept open before new one is began (hours)
+      log_roll_count:               {{ ls_log_roll_count }} # Amount of old log files kept (files)
+      max_tables:                   {{ ls_max_tables }} # Maximum number of tables stored in LS
+      separator_string:             "{{ ls_separator_string }}" # Separator string for data files
+      execute_command_after_reload: {{ ls_command_after_reload }} # Location of the reload script (path+filename), not in use as a default
+      load_data_from_files:         {{ ls_load_data_from_files_flag }} # Load data from a temporary flat file, if one exists, rather than download first from DB
+      sql_fetch_size:               {{ ls_sql_fetch_size }} # The number of rows to fetch from sql at a time
+      ls_agent_zk_url:              "{{ ls_agent_zk_url }}"
+      ls_agent_namenodes:           "{{ ls_agent_namenodes }}"
+      ls_agent_jmx_port:            {{ ls_agent_jmx_port}}
+      ls_agent_monitoring_interval: {{ ls_agent_monitoring_interval }}
+      ls_agent_shutdown_timeout:    {{ ls_agent_shutdown_timeout }}
+      ls_agent_max_thread:          {{ ls_agent_max_thread }}
+    dest: "{{ rc_file_location }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR {{ lookup_server_package_name }}"
+  become: true
+  become_method: sudo

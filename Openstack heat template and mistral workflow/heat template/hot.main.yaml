@@ -1,0 +1,226 @@
+heat_template_version: 2016-10-14
+
+parameters:
+  cbam:
+    type: json
+
+resources:
+  internal_network:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: True
+      name: { list_join: [ "-", [ { get_param: [ cbam, vnfId ] }, internal_network ] ] }
+
+  common_resources:
+    type: hot.common.yaml
+    properties:
+      cbam: { get_param: cbam }
+      prefix: { get_param: [ cbam, vnfId ] }
+      internal_network: { get_resource: internal_network }
+
+  db_static:
+    type: hot.db.static.yaml
+    properties:
+      cbam: { get_param: cbam }
+      prefix: { get_param: [ cbam, vnfId ] }
+
+  ui_static:
+    type: hot.ui.static.yaml
+    properties:
+      cbam: { get_param: cbam }
+      prefix: { get_param: [ cbam, vnfId ] }
+
+  oam_static:
+    type: hot.oam.static.yaml
+    properties:
+      cbam: { get_param: cbam }
+      prefix: { get_param: [ cbam, vnfId ] }
+      el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+      internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+      internal_network: { get_resource: internal_network }
+      internal_subnet: { get_attr: [ common_resources, internal_subnet ] }
+
+  cgf_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      internal_network
+    ]
+    properties:
+      count: { get_param: [ cbam, resources, cgf_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, cgf_aspect_group, blacklist ] } } ]
+      resource_def:
+        type: hot.cgf.main.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, cgf_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          el_cgf_security_group_id: { get_attr: [ common_resources, el_cgf_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ] }
+
+  processingON_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      cgf_aspect_group,
+      internal_network
+    ]
+    properties:
+      count: { get_param: [ cbam, resources, processingON_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, processingON_aspect_group, blacklist ] } } ]
+      resource_def:
+        type: hot.processingON.scalable.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, processingON_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          online_server_group_id: { get_attr: [ common_resources, online_server_group_id ] }
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          el_online_security_group_id: { get_attr: [ common_resources, el_online_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ] }
+
+  processingOFF_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      cgf_aspect_group,
+      processingON_aspect_group
+    ]
+    properties:
+      count: { get_param: [ cbam, resources, processingOFF_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, processingOFF_aspect_group, blacklist ] } } ]
+      resource_def:
+        type: hot.processingOFF.scalable.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, processingOFF_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          el_offline_security_group_id: { get_attr: [ common_resources, el_offline_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ] }
+
+  db_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      cgf_aspect_group,
+      db_static,
+      processingOFF_aspect_group,
+      processingON_aspect_group
+    ]
+    properties:
+      count: { get_param: [cbam, resources, db_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, db_aspect_group, blacklist] } } ]
+      resource_def:
+        type: hot.db.main.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, db_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          db_security_group_id: { get_attr: [ common_resources, db_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ]}
+          oam_moving_ip: { get_attr: [ db_static, db_oam_virtual_ip ] }
+          db_server_group_id: { get_attr: [ db_static, db_server_group_id ] }
+
+  ui_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      cgf_aspect_group,
+      ui_static,
+      processingOFF_aspect_group,
+      processingON_aspect_group,
+      db_aspect_group
+    ]
+    properties:
+      count: { get_param: [cbam, resources, ui_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, ui_aspect_group, blacklist] } } ]
+      resource_def:
+        type: hot.ui.scalable.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, ui_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ]}
+          ui_security_group_id: { get_attr: [ common_resources, ui_security_group_id ] }
+          ui_moving_ip: { get_attr: [ ui_static, ui_virtual_ip_address ] }
+          ui_server_group_id: { get_attr: [ ui_static, ui_server_group_id ] }
+
+  oam_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      cgf_aspect_group,
+      oam_static,
+      processingOFF_aspect_group,
+      processingON_aspect_group,
+      db_aspect_group,
+      ui_aspect_group
+    ]
+    properties:
+      count: { get_param: [ cbam, resources, oam_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, oam_aspect_group, blacklist ] } } ]
+      resource_def:
+        type: hot.oam.main.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, oam_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          oam_security_group_id: { get_attr: [ common_resources, oam_security_group_id ] }
+          oam_moving_ip: { get_attr: [ oam_static, oam_virtual_ip ] }
+          internal_moving_ip: { get_attr: [ oam_static, internal_virtual_ip ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ] }
+          oam_server_group_id: { get_attr: [ oam_static, oam_server_group_id ] }
+
+
+  crdb_aspect_group:
+    type: OS::Heat::ResourceGroup
+    depends_on: [
+      common_resources,
+      internal_network
+    ]
+    properties:
+      count: { get_param: [ cbam, resources, crdb_aspect_group, count ] }
+      removal_policies: [ { "resource_list": { get_param: [ cbam, resources, crdb_aspect_group, blacklist ] } } ]
+      resource_def:
+        type: hot.crdb.scalable.yaml
+        properties:
+          cbam: { get_param: cbam }
+          resources: { get_param: [ cbam, resources, crdb_aspect_group ] }
+          prefix: { get_param: [ cbam, vnfId ] }
+          key_name: { get_param: [ cbam, vnfId ] }
+          node_index: '%index%'
+          el_common_security_group_id: { get_attr: [ common_resources, el_common_security_group_id ] }
+          crdb_server_group_id: { get_attr: [ common_resources, crdb_server_group_id ] }
+          crdb_security_group_id: { get_attr: [ common_resources, crdb_security_group_id ] }
+          internal_network_security_group_id: { get_attr: [ common_resources, internal_network_security_group_id ] }
+          internal_network: { get_resource: internal_network }
+          internal_subnet: { get_attr: [ common_resources, internal_subnet ] }

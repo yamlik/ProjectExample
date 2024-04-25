@@ -1,0 +1,78 @@
+---
+- assert:
+    that:
+        - "db_el_name is defined"
+        - "db_el_user is defined"
+        - "db_el_password is defined"
+        - "db_el_host is defined"
+        - "db_el_port is defined"
+    msg: "EL DB parameters db_el_name, db_el_user, db_el_password, db_el_host and db_el_port are not defined"
+
+- assert:
+    that:
+        - "kc_https_url is defined"
+        - "kc_realm_name is defined"
+        - "kc_ssl_certificate_file is defined"
+        - "kc_realm_admin_user is defined"
+        - "kc_realm_admin_password is defined"
+        - "kc_client_id_TEST_ui is defined"
+    msg: "Keycloak parameters kc_https_url, kc_realm_name, kc_ssl_certificate_file, kc_realm_admin_user, kc_realm_admin_password, kc_client_id_TEST_ui are not defined"
+
+- name: "Copy temporary SSL Certificate file"
+  when:
+   - kc_ssl_certificate_file is defined
+  register: certificate_copied
+  copy:
+    src: "{{ kc_ssl_certificate_file }}"
+    dest: "/tmp/keycloak-certificate.tmp"
+    owner: TEST
+    group: TEST
+    mode: 0664
+
+- name: "Retrieve a list of lookup companies"
+  register: lookup_companies
+  get_lookup_companies:
+    db: "{{ db_el_name }}"
+    db_user: "{{ db_el_user }}"
+    db_password: "{{ db_el_password }}"
+    db_host: "{{ db_el_host }}"
+    db_port: "{{ db_el_port }}"
+  no_log: true
+
+- name: "Remove invalid permission for each of the lookup companies"
+  remove_client_roles:
+    server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    verify_ssl: "{{ certificate_copied.path if 'path' in certificate_copied else certificate_copied.dest }}"
+    username: "{{ kc_realm_admin_user }}"
+    password: "{{ kc_realm_admin_password }}"
+    clientId: "{{ kc_client_id_TEST_ui }}"
+    client_roles:
+      - name: "lookup.company:read:{{ item }}"
+      - name: "lookup.company:write:{{ item }}"
+  with_items: "{{ lookup_companies.companyIds }}"
+  no_log: true
+
+- name: "Create read and write permission for each of the lookup companies"
+  create_client_roles:
+    server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    verify_ssl: "{{ certificate_copied.path if 'path' in certificate_copied else certificate_copied.dest }}"
+    username: "{{ kc_realm_admin_user }}"
+    password: "{{ kc_realm_admin_password }}"
+    client: "{{ kc_client_id_TEST_ui }}"
+    client_roles:
+      - name: "lookup.company|read|{{ item }}"
+        description: "Read permission for {{ item }} parameters."
+      - name: "lookup.company|write|{{ item }}"
+        description: "Write permission for {{ item }} parameters."
+  with_items: "{{ lookup_companies.companyIds }}"
+  no_log: true
+
+- name: "Remove temporary SSL Certificate file"
+  register: certificate_removed
+  when: certificate_copied
+  file:
+    path: "{{ certificate_copied.path | default(certificate_copied.dest) }}"
+    state: absent
+

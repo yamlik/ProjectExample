@@ -1,0 +1,187 @@
+#!/bin/env bash
+
+DB_TOOLS={{ TEST_home }}/bin/db_tools.sh
+TOOLS={{ TEST_home }}/bin/tools.pl
+EGREP=$(which egrep)
+HEAD=$(which head)
+TAIL=$(which tail)
+CAT=$(which cat)
+
+RETURN_VALUE=1
+
+{% if force_mode is defined and force_mode is sameas true %}
+STOP_MODE='END'
+{% else %}
+STOP_MODE='ABORT'
+{% endif %}
+
+function make_temp_file()
+{
+   which mktemp >/dev/null 2>&1 && TMPFILE=$(mktemp) || TMPFILE=${TMPDIR:="/tmp"}/$1
+}
+
+function debug {
+    echo "DEBUG: ${1}"
+}
+
+function complete_stop_stream {
+    STREAM_ID=${1}
+
+    RETURN_VALUE=1
+
+    debug "Get current stream status for streamid: ${STREAM_ID}..."
+    is_stopped=$(${TOOLS} -c monitorstreams | ${EGREP} -w "^${STREAM_ID} " | ${EGREP} -w "STOPPED[ ]*$|OUT_OF_SY[ ]*$" | wc -l)
+    # return if the stream is already stopped
+    if (( is_stopped == 1 ));
+    then
+          RETURN_VALUE=0;
+          return
+    fi
+
+    ## Stop with END for 10 minutes timeout
+    ${TOOLS} -c stopstream --id ${STREAM_ID} --type ${STOP_MODE}
+    max_wait_time=600
+    start_time=$(date +"%s");
+
+    is_stopped=0;
+    while (( ($(date +"%s") - ${start_time}) < ${max_wait_time} ));
+    do
+        debug "Verifying stream status for streamid: ${STREAM_ID}..."
+        is_stopped=$(${TOOLS} -c monitorstreams | ${EGREP} -w "^${STREAM_ID} " | ${EGREP} -w "STOPPED[ ]*$|OUT_OF_SY[ ]*$" | wc -l)
+        if (( is_stopped == 1 ));
+        then
+            break
+        fi
+        sleep 5
+    done
+
+    ## when failed, stop with ABORT for 5 minutes timeout
+    if (( is_stopped == 0 ));
+    then
+        ${TOOLS} -c stopstream --id ${STREAM_ID} --type ABORT
+
+        max_wait_time=300
+        start_time=$(date +"%s");
+        while (( ($(date +"%s") - ${start_time}) < ${max_wait_time} ));
+        do
+            is_stopped=$(${TOOLS} -c monitorstreams | ${EGREP} -w "^${STREAM_ID} " | ${EGREP} -w "STOPPED[ ]*$" | wc -l)
+            if (( is_stopped == 1 ));
+            then
+                break
+            fi
+            sleep 5
+        done
+    fi
+
+    ## return 1 when successful stopped
+    if (( is_stopped == 1 ));
+    then
+        RETURN_VALUE=0;
+    fi
+}
+
+function cleanup_deleted_streams {
+    ${TOOLS} -c cleanupdeletedstreams
+    debug "Cleanup deleted streams command issued via system tools."
+}
+
+make_temp_file "el-remove-host_select_query.${$}"
+TEMP_SELECT=${TMPFILE}
+
+${CAT} > ${TEMP_SELECT} << _EOF_
+SELECT DISTINCT v.STREAMID
+FROM EL_V_STREAM_VERSIONS v JOIN EL_STREAM_LOG l ON l.STREAMID=v.STREAMID AND l.CURRENTSTREAMVERSION=v.STREAMVERSION AND l.CURRENTSTREAMVERSIONID=v.STREAMVERSIONID
+WHERE DEFAULTHOST='{{ instance_host_name }}'
+        AND DELETED='0';
+
+_EOF_
+
+
+. ${DB_TOOLS} && init_db EL
+LIST=$(run_db_script ${TEMP_SELECT} | ${HEAD} -n -2 | ${TAIL} -n +4)
+
+# Update el_stream_log
+UPDATE_STATEMENT="UPDATE EL_STREAM_LOG SET CURRENTSTREAMVERSION='0', CURRENTSTREAMVERSIONID='0' WHERE STREAMID in ("
+
+if [[ "${LIST}" != "" ]];
+then
+    for id in $LIST
+    do
+        debug "Stopping stream with StreamID: ${id}"
+        complete_stop_stream ${id}
+        if (( RETURN_VALUE == 1 ));
+        then
+        	echo "ERROR: Unable to stop stream with streamid (${id})"
+        	exit 1
+        fi
+        UPDATE_STATEMENT="${UPDATE_STATEMENT}${id},"
+    done
+
+    debug "All streams successfully stopped."
+else
+    debug "All streams stopped."
+fi
+
+debug "Unmonitoring and removing host..."
+UPDATE_STATEMENT="${UPDATE_STATEMENT%,});"
+
+make_temp_file "el-remove-host_update_delete_query.${$}"
+TEMP_UPDATE_DELETE=${TMPFILE}
+
+${CAT} > ${TEMP_UPDATE_DELETE} << _EOF_
+${UPDATE_STATEMENT}
+DELETE FROM EL_HOSTS WHERE HOST='{{ instance_host_name }}';
+commit;
+_EOF_
+
+$(run_db_script ${TEMP_UPDATE_DELETE} ${TEMP_UPDATE_DELETE}.log || echo "ERROR: Unable to unmonitor and delete host" && exit 1)
+
+debug "TEST Host '{{ instance_host_name }}' removed."
+
+# Update el_stream_versions
+UPDATE_STATEMENT="UPDATE EL_STREAM_VERSIONS SET DELETED='1' WHERE STREAMID in ("
+
+if [[ "${LIST}" != "" ]];
+then
+    for id in $LIST
+    do
+        UPDATE_STATEMENT="${UPDATE_STATEMENT}${id},"
+    done
+fi
+UPDATE_STATEMENT="${UPDATE_STATEMENT%,});"
+
+make_temp_file "el_stream_versions_update.${$}"
+TEMP_UPDATE_DELETE=${TMPFILE}
+
+${CAT} > ${TEMP_UPDATE_DELETE} << _EOF_
+${UPDATE_STATEMENT}
+commit;
+_EOF_
+
+$(run_db_script ${TEMP_UPDATE_DELETE} ${TEMP_UPDATE_DELETE}.log || echo "ERROR: Unable to mark delete stream as deleted in EL_STREAM_VERSIONS" && exit 1)
+
+# Update el_streams
+UPDATE_STATEMENT="UPDATE EL_STREAMS SET DELETED='1' WHERE STREAMID in ("
+
+if [[ "${LIST}" != "" ]];
+then
+    for id in $LIST
+    do
+        UPDATE_STATEMENT="${UPDATE_STATEMENT}${id},"
+    done
+fi
+UPDATE_STATEMENT="${UPDATE_STATEMENT%,});"
+
+make_temp_file "el_streams_update.${$}"
+TEMP_UPDATE_DELETE=${TMPFILE}
+
+${CAT} > ${TEMP_UPDATE_DELETE} << _EOF_
+${UPDATE_STATEMENT}
+commit;
+_EOF_
+
+$(run_db_script ${TEMP_UPDATE_DELETE} ${TEMP_UPDATE_DELETE}.log || echo "ERROR: Unable to mark delete stream as deleted in EL_STREAMS" && exit 1)
+
+debug "Successfully marked stream(s) as deleted."
+
+cleanup_deleted_streams

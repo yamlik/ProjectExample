@@ -1,0 +1,87 @@
+---
+- name: Ensure that GTP collector directories exists
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ gtp_prime_owner_id }}"
+    group: "{{ gtp_prime_owner_group }}"
+    mode: 0755
+  with_items:
+    - "{{ gtp_prime_collector.base_directory }}"
+    - "{{ gtp_prime_collector.base_directory }}/audit"
+    - "{{ gtp_prime_collector.base_directory }}/bin"
+    - "{{ gtp_prime_collector.base_directory }}/config"
+    - "{{ gtp_prime_collector.base_directory }}/download"
+    - "{{ gtp_prime_collector.base_directory }}/logs"
+    - "{{ gtp_prime_throughput_log_dir }}"
+  become: true
+  become_method: sudo
+
+- name: Copy GTP Prime collector configurations
+  copy:
+    src: "{{ item }}"
+    dest: "{{ gtp_prime_collector.base_directory }}/config/{{ item }}"
+    mode: 0644
+    force: yes
+    owner: "{{ gtp_prime_owner_id }}"
+    group: "{{ gtp_prime_owner_group }}"
+  with_items:
+    - log4j2.properties
+    - sequenceNumbers.json
+  become: true
+  become_method: sudo
+
+- name: Update GTP Prime collector configuration
+  template:
+    src: "gtp.json.j2"
+    dest: "{{ gtp_prime_collector.base_directory }}/config/gtp.json"
+    mode: 0644
+    force: yes
+    owner: "{{ gtp_prime_owner_id }}"
+    group: "{{ gtp_prime_owner_group }}"
+  become: true
+  become_method: sudo
+
+- name: Copy GTP Prime collector startup script
+  template:
+    src: "gtpc_control.j2"
+    dest: "{{ gtp_prime_collector.base_directory }}/bin/gtpc_control"
+    mode: 0755
+    force: yes
+    owner: "{{ gtp_prime_owner_id }}"
+    group: "{{ gtp_prime_owner_group }}"
+  become: true
+  become_method: sudo
+
+- name: Configure GTP Prime collector service
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: 0644
+    force: yes
+    owner: "{{ gtp_prime_owner_id }}"
+    group: "{{ gtp_prime_owner_group }}"
+  with_items:
+    - { src: 'gtp.service.j2', dest: "/etc/systemd/system/{{ gtp_prime_collector.service_name }}.service" }
+    - { src: 'gtpc.j2', dest: "/etc/sysconfig/{{ gtp_prime_collector.service_name }}" }
+  become: true
+  become_method: sudo
+
+- name: Start and enable "{{ gtp_prime_collector.service_name }}" service
+  systemd:
+    name: "{{ gtp_prime_collector.service_name }}"
+    daemon_reload: yes
+    enabled: yes
+    state: started
+  become: true
+  become_method: sudo
+
+- name: Open firewall port for the GTP Prime collector
+  firewalld:
+    zone: public
+    port: "{{ gtp_prime_collector.port }}/{{ gtp_prime_pathProtocol|lower }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo

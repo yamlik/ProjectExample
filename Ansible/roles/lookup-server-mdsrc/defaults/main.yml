@@ -1,0 +1,43 @@
+---
+# defaults file for lookup-server-mdsrc
+rcfile_package_name: "el-mdsrc"
+lookup_server_package_name: "lookup-server"
+
+# Files and directories location
+install_directory: "/opt/TEST/TEST"
+rc_file_location: "{{ install_directory }}/.mds.rc"
+TEST_home: "/opt/TEST/TEST/base"
+TEST_bin: "{{ TEST_home }}/bin"
+
+# Database connection variables
+db_el_vendor: "postgresql"
+db_el_name: "TEST"
+db_el_port: "{{ postgresql_server_port }}"
+db_el_host: "dbhost"
+db_el_type: "dbtype"
+
+# Directories location for lookup server
+ls_directory: "{{ install_directory }}/lookup_server"
+ls_pid_directory: "{{ ls_directory }}/tmp/"
+ls_shmid_directory: "{{ ls_directory }}/tmp/"
+ls_log_directory: "{{ ls_directory }}/log/"
+ls_dump_directory: "{{ ls_directory }}/bin/dump/"
+
+# Lookup server specific configuration
+ls_diagnostic_level: 0
+ls_log_roll_interval: 10
+ls_log_roll_count: 3
+ls_max_tables: 20
+ls_separator_string: " "
+ls_command_after_reload: ""
+ls_load_data_from_files_flag: 0
+ls_sql_fetch_size: 1000
+
+# Lookup server agent configuration
+ls_agent_zk_url: "zookeeperhost:2181"
+ls_agent_namenodes: hdfs://hdfshost1:8020,hdfs://hdfshost2:8020
+ls_agent_jmx_port: 61112
+ls_agent_monitoring_interval: 5
+ls_agent_shutdown_timeout: 60
+ls_agent_max_thread: 100
+...

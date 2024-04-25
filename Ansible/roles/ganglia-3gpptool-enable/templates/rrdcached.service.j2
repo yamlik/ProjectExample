@@ -1,0 +1,14 @@
+[Unit]
+Description=Data caching daemon for rrdtool
+#After=network.service
+#Before=gmetad.service httpd.service
+
+[Service]
+Type=forking
+#PIDFile=/run/rrdcached.pid
+ExecStart=/usr/bin/rrdcached -p /run/rrdcached.pid -s root -m 644 -l unix:/var/lib/ganglia/rrdcached.sock -s apache -m 777 -P FLUSH,STATS,HELP -l unix:/var/lib/ganglia/rrdcached.limited.sock -w {{ rrd_timeout }} -z {{ rrd_delay }} -b {{ rrd_files_location }} -B
+#Restart=on-failure
+#RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

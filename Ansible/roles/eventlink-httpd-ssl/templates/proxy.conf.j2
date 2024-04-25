@@ -1,0 +1,3 @@
+ProxyPass /{{ item.service_name }} {{ item.service }}/{{ item.service_name }}
+ProxyPassReverse /{{ item.service_name }} {{ item.service }}/{{ item.service_name }}
+ProxyPreserveHost On

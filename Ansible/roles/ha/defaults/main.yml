@@ -1,0 +1,5 @@
+---
+ha_vrid: 42
+ha_interface: eth0
+ha_version: 2.2.0
+...

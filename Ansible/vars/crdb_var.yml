@@ -1,0 +1,17 @@
+---
+    host_type: crdb
+    vnf_serial: 1
+    vnf_name: "TEST_{{ vnf_context_data.stack_params.cbam.vnfId }}"
+    ha_master: "{{ inventory_hostname }}"
+    cinder_volumes:
+      - name: backup
+        filesystem: xfs
+        label: data
+        opts: '-b size=4096 -L backup'
+        device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['crdb']['data_mount_id'][0:20] }}"
+        mount_point: /var/lib/redis
+        mount_point_dash: var-lib-redis
+        owner: TEST
+        group: TEST
+        mode: "0700"
+    

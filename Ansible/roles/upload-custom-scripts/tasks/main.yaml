@@ -1,0 +1,66 @@
+---
+- name: Create ansible-scripts directory to Active OAM VM
+  file:
+    path: /var/www/html/ansible-scripts
+    owner: root
+    group: root
+    state: directory
+    mode: '0755'
+  become: yes
+  become_method: sudo
+  when:
+   - inventory_hostname == ha_master
+   - ((reconfigure is not defined) or (reconfigure != True))
+
+- name: Check if local custom_ansible directory has any folders
+  find:
+    paths: custom_ansible
+    recurse: no
+    file_type: directory
+    patterns: '*'
+  register: customScriptFolders
+  become: no
+  delegate_to: localhost
+
+- name: Create tgz out of those folders
+  archive:
+    path: "{{ item.path }}"
+    dest: "{{ item.path }}.tgz"
+    format: gz
+  with_items: "{{ customScriptFolders.files }}"
+  become: no
+  delegate_to: localhost
+
+- name: Check if local custom_ansible directory has any .tgz packages
+  find:
+    paths: custom_ansible
+    recurse: no
+    patterns: '*.tgz'
+  register: customScripts
+  become: no
+  delegate_to: localhost
+
+- name: Copy .tgz packages to OAM node
+  copy:
+    src: "{{ item.path }}"
+    dest: /var/www/html/ansible-scripts/{{ item.path.split('/')[-1] }}
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  become_method: sudo
+  with_items: "{{ customScripts.files }}"
+  when:
+   - inventory_hostname == ha_master
+   - ((reconfigure is not defined) or (reconfigure != True))
+   - customScripts.matched > 0
+
+- name: Restore SELinux context
+  shell: restorecon -Rv /var/www/html
+  become: yes 
+  become_method: sudo
+  when:
+   - inventory_hostname == ha_master
+   - ((reconfigure is not defined) or (reconfigure != True))
+   - customScripts.matched > 0
+...

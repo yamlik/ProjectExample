@@ -1,0 +1,11 @@
+[Unit]
+Description=Ganglia Monitoring Daemon
+After=multi-user.target syslog.target network.target network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/gmond 
+User=ganglia
+
+[Install]
+WantedBy=multi-user.target

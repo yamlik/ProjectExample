@@ -1,0 +1,39 @@
+<configuration name="Simple IP Client Conf">
+
+  <define create_function="create_cipio_instance" delete_function="delete_cipio_instance" entity="transport" file="libtrans_ip.so" init-args="type=tcp" name="trans-ip-v4">
+  </define>
+
+  <define entity="channel" name="channel-1" open-args="mode=client;dest=10.10.20.79:3868" protocol="diameter-v1" transport="trans-ip-v4">
+  </define>
+
+  <define entity="traffic-param" name="call-rate" value="50">
+  </define>	
+  <define entity="traffic-param" name="number-calls" value="10000">
+  </define>	
+  <define entity="traffic-param" name="display-period" value="5">
+  </define>	
+  <define entity="traffic-param" name="log-stat-period" value="2">
+  </define>	
+  <define entity="traffic-param" name="log-stat-file" value="logs/client1-stat.csv">
+  </define>	
+  <define entity="traffic-param" name="call-timeout-ms" value="55000">
+  </define>	
+  <define entity="traffic-param" name="display-scenario-stat" value="true">
+  </define>	
+  <define entity="traffic-param" name="display-protocol-stat" value="true">
+  </define>	
+  <define entity="traffic-param" name="log-protocol-stat-period" value="5">
+  </define>	
+  <define entity="traffic-param" name="log-protocol-stat-name" value="all">
+  </define>	
+  <define entity="traffic-param" name="log-protocol-stat-file" value="logs/client1-protocol-stat.csv">
+  </define>	
+
+  <define entity="traffic-param" name="max-receive" value="200">
+  </define>	
+  <define entity="traffic-param" name="max-simultaneous-calls" value="400">
+  </define>	
+  <define entity="traffic-param" name="select-timeout-ms" value="5500">
+  </define>	
+
+</configuration>

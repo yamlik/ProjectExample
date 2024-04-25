@@ -1,0 +1,20 @@
+{
+  "TC-01": {
+    "Username": "admin",
+    "Password": "predator",
+    "Database": "Online",
+    "Role": "Fraud"
+  },
+  "TC-02.0": {
+    "Username": "admin",
+    "Password": "predator",
+    "Database": "Online",
+    "Role": "Fraud"
+  },
+  "TC-02.1": {
+    "Username": "admin",
+    "Password": "predator",
+    "Database": "Online",
+    "Role": "Fraud"
+  }
+}

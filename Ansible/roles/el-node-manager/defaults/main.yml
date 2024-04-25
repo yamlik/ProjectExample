@@ -1,0 +1,100 @@
+---
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+TEST_home: /opt/TEST/TEST/base
+
+# Event Management
+ad_sendinfo: true
+alarm_send_warning: 1
+alarm_host: "{{ oam_oam_vip }}"
+alarm_port: 44660
+
+# Tracelog
+nm_tracelog_maxsize: 10000
+nm_tracelog_append: false
+
+
+# Node
+nm_node_heartbeat: 60
+nm_node_heartbeattolerance: 10000
+nm_node_heartbeat_warning_interval: 600000
+nm_node_zerothresholdshift: 10
+nm_node_debug_next: true
+
+# Kafka
+nm_node_kafka_session_timeout: 15000
+nm_node_kafka_connection_timeout: 10000
+
+# Audit
+audit_plugins: reporting,statistics,schedules
+audit_thread_assignment:
+audit_thread_count: 1
+
+audit_message_aggregation_threshold: 0
+audit_message_aggregation_timelimit: 0
+
+# Send app metric to unified logging
+app_metric_enabled: true
+
+# 0 - disable alarm sending
+# 1 - legacy alarm dispatcher
+# 2 - unified logging alarm
+alarm_version: 0
+
+# Unified Logging integration
+alarm_v2_sendcrit: true
+alarm_v2_sendmajor: true
+alarm_v2_sendminor: true
+alarm_v2_sendwarning: true
+
+# NetAct PM integration
+audit_3gppxml_enabled: false
+# PM XML file generation interval, in hours.
+audit_3gppxml_interval_hour: 1
+# If feature enabled, this location path must exists
+audit_3gppxml_location: "/appdata/TEST"
+# Whether to automatic create sub-directory for each nm host, and save XMLs onto that directory
+audit_3gppxml_location_separate_host_dir: true
+# Cleanup interval, in minute.
+audit_3gppxml_cleanup_interval_minute: 10080
+
+# NodeManager
+nm_maxConcurrentCollectorStartup: 4
+nm_crontabfile: "{{ install_dir }}/etc/node-manager/TEST.cron"
+node_zero_threshold: 10
+
+record_dir: "{{ TEST_home }}/buffer"
+control_dir: "{{ TEST_home }}/control"
+offline_dir: "{{ TEST_home }}/internal/offline"
+storage_dir: "{{ TEST_home }}/internal/nodes"
+nodes_dir: "{{ TEST_home }}/status/nodes"
+streams_dir: "{{ TEST_home }}/status/streams"
+
+record_dir_threshold: 500
+control_dir_threshold: 30
+storage_dir_threshold: 200
+
+max_diagnostic_messages: 50000
+max_diagnostic_files: 5
+
+exec_log_days: 10
+trs_warning_threshold: 20
+
+portserver_port: 62400
+portserver_range_min: 62500
+portserver_range_max: 62600
+oriserver_port: 62404
+
+jmx_port: 62405
+
+timezone: "{{ vnf_context_data.stack_params.cbam.extensions.time_zone }}"
+
+nm_service_timeout: "{{ vnf_context_data.stack_params.cbam.extensions.node_manager_service_timeout }}"
+
+odbcini: "/opt/TEST/TimesTen/.odbc.ini"
+
+nm_jmx_user: "{{ jmx_user }}"
+nm_jmx_password: "{{ jmx_password }}"
+...

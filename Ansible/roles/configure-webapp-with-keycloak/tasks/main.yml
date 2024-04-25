@@ -1,0 +1,237 @@
+---
+- assert:
+    that:
+      - "keystore_file is defined"
+      - "truststore_file is defined"
+      - "kc_client_id is defined"
+      - "kc_client_name is defined"
+      - "kc_client_description is defined"
+      - "kc_https_url is defined"
+      - "kc_ssl_certificate_file is defined"
+      - "kc_realm_name is defined"
+      - "kc_realm_admin_user is defined"
+      - "kc_realm_admin_password is defined"
+      - "kc_client_conf_file is defined"
+      - "client_local_conf is defined"
+      - "certificate_alias is defined"
+      - "keystore_file_name is defined"
+      - "product_install_dir is defined"
+      - "product_kc_http_port is defined"
+      - "product_kc_origins is defined"
+      - "product_kc_admin_url is defined"
+      - "product_kc_base_url is defined"
+      - "product_service_name is defined"
+      - "product_client_roles is defined"
+      - "product_redirect_uris is defined"
+
+- name: "Install Python requests module"
+  register: py_modules_installed
+  pip:
+    name: "{{ item }}"
+    umask: "0022"
+    state: present
+  become: true
+  become_method: sudo
+  with_items:
+    - requests
+    - pexpect
+
+- name: "Copy temporary SSL Certificate file"
+  when: 
+   - py_modules_installed| success
+   - kc_ssl_certificate_file is defined
+  register: certificate_copied
+  copy:
+    src: "{{ kc_ssl_certificate_file }}"
+    dest: "/tmp/keycloak-certificate.tmp"
+    owner: TEST
+    group: TEST
+    mode: 0664
+
+- name: "Generate a self-signed certificate"
+  when: py_modules_installed| success
+  register: keystore_created
+  expect:
+    command: "keytool -genkey -keystore {{ keystore_file }} -storepass {{ keystore_password }} -alias {{ certificate_alias }} -keypass {{ certificate_password }} -keyalg RSA -validity {{ validity_days }} -keysize 2048"
+    chdir: "{{ product_install_dir }}"
+    creates: "{{ keystore_file_name }}"
+    responses:
+      (?i)first and last name: "{{ product_fqdn }}"
+      (?i)organizational unit: ""
+      (?i)organization: "{{ responses_organization }}"
+      (?i)city or locality: ""
+      (?i)state or province: ""
+      (?i)country code: ""
+      (?i)correct: "{{ responses_correct }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+
+- name: "Fix owner and permissions for self-signed certificate"
+  when: keystore_created| success
+  file:
+    path: "{{ keystore_file }}"
+    owner: "{{ el_ui_user }}"
+    group: "{{ el_ui_group }}"
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: "Import Keycloak certificate into product Truststore"
+  when:
+    - (certificate_copied is skipped) == false
+    - keystore_created| success
+  import_certificate:
+    keystore: "{{ truststore_file }}"
+    storepass: "{{ truststore_password }}"
+    certificate: "{{ certificate_copied.path | default(certificate_copied.dest) }}"
+    certificate_alias: keycloak
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+
+- name: Make sure Keycloak is up
+  wait_for: host={{ kc_fqdn }} state=started port={{ kc_https_port }} delay=5 timeout=120 connect_timeout=10
+
+- name: "Register client"
+  when: keystore_created| success
+  register: client_registered
+  retries: 5
+  delay: 10
+  until: client_registered | success
+  no_log: "{{ hide_sensitive_debug_info }}"
+  register_client:
+    server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    username: "{{ kc_realm_admin_user }}"
+    password: "{{ kc_realm_admin_password }}"
+    verify_ssl: False
+    adapter_config_extras:
+      truststore: "{{ truststore_file }}"
+      truststore-password: "{{ truststore_password }}"
+      client-keystore: "{{ keystore_file }}"
+      client-keystore-password: "{{ keystore_password }}"
+      client-key-password: "{{ certificate_password }}"
+    client_representation:
+      adminUrl: "{{ product_kc_admin_url }}"
+      baseUrl: "{{ product_kc_base_url }}"
+      webOrigins:
+        "{{ product_kc_origins }}"
+      redirectUris:
+        "{{ product_redirect_uris }}"
+      clientId: "{{ kc_client_id  }}"
+      name: "{{ kc_client_name  }}"
+      description: "{{ kc_client_description }}"
+      enabled: true
+      publicClient: false
+      clientAuthenticatorType: client-secret
+      fullScopeAllowed: false
+      bearerOnly: false
+      directAccessGrantsEnabled: true
+      implicitFlowEnabled: false
+      standardFlowEnabled: true
+      consentRequired: false
+      serviceAccountsEnabled: true
+      clientTemplate: shiro-client
+      useTemplateMappers: true
+      useTemplateScope: false
+      protocolMappers: "{{ kc_client_protocolMappers }}"
+    client_roles: "{{ product_client_roles }}"
+
+- name: "Remove keycloak client role"
+  when: 
+    - keystore_created | success
+    - remove_product_client_roles is defined
+    - remove_product_client_roles | length > 0
+  no_log: "{{ hide_sensitive_debug_info }}"
+  remove_client_roles:
+    server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    username: "{{ kc_realm_admin_user }}"
+    password: "{{ kc_realm_admin_password }}"
+    verify_ssl: "{{ certificate_copied.path if 'path' in certificate_copied else certificate_copied.dest | default(False) }}"
+    clientId: "{{ kc_client_id  }}"
+    client_roles: "{{ remove_product_client_roles }}"
+
+- name: "Fix owner and permissions for self-signed truststore"
+  when: client_registered| success
+  file:
+    path: "{{ truststore_file }}"
+    owner: "{{ el_ui_user }}"
+    group: "{{ el_ui_group }}"
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: "Add client-level roles to the client {{ kc_client_id }} scope"
+  kc_client_scope_mapping:
+    server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    username: "{{ kc_realm_admin_user }}"
+    password: "{{ kc_realm_admin_password }}"
+    verify_ssl: "{{ certificate_copied.path if 'path' in certificate_copied else certificate_copied.dest | default(False) }}"
+    client_id: "{{ kc_client_id }}"
+    scope_mappings: "{{ kc_client_scope_mappings | default([]) }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
+
+- name: "Remove temporary SSL Certificate file"
+  when: (certificate_copied is skipped) == false
+  file:
+    path: "{{ certificate_copied.path | default(certificate_copied.dest) }}"
+    state: absent
+
+- name: "Save Keycloak Adapter Config"
+  when: client_registered| success
+  register: adapter_config_saved
+  local_action:
+    module: copy
+    content: "{{ client_registered.adapter_config }}"
+    dest: "{{ client_local_conf }}"
+    owner: "dcbam"
+    group: "dcbam"
+    mode: 0664
+  become: no
+
+# Change ssl-required level to none as currently end-to-end SSL support is not fully implemented.
+# Although SSL is used between webapp and Keycloak server,
+#   Keycloak Java adapter will complain in case SSL is not used towards webapp.
+- name: "Change ssl-required to none"
+  local_action:
+    module: lineinfile
+    path: "{{ client_local_conf  }}"
+    state: present
+    regexp: '^(.*)"ssl-required": "external"(.*)$'
+    line: '\1"ssl-required": "none"\2'
+    backrefs: yes
+  become: no
+    
+- name: "Configure Keycloak Adapter"
+  when: adapter_config_saved| success
+  register: adapter_configured
+  copy:
+    src: "{{ client_local_conf }}"
+    dest: "{{ kc_client_conf_file }}"
+    owner: TEST
+    group: TEST
+
+- name: "Restart product service"
+  when:
+    - adapter_configured| success
+  register: service_restarted
+  service:
+    name: "{{ product_service_name }}"
+    state: restarted
+  become: true
+  become_method: sudo
+
+- name: "Wait for product service to start"
+  when: service_restarted| success
+  wait_for:
+    host: "{{ product_fqdn }}"
+    port: "{{ product_kc_http_port }}"
+    state: started
+    timeout: "{{ start_wait_timeout }}"

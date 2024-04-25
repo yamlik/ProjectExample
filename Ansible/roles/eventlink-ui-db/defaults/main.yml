@@ -1,0 +1,8 @@
+---
+# Defaults for TEST-ui-db
+# Database properties
+
+db_el_name: "TEST"
+db_el_port: "{{ postgresql_server_port }}"
+el_db_url: "{{ el_db_prefix | default('postgresql://') }}{{ db_el_host }}:{{ db_el_port }}/{{ db_el_name }}"
+el_db_jdbc_url: "{{ el_db_jdbc_prefix | default('jdbc:') }}{{ el_db_url }}"

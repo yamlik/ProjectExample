@@ -1,0 +1,16 @@
+[Unit]
+Description=alertmanager instance
+Documentation=https://prometheus.io/docs/
+Wants=network-online.target
+After=network-online.target
+After=network.target
+
+[Service]
+User={{ user }}
+Type=simple
+Restart=on-failure
+ExecStart=/bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager --web.listen-address=:{{ alert_manager_http_port }}
+
+[Install]
+WantedBy=multi-user.target
+

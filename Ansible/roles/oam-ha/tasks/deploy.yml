@@ -1,0 +1,86 @@
+---
+- name: Verify OAM group has two hosts
+  fail:
+    msg: OAM group must contain exactly two hosts
+  when: groups['vdu-oam']|length != 2
+
+- name: Template em_control to remote host
+  template:
+    src: em_control.j2
+    dest: /opt/event-management/install/eventmanagement-engine/bin/em_control
+    owner: eventm
+    group: TEST
+    mode: 0755
+    backup: yes
+
+- name: Template service file to remote host
+  template:
+    src: event-management.service.j2
+    dest: /etc/systemd/system/event-management.service
+    owner: root
+    group: root
+    mode: 0755
+    backup: yes
+
+- name: Further increase timeout for the notify script
+  replace:
+    regexp: timeout=180
+    replace: "timeout=900"
+    path: /usr/libexec/keepalived/ha-keepalived-notify
+
+# Keeping EM for DR-20.6 but not enabled 
+- name: Disabled and reload daemon
+  systemd:
+    state: stopped
+    daemon_reload: yes
+    enabled: no
+    masked: yes
+    name: event-management
+
+- name: Make sure EM dir is owned by eventm:TEST
+  shell: chown eventm:TEST -R /opt/event-management
+
+- name: Open firewall for EM
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "44660"
+    - "44661"
+
+# Set up keepalived plugin
+- name:
+  file:
+    name: /opt/vrrp
+    state: directory
+
+- name: Copy em-failover script
+  template:
+    src: em-failover.py.j2
+    owner: root
+    group: root
+    dest: /opt/vrrp/em-failover.py
+    mode: 0700
+
+- name: Create directories for custom lifecycle scripts
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+  with_items:
+    - /opt/vrrp/pre_start
+    - /opt/vrrp/post_start
+
+- name: Copy HA plugins.json
+  copy:
+    src: plugins.json
+    owner: root
+    group: root
+    dest: /etc/ha/plugins.json
+    mode: 0700
+

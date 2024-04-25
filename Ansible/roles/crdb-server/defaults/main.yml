@@ -1,0 +1,26 @@
+---
+sentinel_port: 26379
+redis_port: 6379
+quorum: 2
+
+log_dir: "/var/log/redis"
+dump_dir: "/var/lib/redis"
+
+cg_module_src_path: "/var/www/html/data-refinery-22/non-rpm/rediscg"
+cg_module_file: "TEST_cg_module.so"
+
+ipv4_interface: "eth0"
+ipv6_interface: "eth0"
+
+ipv4_private_ip: "127.0.0.1"
+ipv6_private_ip: "::1"
+
+group: "TEST"
+user: "TEST"
+pass_crdb: "password"
+crdb_ssl: false
+
+private_ip_0: "{{ vnf_context_data['resource_model']['resources']['crdb_aspect_group']['resources']['0']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+private_ip_1: "{{ vnf_context_data['resource_model']['resources']['crdb_aspect_group']['resources']['1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+private_ip_2: "{{ vnf_context_data['resource_model']['resources']['crdb_aspect_group']['resources']['2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+...

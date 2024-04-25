@@ -1,0 +1,27 @@
+---
+
+#Default setup
+crmq_tcp_port: 5672
+crmq_tcp_backlog: 128
+crmq_tcp_nodelay: 'true'
+crmq_tcp_exit_on_close: 'false'
+crmq_tcp_sndbuf: 196608
+crmq_tcp_recbuf: 196608
+crmq_loopback_users_guest: 'false'
+crmq_num_acceptors_tcp: 10
+crmq_log_level: info
+crmq_heartbeat_seconds: 180
+crmq_admin_port: 15672
+crmq_admin_ssl_port: 15671
+
+# SSL setup flag , This boolean is capitalized as its not a config file variable.
+crmq_enable_ssl: true
+
+crmq_tcp_ssl_port: 5671
+crmq_ssl_verify_option: verify_peer
+crmq_ssl_fail_if_no_peer_cert: 'true'
+
+crmq_cert_dir: /etc/rabbitmq/ssl
+ca_key_backup_dir: /opt/TEST/certs/crmq
+operation: ""
+...

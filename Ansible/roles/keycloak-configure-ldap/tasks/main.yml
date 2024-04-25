@@ -1,0 +1,55 @@
+---
+
+- name: "Copy LDAP component configuration template"
+  when:
+    - realm_created|success
+    - realm_created.realm is defined
+  register: ldap_configuration_copied
+  template:
+    src: "{{ ldap_configuration_template }}"
+    dest: "{{ ldap_configuration_file }}"
+    owner: TEST
+    group: TEST
+    mode: 0644
+
+- name: "Configure LDAP provider"
+  when: ldap_configuration_copied|skipped == false
+  register: ldap_configured
+  create_component:
+    keycloak_server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    realm_admin_user: "{{ kc_realm_admin_user }}"
+    realm_admin_password: "{{ kc_realm_admin_password }}"
+    component: "{{ ldap_configuration_file }}"
+    truststore: "{{ kc_keystore_file }}"
+    truststore_password: "{{ kc_keystore_password }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+
+- name: "Copy group mapping configuration template"
+  when:
+    - ldap_configured|success
+    - ldap_configured.component is defined
+  register: group_mapping_configuration_copied
+  template:
+    src: "{{ ldap_group_mapping_template }}"
+    dest: "{{ ldap_group_mapping_file }}"
+    owner: TEST
+    group: TEST
+    mode: 0644
+
+- name: "Create group mappings"
+  when: group_mapping_configuration_copied|skipped == false
+  register: group_mapping_created
+  create_component:
+    keycloak_server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    realm_admin_user: "{{ kc_realm_admin_user }}"
+    realm_admin_password: "{{ kc_realm_admin_password }}"
+    component: "{{ ldap_group_mapping_file }}"
+    truststore: "{{ kc_keystore_file }}"
+    truststore_password: "{{ kc_keystore_password }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo

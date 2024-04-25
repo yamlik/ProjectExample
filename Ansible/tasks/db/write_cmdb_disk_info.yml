@@ -1,0 +1,29 @@
+---
+#- name: Find a correct CMDB disk ID from dir /dev/disk/by-id
+  #find:
+  #  paths: /dev/disk/by-id
+  #  file_type: file
+  #  use_regex: yes
+  #  patterns: ["^virtio-.*"]
+    #excludes: "virtio-{{ ansible_local['disks']['db']['pgdata_mount_id'][0:20] }}"
+  #register: files_matched
+
+- name: Find a correct CMDB disk ID from dir /dev/disk/by-id
+  shell: "ls /dev/disk/by-id | grep -e virtio-* | grep -v virtio-{{ ansible_local['disks']['db']['pgdata_mount_id'][0:20] }}"
+  register: files_matched
+
+- debug:
+    msg: "{{files_matched}}"
+
+- fail:
+    msg: Can't deduct correct disk ID for CMDB
+  when: files_matched.stdout_lines|length != 1
+
+- name: Write CMDB disk ID to local facts
+  lineinfile:
+    path: /etc/ansible/facts.d/disks.fact
+    state: present
+    line: "cmdb_mount_id={{ files_matched.stdout.split('virtio-')[1] }}"
+
+- name: Regather local facts since CMDB volume ID was added
+  setup:

@@ -1,0 +1,37 @@
+---
+- name: Verify that TEST is started
+  systemd:
+    name: el-node-manager
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+  become: true
+  become_method: sudo
+
+- name: Open ports to allow GUI render streams smoothly
+  firewalld:
+    port: 62500-62600/tcp
+    permanent: true
+    state: enabled
+    immediate: yes
+  become: yes
+
+- name: Open port to allow "Rejected Data" page to render smoothly
+  firewalld:
+    port: 62404/tcp
+    permanent: true
+    state: enabled
+    immediate: yes
+  become: yes
+
+- name: Open ports for the Diameter Rf
+  firewalld:
+    zone: public
+    port: "{{ item.port }}/{{ item.protocol }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+   - { port: 3868, protocol: tcp }
+   - { port: 3868, protocol: sctp }
+...

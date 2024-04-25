@@ -1,0 +1,23 @@
+[Unit]
+Description=The keycloak Service
+After=network.target network-online.target nss-lookup.target
+
+[Service]
+Type=idle
+User=keycloak
+Group=keycloak
+Restart=on-failure
+RestartSec=10
+EnvironmentFile=/opt/etc/keycloak/keycloak-sysconfig
+ExecStartPre=/var/lib/scripts/db_conn.sh
+ExecStart=/opt/keycloak/bin/standalone.sh -c standalone.xml
+TimeoutStartSec=3600
+TimeoutStopSec=600
+#ExecReload=/bin/kill -SIGHUP ${MAINPID}
+#ExecStop=/bin/kill -9 ${MAINPID}
+KillSignal=SIGTERM
+#StandardOutput=null
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

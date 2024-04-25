@@ -1,0 +1,15 @@
+galaxy_info:
+  author: TEST Corporation
+  description: TEST TEST Lookup server role for configuring RCFILE (.mds.rc) file
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags: []

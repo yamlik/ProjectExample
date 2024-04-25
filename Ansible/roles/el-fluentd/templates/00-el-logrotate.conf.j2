@@ -1,0 +1,10 @@
+{{ rsyslog_alarm_log }}
+{
+        rotate {{ logrotate_rotate }}
+        daily
+        missingok
+        size {{ logrotate_size }}
+        copytruncate
+        compress
+        delaycompress
+}

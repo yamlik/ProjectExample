@@ -1,0 +1,8 @@
+\set AUTOCOMMIT on
+\set ON_ERROR_STOP on
+\set VERBOSITY terse
+\set ECHO all
+
+INSERT INTO lookup_servers (lookupserver_name, ip_address, port_number, host) VALUES ('{{ lookup_server_name }}', '{{ lookup_server_ip }}', {{ lookup_server_port }}, '{{ lookup_server_host }}');
+
+\q

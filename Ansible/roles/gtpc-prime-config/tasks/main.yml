@@ -1,0 +1,51 @@
+---
+- name: Install GTP Prime Collector
+  yum:
+    name: "{{ gtp_prime_rpm_package }}"
+    state: installed
+  become: true
+  become_method: sudo
+
+# We are using programatically configured GTP collector services, for example gtp0, gtp1, ...
+- name: Ensure that GTP collector service installed from RPM is masked
+  systemd:
+    name: gtp
+    daemon_reload: yes
+    state: stopped
+    enabled: no
+    masked: yes
+  become: true
+  become_method: sudo
+  
+# Deduce gtp_prime_charging_nic, so that we can use it to retrieve the host's
+# IPv4 and IPv6 address, which will be used as part of the collector name
+- name: Update charging network device
+  set_fact:
+    gtp_prime_charging_nic: "{{ ansible_local.interfaces.devices.charg_interface }}"
+#  when: charging_network_vlan_id|int != 0
+
+#- name: Update charging network device if VLAN ID is 0
+#  set_fact:
+#    gtp_prime_charging_nic: "eth1"
+#  when: charging_network_vlan_id|int == 0
+
+- debug:
+    msg: "gtp_prime_charging_nic is now {{ gtp_prime_charging_nic }}"
+
+- name: Get collector IPv4 address
+  set_fact:
+    gtp_prime_collectorIp4Address: "{{ vars['ansible_' + gtp_prime_charging_nic]['ipv4']['address'] }}"
+  when: vars['ansible_' + gtp_prime_charging_nic]['ipv4'] is defined
+
+- name: Get collector IPv6 address
+  set_fact:
+    gtp_prime_collectorIp6Address: "{{ item['address'] }}"
+  with_items: "{{ vars['ansible_' + gtp_prime_charging_nic]['ipv6'] }}"
+  when: item['address'] is defined and item['scope'] != 'link'
+
+# Configure GTP Prime Collector(s)
+- include: configure.yml
+  with_sequence: start=0 count="{{ gtp_prime_collector_instance }}" stride=1
+  loop_control:
+    loop_var: collector_index
+  when: gtp_prime_collector_instance > 0

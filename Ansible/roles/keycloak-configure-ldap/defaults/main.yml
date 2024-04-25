@@ -1,0 +1,13 @@
+---
+
+ldap_configuration_template: "ldap-component.json.j2"
+ldap_configuration_file: "{{ kc_conf_dir }}/ldap-component.json"
+
+ldap_group_mapping_template: "group-mapping-component.json.j2"
+ldap_group_mapping_file: "{{ kc_conf_dir }}/group-mapping-component.json"
+
+ldap_username_ldap_attribute: cn
+ldap_uuid_ldap_attribute: objectGUID
+ldap_user_object_classes: "person, organizationalPerson, user"
+ldap_group_object_classes: "group"
+ldap_vendor: ad

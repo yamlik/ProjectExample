@@ -1,0 +1,11 @@
+- name: debug in EL-HA main tasks
+  debug: msg="role_path={{role_path}}, hookFunction={{hookFunction}}"
+
+- stat: path="{{role_path}}/tasks/{{hookFunction}}.yml"
+  delegate_to: 127.0.0.1
+  become: false
+  register: statResult
+
+- include: "{{hookFunction}}.yml"
+  when: statResult.stat.isreg is defined and statResult.stat.isreg
+  

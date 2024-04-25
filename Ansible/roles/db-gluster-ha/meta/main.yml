@@ -1,0 +1,5 @@
+---
+dependencies:
+#  - { role: glusterfs, hookFunction: mount-volumes }
+  - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+  - { role: ha, hookFunction: deploy }

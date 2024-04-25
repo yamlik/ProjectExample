@@ -1,0 +1,223 @@
+*** Settings ***
+
+Documentation  Run Smoke Stream Data
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/manage_releases.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/sql/db_script_${DB_VENDOR_NAME}.txt
+
+Default Tags     Run_smoke
+
+Suite Setup     Prepare Environment
+Suite Teardown  Cleanup Testing Environment
+
+*** Variables ***
+${ROBOT_LOG_LEVEL}				WARN
+${stream_name}          Smoke_stream
+${robotDataDirectory}   run_smoke_test
+
+*** Keywords ***
+Prepare Environment
+    Log  Login to test environment  ${ROBOT_LOG_LEVEL}
+    	manage_releases.Login To Test Host1
+    	Set Client Configuration  prompt=]$
+    	Write   export PS1=]$
+    	Read Until Prompt
+
+    Log  Create robot directory and copy shell script  ${ROBOT_LOG_LEVEL}
+    	Write  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+    	Read Until Prompt
+    	Put File  ${ROBOT_PATH}/keywords/exec_query.ksh  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+    	
+    Log  Delete data from DB  ${ROBOT_LOG_LEVEL}
+
+    	${stream_id}  el_host.Tools Get Stream Id  ${stream_name}
+    	Set Suite Variable  ${stream_id}
+    	
+    	## Keyword in db_script_${DB_VENDOR_NAME}.txt
+    	SQL - Clear Audit Tables  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}/
+
+Wait For Smoke Stream Run Complete  [Arguments]  ${verificationText}
+		${result}=  Read
+		Log  ${result}   ${ROBOT_LOG_LEVEL}
+		
+		${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Could not connect to url*
+		Run Keyword If  '${match[0]}'=='PASS'   Fatal Error  ${result}
+		
+		${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Stream startup failed*
+        Run Keyword If  '${match[0]}'=='PASS'   Fatal Error  ${result}
+		
+		Should Match  ${result}  *${verificationText}*    	
+
+Cleanup Testing Environment
+		## Recreate datastore
+		Write  exit | ttisql Smoke6DS
+		Read Until Prompt
+		Write  rm -rf ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+		Read Until Prompt
+		Close Connection
+
+	
+Verification For CM8
+	Should Match  ${result}  *Correct ASN.1 output found in output_SFTP1 directory*
+    	Should Match  ${result}  *Correct ASN.1 output found in output_SFTP2 directory*
+    	Should Match  ${result}  *Correct aggregator output found in output directory*
+    	Should Match  ${result}  *Correct aggregator output found in output_FTP1 directory*
+    	Should Match  ${result}  *Correct Correlator output found in output_FTP1 directory*
+    	Should Match  ${result}  *Correct LTE XML decoder output found in xml_output directory*
+    	Should Match  ${result}  *Correct first NEPTUN XML decoder output found in xml_output directory*
+    	Should Match  ${result}  *Correct second NEPTUN XML decoder output found in xml_output directory*
+    	Should Match  ${result}  *Correct first TEST MSC decoder output found in xml_output directory*
+    	Should Match  ${result}  *Correct second TEST MSC decoder output found in xml_output directory*
+    	Should Match  ${result}  *Correct TEST MSC decoder output found in xml_output2 directory*
+    	Should Match  ${result}  *Correct Audit output found in xml_output directory*
+    	Should Match  ${result}  *Discarded files found in Distributor_multinNE3 node*
+    	Should Match  ${result}  *Correct duplicate file send from File Checker to output_local1 directory due to duplicate file found*
+    	Should Match  ${result}  *Correct TEST backup file found*
+    	Should Match  ${result}  *Correct aggregator backup file found*
+    	
+   	Log  Verify Audit Input Details Reporting  ${ROBOT_LOG_LEVEL}
+		
+		#File collected by Collector1 node
+		Verify Audit EL_REPORTING_INPUT_DETAILS With Pattern Matching For Filename  TT100%  54000  SDK_SOURCE1  1000
+		
+		#File collected by Collector1 node - duplicate file
+		Verify Audit EL_REPORTING_INPUT_DETAILS With Pattern Matching For Filename  TT100%  54000  SDK_SOURCE1  0
+		
+		#File collected by Collector2 node
+		Verify Audit EL_REPORTING_INPUT_DETAILS  neptun_in_2  3226197  SDK_SOURCE2  500
+		
+		#File collected by Collector3 node
+		Verify Audit EL_REPORTING_INPUT_DETAILS  TAP3Samp1-17000.cdr  3256513  ASN1  17000
+		
+		
+		############# There is a bug in Nodemanager that without the existen of sourceid in stream.xml, the bytein value won't be pass into the audit table
+		############# It has been fixed in EL710 and it shall have EL701EB2 implement with fixes, hence temporary validate with 0 for bytein with instance EL701 or below
+		#File collected by Collector_multiNE1 node
+		Verify Audit EL_REPORTING_INPUT_DETAILS  in_sample_inp1000  466686  SFTP_NE1  1008
+		
+		
+		#File collected by Collector_multiNE2 node - 1st NE
+		Verify Audit EL_REPORTING_INPUT_DETAILS  LTE_in  11473120  LOCAL_NE1  500
+		
+		
+		#File collected by Collector_multiNE2 node - 2nd NE
+		Verify Audit EL_REPORTING_INPUT_DETAILS  neptun_in_1  3226197  LOCAL_NE2  500
+		
+		
+		#File collected by Collector_multiNE3 node - 1st NE
+		Verify Audit EL_REPORTING_INPUT_DETAILS  TEST_input1  3401216  FTP_NE1  25854
+		
+		
+		#File collected by Collector_multiNE3 node - 2nd NE
+		Verify Audit EL_REPORTING_INPUT_DETAILS  TEST_input2  3401216  FTP_NE2  12927
+		
+		
+		#File collected by Collector_ascii node
+		Verify Audit EL_REPORTING_INPUT_DETAILS  asp_1397700838658-0.ready  16077  ASCII_SOURCE  24
+		
+	Log  Verify Audit Output Details Reporting  ${ROBOT_LOG_LEVEL}
+		#Files distributed by Backup node
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS  TEST_input2  3401216  backup  0  1
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  TT100%  54000   backup   0   2
+		
+		#Files distributed by Distributor_multiNE1 node - total having 18 correlator files - 1st NE
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  corr_%   660  FTP_NE1  12   2
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  corr_%  1734  FTP_NE1  17   1
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  corr_%  1938  FTP_NE1  19   5
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  corr_%  1100  FTP_NE1  20  10
+		
+		#Files distributed by Distributor_multiNE1 node - total having 3 aggregation files - 2nd NE
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  aggr_%  1420  FTP_NE2	 20   1
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  aggr_%  2840  FTP_NE2  40   2
+		
+		#Files distributed by Distributor node - total having 3 aggregation files
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  aggr_%  1420  SDK_DESTINATION  20  1
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  aggr_%  2840  SDK_DESTINATION  40  2
+		
+		#Files distributed by Distributor_multiNE2 node - 1st NE
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  00%  2071352  SFTP_NE1  10703  1
+		
+		#Files distributed by Distributor_multiNE2 node - 2nd NE
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  00%  2071352  SFTP_NE2  10703  1
+		
+		#Files distributed by Distributor_multiNE3 node
+		Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  TT100%  54000  LOCAL_NE1  0  1
+
+	Log  Verify Counter Reporting  ${ROBOT_LOG_LEVEL}
+		Verify Audit EL_REPORTING_COUNTERS  ARM FR decoder         -                     1000      1000      0         0       0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  ASCII_decoder          -                     1008      1008      0         0       0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  ASN1_Decoder           -                     17000     10775     6225      0       0     0       0       0         0       0 
+		Verify Audit EL_REPORTING_COUNTERS  ASN1_Encoder           -                     10703     21406     0         0       0     0       10703   10703     10703   0  
+		Verify Audit EL_REPORTING_COUNTERS  ASN1_Encoder           DEFAULT               3         0         0         3       0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  Aggregator             -                     1000      100       0         0       0     0       0       100       100     900	 
+		Verify Audit EL_REPORTING_COUNTERS  BLT_Business_logic     -                     10706     10706     0         0       0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  BLT_Business_logic     BLT_STORAGE           69        0         0         69      0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  Business logic         -                     1000      1672      0         0       0     336     336     0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  Business logic         INCOMPLETE_RECORD     112       0         0         112     0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  Business logic         INVALID_REC_TYPE      224       0         0         224     0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  Business logic         INVALID_TIMESTAMP     224       0         0         224     0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  Business logic         ZERO_DURATION         112       0         0         112     0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  Collector_ascii        -                     24        24        0         0       0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  Common_Copy            -                     27378     0         27378     0       0     0       0       0         0       0 
+		Verify Audit EL_REPORTING_COUNTERS  Common_Copy2           -                     12927     0         12927     0       0     0       0       0         0       0 
+		Verify Audit EL_REPORTING_COUNTERS  Correlator             -                     336       336       0         0       0     0       0       208       208     0     
+		Verify Audit EL_REPORTING_COUNTERS  LTE_xml_dec            -                     500       500       0         0       0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  MFE1                   -                     100       200       0         0       0     0       100     100       100     0  
+		Verify Audit EL_REPORTING_COUNTERS  MFE2                   -                     336       336       0         0       0     0       0       336       336     0  
+		Verify Audit EL_REPORTING_COUNTERS  NEPTUN_xml_dec         -                     1000      1000      0         0       0     0       0       0         0       0  
+		Verify Audit EL_REPORTING_COUNTERS  TEST_MSC_DEC            -                     25854     25854     0         0       0     0       0       0         0       0
+		Verify Audit EL_REPORTING_COUNTERS  TEST_MSC_DEC2           -                     12927     12927     0         0       0     0       0       0         0       0
+
+
+Verify Audit EL_REPORTING_INPUT_DETAILS  [Arguments]  ${inputfile}  ${bytesin}  ${source_id}  ${streamRecordIn}
+		## Keyword in db_script_${DB_VENDOR_NAME}.txt
+		SQL - Verify Audit EL_REPORTING_INPUT_DETAILS With streamRecordIn   ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${inputfile}  ${bytesin}  ${source_id}  ${streamRecordIn}  1
+
+Verify Audit EL_REPORTING_INPUT_DETAILS With Pattern Matching For Filename  [Arguments]  ${inputfile}  ${bytesin}  ${source_id}  ${streamRecordIn}
+		## Keyword in db_script_${DB_VENDOR_NAME}.txt
+		SQL - Verify Audit EL_REPORTING_INPUT_DETAILS With streamRecordIn And Pattern Matching For Filename  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${inputfile}  ${bytesin}  ${source_id}  ${streamRecordIn}  1
+
+Verify Audit EL_REPORTING_OUTPUT_DETAILS  [Arguments]  ${outputfile}  ${bytesout}  ${destinationid}  ${streamRecordOut}  ${expected_count}
+		## Keyword in db_script_${DB_VENDOR_NAME}.txt
+		SQL - Verify Audit EL_REPORTING_OUTPUT_DETAILS With streamRecordOut  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${outputfile}  ${bytesout}  ${destinationid}  ${streamRecordOut}  ${expected_count}
+
+Verify Audit EL_REPORTING_OUTPUT_DETAILS With Pattern Matching For Filename  [Arguments]  ${outputfile}  ${bytesout}  ${destinationid}  ${streamRecordOut}  ${expected_count}
+		## Keyword in db_script_${DB_VENDOR_NAME}.txt
+		SQL - Verify Audit EL_REPORTING_OUTPUT_DETAILS With streamRecordOut And Pattern Matching For Filename  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${outputfile}  ${bytesout}  ${destinationid}  ${streamRecordOut}  ${expected_count}
+											
+Verify Audit EL_REPORTING_COUNTERS  [Arguments]  ${node_name}  ${outRejectedStore}  ${recordIn}  ${recordOut}  ${filtered}  ${rejected}  ${reprocessedIn}   ${created}  ${duplicated}   ${stored}  ${retrieved}  ${reducedInMerging}
+		## Keyword in db_script_${DB_VENDOR_NAME}.txt
+		SQL - Verify Audit EL_REPORTING_COUNTERS  ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}  ${node_name}  ${outRejectedStore}  ${recordIn}  ${recordOut}  ${filtered}  ${rejected}  ${reprocessedIn}   ${created}  ${duplicated}   ${stored}  ${retrieved}  ${reducedInMerging}  ${stream_name}
+										
+
+*** Test Cases ***
+Run Smoke Stream Data	
+    Log  Run Smoke Stream Data  ${ROBOT_LOG_LEVEL}
+		Write  cd ${SMOKE_STREAM_DIR}/bin
+		Read Until Prompt
+		  
+  	Log  ./Run_Smoke_and_Data.ksh  ${ROBOT_LOG_LEVEL}
+		${timeout}=  Set Variable If
+		...   '${INSTALL_FILE_HOST}'!='SunOS'  1800
+		...   '${INSTALL_FILE_HOST}'=='SunOS'  1200
+			
+		
+		SSHLibrary.Write  ./Run_Smoke_and_Data.ksh
+    	
+    	Wait Until Keyword Succeeds  ${timeout}   5   Wait For Smoke Stream Run Complete   Waiting while stream is in STOPPED state
+    	Wait Until Keyword Succeeds  ${timeout}   5   Wait For Smoke Stream Run Complete   Waiting while stream is in STOPPED state
+    	
+    	Set Client Configuration  timeout=${timeout}
+    	${result}=  Read Until Prompt
+    	Log  ${result}  ${ROBOT_LOG_LEVEL}
+    	
+    	Set Suite Variable  ${result}  ${result}
+
+    	## Reset Timeout
+		Set Client Configuration  timeout=120
+	
+    Log  Verfication  ${ROBOT_LOG_LEVEL}
+		Verification For CM8

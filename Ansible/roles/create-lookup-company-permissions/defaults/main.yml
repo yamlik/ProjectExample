@@ -1,0 +1,11 @@
+---
+db_el_name: "TEST"
+db_el_port: "{{ db_el_port }}"
+kc_https_port: 8666
+kc_https_url: "https://{{ kc_fqdn }}:{{ kc_https_port }}/auth"
+kc_realm_name: "TEST"
+kc_client_id_TEST_ui: "TEST_ui"
+kc_certificate_name: "keycloak-certificate"
+kc_ssl_certificate_file: "{{ ansible_dir }}/{{ kc_certificate_name }}"
+
+

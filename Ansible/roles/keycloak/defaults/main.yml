@@ -1,0 +1,46 @@
+---
+# Preffer IPv4 over IPv6
+kc_preferred_ip_version: 4
+
+# CSF Keycloak standalone distribution. Other distributions are keycloak-standalone-ha and keycloak-domain
+kc_sa_package_name: "keycloak-standalone"
+kc_service_name: "keycloak"
+
+responses_organization: "TEST"
+responses_correct: "yes"
+validity_days: 3650
+
+kc_fqdn: "{{ inventory_hostname }}"
+kc_http_port: 8665
+kc_https_port: 8666
+kc_http_url: "http://{{ kc_fqdn }}:{{ kc_http_port }}/auth"
+kc_https_url: "https://{{ kc_fqdn }}:{{ kc_https_port }}/auth"
+kc_start_wait_timeout: 120
+
+kc_user: "keycloak"
+kc_group: "keycloak"
+kc_conf_dir: "/opt/TEST/keycloak"
+kc_install_dir: "/opt/keycloak"
+kc_sa_conf_dir: "{{ kc_install_dir }}/standalone/configuration"
+kc_csf_conf: "/opt/etc/keycloak.conf"
+
+kc_vault_name: "vault.jks"
+kc_vault_file: "{{ kc_install_dir }}/security/vault/{{ kc_vault_name }}"
+kc_vault_alias: "initseckey"
+kc_vault_password: "keycloak"
+kc_vault_salt: 33550336
+kc_vault_iterations: 99
+
+kc_keystore_name: "keycloak-keystore.jks"
+kc_keystore_file: "{{ kc_install_dir }}/security/ssl/{{ kc_keystore_name }}"
+kc_keystore_password_attribute: "ks_pass"
+kc_certificate_name: "keycloak-certificate"
+kc_certificate_password_attribute: "cert_pass"
+
+kc_ssl_certificate_file: "{{ ansible_dir }}/{{ kc_certificate_name }}"
+kc_local_keystore_file: "{{ ansible_dir }}/{{ kc_keystore_name }}"
+
+kc_custom_cli_file: "{{ kc_install_dir }}/csf/cli/custom-config.cli"
+
+kc_jboss_bind_address: "{{ (kc_preferred_ip_version == '4') | ternary('0.0.0.0','[::]') }}"
+kc_jboss_bind_address_private: "{{ (kc_preferred_ip_version == '4') | ternary('127.0.0.1','[::1]') }}"

@@ -1,0 +1,20 @@
+#!/bin/bash
+export ANSIBLE_HOST_KEY_CHECKING=False
+export ANSIBLE_CONFIG={{ inventory_dir }}/ansible.cfg
+if [ -z $HOME ]; then
+  export HOME="{{ inventory_dir }}"
+fi
+
+for dir in {{ inventory_dir }}/playbook/ansible/custom_ansible/custom_services/*/ ; do
+  echo "$dir"
+
+  custom_playbook=(${dir//\// })
+
+  #Skip Example Plays
+  [[ ${custom_playbook[-1]} == *_example ]] && echo "Skipping ${custom_playbook[-1]}" && continue
+
+  echo "Running ${custom_playbook[-1]}"
+
+  ansible-playbook  --inventory-file={{ inventory_dir }}/inventory --ssh-extra-args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --private-key={{ inventory_dir }}/generated_ssh_key.pem --timeout=60 --extra-vars='@{{ inventory_dir }}/extra_vars.yaml' {{ inventory_dir }}/playbook/ansible/custom_ansible/custom_services/${custom_playbook[-1]}/${custom_playbook[-1]}.yaml > >(tee {{ inventory_dir }}/custom_std_TEST.out) 2> >(tee {{ inventory_dir }}/custom_std.err >&2)
+
+done

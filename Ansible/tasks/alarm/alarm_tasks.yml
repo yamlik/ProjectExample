@@ -1,0 +1,8 @@
+---
+- name: "Ensure group wildfly exists"
+  group:
+    name: wildfly
+    state: present
+
+- name: "Add user and group wildfly"
+  user: name=wildfly group=wildfly home=/opt/wildfly createhome=yes

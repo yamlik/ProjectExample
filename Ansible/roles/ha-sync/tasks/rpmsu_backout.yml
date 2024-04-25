@@ -1,0 +1,9 @@
+- include: ha-sync/scalein.yml
+
+- name: remove new configuration files
+  file: path=/etc/ha-sync state=absent
+
+- include: ha-sync/restore.yml
+
+- name: restart confd
+  service: name=confd state=restarted

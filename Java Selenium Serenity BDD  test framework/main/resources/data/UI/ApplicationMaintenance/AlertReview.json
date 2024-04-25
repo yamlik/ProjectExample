@@ -1,0 +1,142 @@
+{
+  "TC-58784": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION58784",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Home Address 5": "BANGALORE",
+      "Company Address 5": "HYDERABAD"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation58784LOAN"
+    }
+  },
+  "TC-58861": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_1",
+      "Application Date": "11/10/2020",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_1MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_2",
+      "Application Date": "21/10/2020",
+      "Application Type": "MTGE"
+    },
+    "ReviewDetails": {
+      "StartDate": "11/10/2020",
+      "EndDate": "21/10/2020"
+    },
+    "verifyRow1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_1",
+      "Application Date": "11/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRow2": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_2",
+      "Application Date": "21/10/2020",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_2MTGE"
+    }
+  },
+  "TC-61466": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_1",
+      "Application Date": "11/10/2020",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_1MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_2",
+      "Application Date": "21/10/2020",
+      "Application Type": "CARD"
+    },
+    "Filter": {
+      "ApplicationType": "MTGE",
+      "ApplicationType1": "CARD"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    },
+    "verifyRow1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_1",
+      "Application Date": "11/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyRow2": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_2",
+      "Application Date": "21/10/2020",
+      "Application Type": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_2CARD"
+    }
+  },
+  "TC-58783": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST1_58783",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||FCWS1_58783||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|TEST1|||||||||||||||||||||||||||||||||||||||||||||||||A|TEST2|||||||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest2": "{{organisation}}|{{country}}||FCWS2_58783||||20/10/2020|MTGE||||||||||||||||||||||||||||||||||||||A||||||||||ADD1|ADD2|ADD3|ADD4|ADD5|ADD6|12345||||||||||||||||||||||||||||||||||",
+      "fcwsRequest3": "{{organisation}}|{{country}}||FCWS3_58783|||20/10/2021|20/10/2020|LOAN||||||||||||||||||||||||||||||||||||||A||||||||||||||BANGALORE||||||||||HYDERABAD||||||||||||||||||||||||||",
+      "fcwsRequest4": "GBA|AU||FCWS4_58783|||20/10/2021|20/10/2020|LOAN||||||||||||||||||||||||||||||||||||||A||||||||||||||BANGALORE||||||||||HYDERABAD||||||||||||||||||||||||||"
+    },
+    "verify_alertReview_HFP": {
+      "Application Number1": "FCWS2_58783",
+      "Application Number2": "BAT1_58783"
+    },
+    "verify_alertReview_Suspect": {
+      "Application Number1": "FCWS3_58783",
+      "Application Number2": "BAT2_58783"
+    },
+    "verify_alertReview_Clean": {
+      "Application Number1": "FCWS1_58783",
+      "Application Number2": "BAT01",
+      "Application Number3": "BAT4_58783"
+    },
+    "verify_alertReview_Errors": {
+      "Application Number1": "01 - Organisation was null or invalid"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  }
+
+}

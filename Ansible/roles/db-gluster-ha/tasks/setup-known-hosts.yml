@@ -1,0 +1,86 @@
+---
+#For root
+- name: Prepare known_hosts entries RSA
+  shell: ssh-keyscan -t rsa {{ item }}
+  with_items: "{{ groups['postgresql'] }}"
+  register: keyscans_rsa
+  tags:
+  - configuration
+
+- name: Update known_hosts RSA
+  lineinfile:
+    dest=~/.ssh/known_hosts
+    create=yes
+    state=present
+    line="{{ item.stdout }}"
+    regexp="{{ item.item }} ssh-rsa"
+    owner=postgres
+    group=postgres
+  with_items: "{{ keyscans_rsa.results }}"
+  tags:
+  - configuration
+
+- name: Prepare known_hosts entries ECDSA
+  shell: ssh-keyscan -t ecdsa {{ item }}
+  with_items: "{{ groups['postgresql'] }}"
+  register: keyscans_ecdsa
+  tags:
+  - configuration
+
+- name: Update known_hosts ECDSA
+  lineinfile:
+    dest="~/.ssh/known_hosts"
+    create=yes
+    state=present
+    line="{{ item.stdout }}"
+    regexp="{{ item.item }} ssh-rsa"
+    owner=postgres
+    group=postgres
+  with_items: "{{ keyscans_ecdsa.results }}"
+  tags:
+  - configuration
+
+#For postgres
+- name: Prepare known_hosts entries RSA
+  become_user: postgres
+  shell: ssh-keyscan -t rsa {{ item }}
+  with_items: "{{ groups['postgresql'] }}"
+  register: keyscans_rsa
+  tags:
+  - configuration
+
+- name: Update known_hosts RSA
+  become_user: postgres
+  lineinfile:
+    dest=~/.ssh/known_hosts
+    create=yes
+    state=present
+    line="{{ item.stdout }}"
+    regexp="{{ item.item }} ssh-rsa"
+    owner=postgres
+    group=postgres
+  with_items: "{{ keyscans_rsa.results }}"
+  tags:
+  - configuration
+
+- name: Prepare known_hosts entries ECDSA
+  become_user: postgres
+  shell: ssh-keyscan -t ecdsa {{ item }}
+  with_items: "{{ groups['postgresql'] }}"
+  register: keyscans_ecdsa
+  tags:
+  - configuration
+
+- name: Update known_hosts ECDSA
+  become_user: postgres
+  lineinfile:
+    dest="~/.ssh/known_hosts"
+    create=yes
+    state=present
+    line="{{ item.stdout }}"
+    regexp="{{ item.item }} ssh-rsa"
+    owner=postgres
+    group=postgres
+  with_items: "{{ keyscans_ecdsa.results }}"
+  tags:
+  - configuration

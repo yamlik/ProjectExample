@@ -1,0 +1,26 @@
+---
+- name: Update /etc/hosts with ui_fqdn
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: "{{ ui_oam_vip }} {{ vnf_context_data.stack_params.cbam.extensions.ui_fqdn }}"
+    insertafter: EOF
+  become: true
+  become_method: sudo
+  when:
+    - vnf_context_data.stack_params.cbam.extensions.ui_fqdn |lower != "floating"
+    - vnf_context_data.stack_params.cbam.extensions.ui_fqdn != ui_oam_vip
+
+- name: Update /etc/hosts with db_oam_hostname
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: "{{ db_oam_vip }} {{ db_oam_hostname }}"
+    insertafter: EOF
+  become: true
+  become_method: sudo
+  when:
+    - vnf_context_data.stack_params.cbam.extensions.ui_fqdn |lower != "floating"
+    - vnf_context_data.stack_params.cbam.extensions.ui_fqdn != ui_oam_vip
+
+...

@@ -1,0 +1,99 @@
+---
+# tasks file for el-systemtools
+
+- assert:
+    that:
+      - "client_local_conf_TEST_ui is defined"
+    msg: "'TEST UI Keycloak client configuration not defined'"
+
+- assert:
+    that:
+      - "el_ui_URL is defined"
+    msg: "'TEST UI URL not defined'"
+
+- set_fact:
+    kc_client_secret: "{{client_local_conf_TEST_ui.credentials.secret}}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- assert:
+    that:
+      - kc_client_secret is match("[a-f0-9-]*")
+    msg: "'TEST UI Keycloak client secret is with invalid format.'"
+
+- name: "Install dependent binaries for used Ansible libraries"
+  package:
+    name: "{{ item }}"
+    state: present
+  become: true
+  become_method: sudo
+  with_items:
+      - expect
+
+- name: "Install {{ systemtools_package_name }} package"
+  package:
+    name: "{{ systemtools_package_name }}"
+    state: "{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo
+
+- name: "Copy temporary Keycloak SSL Certificate file"
+  when:
+    - kc_ssl_certificate_file is defined
+    - kc_ssl_certificate_file is is_file
+  register: certificate_copied
+  copy:
+    src: "{{ kc_ssl_certificate_file }}"
+    dest: "/tmp/keycloak-certificate.tmp"
+    owner: TEST
+    group: TEST
+    mode: 0644
+
+- name: "Verify that there's no obsolete 'keycloak' certificate on keystore"
+  when: certificate_copied|skipped == false
+  java_cert:
+    cert_path: "{{ kc_ssl_certificate_file }}"
+    cert_alias: keycloak
+    keystore_path: "{{ java_cacerts_file }}"
+    keystore_pass: "{{ java_truststore_password }}"
+    state: absent
+  become: true
+  become_method: sudo
+
+- name: "Import Keycloak certificate into system-wide Java truststore"
+  when: certificate_copied|skipped == false
+  import_certificate:
+    keystore: "{{ java_cacerts_file }}"
+    storepass: "{{ java_truststore_password }}"
+    certificate: "{{ certificate_copied.path | default(certificate_copied.dest) }}"
+    certificate_alias: "keycloak"
+  become: true
+  become_method: sudo
+
+- name: "Add/Update {{ rc_system_tools_module }} section of RC file with provided el_ui_URL"
+  blockinfile:
+    block: |
+      program:                    {{ rc_system_tools_module }}
+      url:                        {{ el_ui_URL }}
+      keycloak_client_id:         {{ kc_TEST_ui_client_id }}
+      keycloak_client_secret:     {{ kc_client_secret }}
+      keycloak_auth_service_url:  {{ kc_https_url }}
+      keycloak_token_life_span:   {{ kc_token_life_span }}
+      keycloak_realm:             {{ kc_realm_name }}
+    dest: "{{ rc_file_location }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR {{ rc_system_tools_module }}"
+  become: true
+  become_method: sudo
+
+- name: "Add SystemTools profile file for all users"
+  template:
+    src: el-system-tools.sh.j2
+    dest: /etc/profile.d/el-system-tools.sh
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: "Source SystemTools profile file"
+  shell: source /etc/profile.d/el-system-tools.sh
+  changed_when: false

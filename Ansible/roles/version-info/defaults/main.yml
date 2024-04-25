@@ -1,0 +1,4 @@
+---
+vi_crud_wait_timeout: 30
+ansible_dir: '/tmp/ansible_tmp'
+admintools_client_local_conf: "{{ ansible_dir }}/admintools-keycloak.json"

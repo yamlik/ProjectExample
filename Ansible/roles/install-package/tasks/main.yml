@@ -1,0 +1,13 @@
+---
+
+- assert:
+    that:
+      - "package_name is defined"
+
+- name: "Install {{ package_name }} package"
+  register: "{{ package_name }}_package_installed"
+  yum:
+    name: "{{ package_name }}"
+    state: "{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo

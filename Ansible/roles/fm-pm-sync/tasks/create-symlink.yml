@@ -1,0 +1,103 @@
+---
+- name: create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+    recurse: yes
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ gen3gppxml_report_location }}" 
+    - "{{ sync_directory }}"
+    - "{{ sync_directory }}/meas"
+    - "{{ sync_directory }}/prometheus"
+
+- name: create grafana data directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "grafana"
+    group: "grafana"
+    mode: 0755
+    recurse: yes
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ sync_directory }}/data"  
+
+- name: remove obsolete prometheus files from image
+  shell: "rm -rf /prometheus"
+  become: true
+  become_method: sudo
+
+- name: Create symbolic link for /prometheus
+  file:
+    src: "{{ sync_directory }}/prometheus"
+    dest: "{{ prometheus_storage_path }}"
+    force: yes
+    state: link
+  become: yes
+  become_method: sudo
+
+- name: Create symbolic link for /appdata/meas
+  file:
+    src: "{{ sync_directory }}/meas"
+    dest: "{{ gen3gppxml_report_location }}"
+    force: yes
+    state: link
+  become: yes
+  become_method: sudo
+
+- name: "check if directory /var/lib/grafana/data exists."
+  stat:
+    path: "{{ grafana_data_dir }}"
+  register: grafana_dir_check
+
+- name: stop service grafana-server
+  systemd:
+    name: grafana-server
+    enabled: no
+    state: stopped
+  register: grafana_status
+  until: "grafana_status is defined and grafana_status.state is defined and grafana_status.state == 'stopped'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+  when: grafana_dir_check.stat.exists
+
+- name: "Move grafana database file to a temporary location"
+  command: "mv -f {{ grafana_data_dir }}/grafana.db {{ grafana_data_dir }}/../"
+  become: true
+  become_method: sudo
+  when: grafana_dir_check.stat.exists
+
+- name: "Move grafana png directory to a temporary location"
+  command: "mv -f {{ grafana_data_dir }}/png {{ grafana_data_dir }}/../"
+  become: true
+  become_method: sudo
+  when: grafana_dir_check.stat.exists
+
+- name: Create symbolic link for /var/lib/grafana/data
+  file:
+    src: "{{ sync_directory }}/data"
+    dest: "{{ grafana_data_dir }}"
+    force: yes
+    state: link
+  become: yes
+  become_method: sudo
+  
+- name: "Move grafana database file to the new location"
+  command: "mv -f {{ grafana_data_dir }}/../grafana.db {{ grafana_data_dir }}"
+  become: true
+  become_method: sudo
+  when: grafana_dir_check.stat.exists
+
+- name: "Move grafana png directory to the new location"
+  command: "mv -f {{ grafana_data_dir }}/../png {{ grafana_data_dir }}"
+  become: true
+  become_method: sudo
+  when: grafana_dir_check.stat.exists

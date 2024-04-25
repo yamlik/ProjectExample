@@ -1,0 +1,11 @@
+gtpc_volume:
+  - name: "gtpc"
+    filesystem: xfs
+    label: gtpc
+    opts: '-b size=4096 -L gtpc'
+    mount_point: /opt/gtpc
+    mount_point_dash: opt-gtpc
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingon']['gtpc_mount_id'][0:20] }}"
+    owner: TEST
+    group: TEST
+    mode: "0700"

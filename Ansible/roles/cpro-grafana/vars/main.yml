@@ -1,0 +1,8 @@
+---
+user: grafana
+group: grafana
+
+dr_ca_cert_dir: /etc/ssl/dr_alarms_ca
+grafana_ssl_dir: /etc/ssl/grafana_server
+
+...

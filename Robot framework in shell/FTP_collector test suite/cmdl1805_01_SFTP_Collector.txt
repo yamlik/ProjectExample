@@ -1,0 +1,386 @@
+*** Settings ***
+
+Documentation  Test for new SFTP Collector with libssh
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+
+Default Tags  Non-regression
+
+*** Variables ***
+${SV_LATEST_STREAM_VERSION_LINK}  xpath=//tr[2]/td[1]/a[text()='View']
+@{collector_list}	Col1   Col2   Col3   Col4   Col5
+@{collector_dir}	col1   col2   col3   col4   col5
+@{distributor_list}  	Dist1  Dist2  Dist3  Dist4  Dist5
+@{distributor_dir}      dist1  dist2  dist3  dist4  dist5
+@{collected_file}       LTE_in  in_IN1_inp1000  in_IN2_inp1000  neptun_in  TEST_input
+@{cipher_value}		aes128-cbc  aes192-cbc  aes256-cbc  blowfish-cbc
+#@{cipher_value_sunOS}   aes128-cbc  aes192-cbc  aes256-cbc  blowfish-cbc  
+#@{kex_value}		diffie-hellman-group14-sha1  diffie-hellman-group-exchange-sha1 
+${total_not_collected}  
+${total_collected}
+
+*** Keywords ***
+
+Call For Looping
+	:FOR    ${vfiles}    IN    @{collected_file}  
+        \   Write  echo $PWD
+        \   Read Until Prompt       
+   	\   Write  diff ${vfiles} ${AUTO_EL_INST_DIR}/TEST/smoke/data/sample/${vfiles}
+        \   Read Until Prompt
+   	\   Write   echo $?
+        \   ${output_result}=  Read Until Prompt
+        \   Should Start With  ${output_result}  0
+
+Verify result   [Arguments]  ${directory}  ${dist_directory}
+	Log  check source files - Number of Files Not Collected  WARN
+	Write  cd ${AUTO_EL_INST_DIR}/${directory}/
+	Read Until Prompt
+	Write  ls | wc -l
+	${result}=  Read Until Prompt       
+    	${match}=  Run Keyword  Should Match  ${result}  *${total_not_collected}*
+
+        Log  check collected files - Number of Files Collected   WARN
+	Write  cd ${AUTO_EL_INST_DIR}/${dist_directory}
+	Read Until Prompt
+	Write  ls | wc -l
+	${result}=  Read Until Prompt       
+    	${match}=  Run Keyword  Should Match  ${result}  *${total_collected}*
+	
+	Log  check collected files - Content same as original input file  WARN	
+	Write  cd ${AUTO_EL_INST_DIR}/${dist_directory}
+	Read Until Prompt
+	Call For Looping
+
+Cipher Others
+	:FOR    ${cipher}    IN    @{cipher_value}  
+	\   Write  rm -rf ${AUTO_EL_INST_DIR}/col5/*
+        \   Read Until Prompt
+	\   Write  rm -rf ${AUTO_EL_INST_DIR}/dist5/*
+	\   Read Until Prompt 
+	\   Set Node Parameters List  SFTP_LIBSSH_Stream  Col5  Cipher  ${cipher}
+ 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Running
+	\   Stop Node   SFTP_LIBSSH_Stream  Col5  end
+ 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Stopped
+	\   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/sample/* ${AUTO_EL_INST_DIR}/col5/
+	\   Read Until Prompt 
+        \   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/asn1/TAP3Test1-17000.cdr ${AUTO_EL_INST_DIR}/col5/
+	\   Read Until Prompt
+	\   Start Node   SFTP_LIBSSH_Stream  Col5
+ 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Running
+  	\   Write   sleep 20
+	\   Read Until Prompt
+  	\   Log  Verify Result for Node Parameter Cipher - ${cipher}   WARN
+	\   Verify result   col5  dist5
+
+#Cipher SunOS
+#	:FOR    ${cipher}    IN    @{cipher_value_sunOS}  
+#	\   Write  rm -rf ${AUTO_EL_INST_DIR}/col5/*
+#        \   Read Until Prompt
+#	\   Write  rm -rf ${AUTO_EL_INST_DIR}/dist5/*
+#	\   Read Until Prompt 
+#	\   Set Node Parameters List  SFTP_LIBSSH_Stream  Col5  Cipher  ${cipher}
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Running
+#	\   Stop Node   SFTP_LIBSSH_Stream  Col5  end
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Stopped
+#	\   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/sample/* ${AUTO_EL_INST_DIR}/col5/
+#	\   Read Until Prompt 
+#        \   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/asn1/TAP3Test1-17000.cdr ${AUTO_EL_INST_DIR}/col5/
+#	\   Read Until Prompt
+#	\   Start Node   SFTP_LIBSSH_Stream  Col5
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col5  3 minute  Running
+#  	\   Write   sleep 20
+#	\   Read Until Prompt
+#  	\   Log  Verify Result for Node Parameter Cipher - ${cipher}   WARN
+#	\   Verify result   col5  dist5
+
+Test For Node Param Cipher
+	Write   mkdir -p ${BASE_DIR}/sftp_col
+    	Read Until Prompt
+	
+	Start Command   ${BASE_DIR}/sftp_col/Arch
+    	${result}=  Read Command Output
+	Cipher Others   
+
+	#Run Keyword If   '${result}'=='LINUXintel'   Cipher Others   
+	#Run Keyword If   '${result}'=='HP-UXita'   Cipher Others  
+	#Run Keyword If   '${result}'=='AIX'   Cipher Others 
+	#Run Keyword If   '${result}'=='SunOS'  Cipher SunOS
+	
+#Test For Node Param Kex
+#  	:FOR    ${kex}    IN    @{kex_value}  
+#	\   Write  rm -rf ${AUTO_EL_INST_DIR}/col6/*
+#	\   Read Until Prompt
+#	\   Write  rm -rf ${AUTO_EL_INST_DIR}/dist6/*
+#	\   Read Until Prompt 
+#	\   Set Node Parameters List  SFTP_LIBSSH_Stream  Col6  Kex  ${kex}
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col6  3 minute  Running
+#	\   Stop Node   SFTP_LIBSSH_Stream  Col6  end
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col6  3 minute  Stopped
+#	\   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/sample/* ${AUTO_EL_INST_DIR}/col6/
+#	\   Read Until Prompt 
+#	\   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/asn1/TAP3Test1-17000.cdr ${AUTO_EL_INST_DIR}/col6/
+#	\   Read Until Prompt
+#	\   Start Node   SFTP_LIBSSH_Stream  Col6
+# 	\   Wait Until Node Is    SFTP_LIBSSH_Stream  Col6  3 minute  Running
+#  	\   Write   sleep 20
+#	\   Read Until Prompt
+#  	\   Log  Verify Result for Node Parameter Kex - ${kex}   WARN
+#	\   Verify result   col6  dist6
+
+
+*** Test Cases ***
+
+Prepare Enviroment		 
+    	Login To Test Host
+    	Set Client Configuration  prompt= ]$
+    	Write   export PS1=]$
+    	Read Until Prompt 
+	Set Client Configuration  timeout=600 
+	Put File  ${ROBOT_PATH}/testcases/FTP_collector/Arch   ${BASE_DIR}/sftp_col/
+    	el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/SFTP_Stream.tar  ${AUTO_EL_INST_DIR}/TEST/smoke/
+    	Write   cd ${AUTO_EL_INST_DIR}/TEST/smoke
+    	Read Until Prompt 
+    	Write   tar xvf SFTP_Stream.tar
+    	Read Until Prompt 
+
+    	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+    	Write  . ./.profile
+    	Read Until Prompt
+    	Write  cd ${AUTO_EL_INST_DIR}/TEST/smoke/collector_config
+    	Read Until Prompt
+    	Write  ./install_collectors_stream.ksh -v ${COLLECTORS_PACKAGES} -h ${EL_TEST_HOST_SHORT}_a -u ${GTAF_SSH_USER} -p ${GTAF_SSH_PASS} -l ${EL_TEST_HOST}    
+    	${result}=  Read Until Prompt       
+    	${match}=  Run Keyword  Should Match  ${result}  *Done*
+
+	Write   mkdir ${BASE_DIR}/robot_input
+    	Read Until Prompt 
+	Write   cd ${BASE_DIR}/robot_input
+    	Read Until Prompt 
+	Write  echo "set heading off;" > deleteAudit.sql
+    	Read Until Prompt
+    	Write  echo "delete from el_reporting_output_details;" >> deleteAudit.sql
+    	Read Until Prompt
+	Write  echo "delete from el_reporting_input_details;" >> deleteAudit.sql
+    	Read Until Prompt
+	Write  echo "commit;" >> deleteAudit.sql
+    	Read Until Prompt
+    	Write  echo "quit;" >> deleteAudit.sql
+    	Read Until Prompt 
+    	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+    	Write  . ./.profile
+    	Read Until Prompt
+
+	Run Keyword If   '${DB_VENDOR}'=='1'  Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${BASE_DIR}/robot_input/deleteAudit.sql
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 -tf ${BASE_DIR}/robot_input/deleteAudit.sql
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+
+	Write   sleep 60
+    	Read Until Prompt 
+
+
+Pump In Input Files
+      	Start Latest Stream   SFTP_LIBSSH_Stream
+	Wait Until Stream Is  SFTP_LIBSSH_Stream  5 minute  Running
+	Stop Stream   SFTP_LIBSSH_Stream
+	Wait Until Stream Is  SFTP_LIBSSH_Stream  5 minute  Stopped
+	Acknowledge Messages
+
+	Write  rm -rf ${AUTO_EL_INST_DIR}/movedDir/*
+	Read Until Prompt
+
+	:FOR    ${dist_directory}    IN    @{distributor_dir}
+	\   Write  rm -rf ${AUTO_EL_INST_DIR}/${dist_directory}/*
+	\   Read Until Prompt 
+
+	:FOR    ${directory}    IN    @{collector_dir}
+    	\   Write  rm -rf ${AUTO_EL_INST_DIR}/${directory}/*
+	\   Read Until Prompt 
+	\   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/sample/* ${AUTO_EL_INST_DIR}/${directory}/
+	\   Read Until Prompt 
+        \   Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/data/asn1/TAP3Test1-17000.cdr ${AUTO_EL_INST_DIR}/${directory}/
+	\   Read Until Prompt
+	\   Write  cd ${AUTO_EL_INST_DIR}/${directory}
+	\   Read Until Prompt
+	\   Write   ls | wc -l > ${BASE_DIR}/robot_input/total_in.txt
+	\   Read Until Prompt
+	\   Start Command  cat ${BASE_DIR}/robot_input/total_in.txt | sed '/^$/d' | sed 's/.* //'
+    	\   ${total_in}=  Read Command Output 
+	\   Write   ls *in* | wc -l > ${BASE_DIR}/robot_input/total_collected.txt
+	\   Read Until Prompt
+	\   Start Command  cat ${BASE_DIR}/robot_input/total_collected.txt | sed '/^$/d' | sed 's/.* //'
+    	\   ${total_collected}=  Read Command Output 
+	\   ${total_not_collected}  Evaluate  ${total_in} - ${total_collected}	
+
+        Write  cp ${AUTO_EL_INST_DIR}/TEST/smoke/filelist.txt ${AUTO_EL_INST_DIR}/col1/
+	Read Until Prompt 
+
+
+Verify Collector Node Status, Source Files, Collected Files, MoveSrcToDirectory	
+	Start Latest Stream   SFTP_LIBSSH_Stream
+	
+        Log  check node status - Running  WARN
+	:FOR    ${collector}    IN    @{collector_list}
+	\   Wait Until Node Is   SFTP_LIBSSH_Stream  ${collector}  5 minute  Running
+
+	Set Client Configuration  timeout=600 
+	Write  sleep 60
+        Read Until Prompt
+
+	Log  check source files - Number of Files Not Collected  WARN
+        Write  rm -rf ${AUTO_EL_INST_DIR}/col1/filelist.txt 
+	Read Until Prompt 
+	:FOR    ${directory}    IN    @{collector_dir}
+	\   Write  cd ${AUTO_EL_INST_DIR}/${directory}/
+	\   Read Until Prompt
+	\   Write  ls | wc -l
+	\   ${result}=  Read Until Prompt       
+    	\   ${match}=  Run Keyword  Should Match  ${result}  *${total_not_collected}*
+
+        Log  check collected files - Number of Files Collected   WARN
+	:FOR    ${dist_directory}    IN    @{distributor_dir}
+	\   Write  cd ${AUTO_EL_INST_DIR}/${dist_directory}
+	\   Read Until Prompt
+	\   Write  ls | wc -l
+	\   ${result}=  Read Until Prompt       
+    	\   ${match}=  Run Keyword  Should Match  ${result}  *${total_collected}*
+	
+	Log  check collected files - Content same as original input file  WARN
+	:FOR    ${dist_directory}    IN    @{distributor_dir}
+	\   Write  cd ${AUTO_EL_INST_DIR}/${dist_directory}
+	\   Read Until Prompt
+	\   Call For Looping
+  	
+        Log  check MoveSrcToDirectory  WARN
+        Write  cd ${AUTO_EL_INST_DIR}/movedDir
+	Read Until Prompt
+	Write  ls *pre*suf | wc -l
+	${result}=  Read Until Prompt       
+    	${match}=  Run Keyword  Should Match  ${result}  *${total_collected}*
+
+	Log  Node Parameter Cipher   WARN
+        Test For Node Param Cipher
+
+#	Log  Node Parameter Kex   WARN
+#       Test For Node Param Kex
+
+Verify Audit Report
+	Set Client Configuration  timeout=600
+	Write   cd ${BASE_DIR}/robot_input
+    	Read Until Prompt 
+	Write  echo "set heading off;" > inAuditDetail.sql
+    	Read Until Prompt
+    	Write  echo "select count(*) from el_reporting_input_details;" >> inAuditDetail.sql
+    	Read Until Prompt
+    	Write  echo "quit;" >> inAuditDetail.sql
+    	Read Until Prompt 
+    	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+    	Write  . ./.profile
+    	Read Until Prompt
+
+	Run Keyword If   '${DB_VENDOR}'=='1'  Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${BASE_DIR}/robot_input/inAuditDetail.sql > ${BASE_DIR}/robot_input/inAuditCount.txt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 -tf ${BASE_DIR}/robot_input/inAuditDetail.sql > ${BASE_DIR}/robot_input/inAuditCount.txt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+
+
+    	Start Command  cat ${BASE_DIR}/robot_input/inAuditCount.txt | sed '/^$/d' | sed 's/.* //'
+    	${in_count}=  Read Command Output 
+
+	Start Command   ${BASE_DIR}/sftp_col/Arch
+    	${result}=  Read Command Output
+	Run Keyword  Should Match  ${in_count}  *45*
+
+	#Run Keyword If   '${result}'=='SunOS'   Run Keyword  Should Match  ${in_count}  *50*
+	#Run Keyword If   '${result}'=='LINUXintel'   Run Keyword  Should Match  ${in_count}  *60*
+	#Run Keyword If   '${result}'=='AIX'   Run Keyword  Should Match  ${in_count}  *60*
+	#Run Keyword If   '${result}'=='HP-UXita'   Run Keyword  Should Match  ${in_count}  *60*
+
+	Write   cd ${BASE_DIR}/robot_input
+    	Read Until Prompt 
+	Write  echo "set heading off;" > outAuditDetail.sql
+    	Read Until Prompt
+    	Write  echo "select count(*) from el_reporting_output_details;" >> outAuditDetail.sql
+    	Read Until Prompt
+    	Write  echo "quit;" >> outAuditDetail.sql
+    	Read Until Prompt 
+    	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+    	Write  . ./.profile
+    	Read Until Prompt
+    	
+	Run Keyword If   '${DB_VENDOR}'=='1'  Write  ${ORACLE_HOME}/bin/sqlplus ${DB_USER}/${DB_PASSWORD} @${BASE_DIR}/robot_input/outAuditDetail.sql > ${BASE_DIR}/robot_input/outAuditCount.txt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 connect to ${DB2_ALIAS} user ${DB2_USER} using ${DB2_PASSWORD}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  db2 -tf ${BASE_DIR}/robot_input/outAuditDetail.sql > ${BASE_DIR}/robot_input/outAuditCount.txt
+	Run Keyword If   '${DB_VENDOR}'=='2'  Read Until Prompt
+
+
+	#Write  sqlplus -S ${DB_USER}/${DB_PASSWORD} @ ${BASE_DIR}/robot_input/outAuditDetail.sql > ${BASE_DIR}/robot_input/outAuditCount.txt
+	#Read Until Prompt
+    	Start Command  cat ${BASE_DIR}/robot_input/outAuditCount.txt | sed '/^$/d' | sed 's/.* //'
+    	${out_count}=  Read Command Output 
+	Run Keyword  Should Match  ${out_count}  *45*
+
+	#Run Keyword If   '${result}'=='SunOS'   Run Keyword  Should Match  ${out_count}  *50*
+	#Run Keyword If   '${result}'=='LINUXintel'   Run Keyword  Should Match  ${out_count}  *60*
+	#Run Keyword If   '${result}'=='AIX'   Run Keyword  Should Match  ${out_count}  *60*
+	#Run Keyword If   '${result}'=='HP-UXita'   Run Keyword  Should Match  ${out_count}  *60*
+
+	Write  sleep 60
+    	Read Until Prompt
+
+Cleanup Testing Environment
+	Log  Stop and delete SFTP_LIBSSH_Stream Stream  WARN
+	Stop Stream   SFTP_LIBSSH_Stream
+	Wait Until Stream Is  SFTP_LIBSSH_Stream  5 minute  Stopped
+	Hide Stream   SFTP_LIBSSH_Stream
+	Delete Stream   SFTP_LIBSSH_Stream
+	
+	Log  Cleanup deleted stream  WARN
+	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+    	Write  . ./.profile
+    	Read Until Prompt
+	Write  tools.pl -c cleanupdeletedstreams
+	Read Until Prompt
+
+	Log   Acknowledge Notifications  WARN
+	Acknowledge Messages
+
+	Write  rm -rf ${AUTO_EL_INST_DIR}/TEST/smoke/filelist.txt
+	Read Until Prompt
+	Write  rm -rf ${AUTO_EL_INST_DIR}/TEST/smoke/collector_*
+	Read Until Prompt
+	Write  rm -rf ${AUTO_EL_INST_DIR}/TEST/smoke/SFTP_Stream.tar
+	Read Until Prompt
+	
+  	Write  rm -rf ${AUTO_EL_INST_DIR}/movedDir
+	Read Until Prompt
+
+	:FOR    ${dist_directory}    IN    @{distributor_dir}
+	\   Write  rm -rf ${AUTO_EL_INST_DIR}/${dist_directory}
+	\   Read Until Prompt 
+
+  	:FOR    ${directory}    IN    @{collector_dir}
+    	\   Write  rm -rf ${AUTO_EL_INST_DIR}/${directory}
+	\   Read Until Prompt 
+
+	Write  rm -rf ${BASE_DIR}/robot_input
+	Read Until Prompt
+	
+	Write  rm -rf ${BASE_DIR}/sftp_col
+	Read Until Prompt
+
+	Close Connection
+

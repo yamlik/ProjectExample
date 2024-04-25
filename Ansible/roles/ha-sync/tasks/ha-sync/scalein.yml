@@ -1,0 +1,2 @@
+- name: remove scheduled ha-sync from crontab
+  shell: crontab -l | grep -v /usr/bin/ha-sync | crontab -

@@ -1,0 +1,12 @@
+---
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+lookup_bin_dir: "{{ install_dir }}/lookup_server/bin"
+TEST_home: /opt/TEST/TEST/base
+rcfile: "{{ install_dir }}/.mds.rc"
+
+lookup_server_host: "{{ fqdn_host }}"
+lookup_server_ip: "{{ ansible_ssh_host }}"
+...

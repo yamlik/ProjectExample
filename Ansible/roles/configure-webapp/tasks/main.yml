@@ -1,0 +1,44 @@
+---
+
+- assert:
+    that:
+      - "component_name is defined"
+      - "configuration_files is defined"
+      - "service_name is defined"
+      - "wait_for_fqdn is defined"
+      - "wait_for_port is defined"
+      - "wait_for_timeout is defined"
+
+- name: "Encrypt tomcat resource password"
+  shell: "{{ TEST_bin }}/el_crypto.ksh ENC '{{ plain_db_password }}'"
+  register: processed_db_passwd
+  when: plain_db_password is defined
+
+- name: "Copy {{ component_name }} configuration"
+  register: configuration_copied
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('TEST') }}"
+    group: "{{ item.group | default('TEST') }}"
+    mode: "{{ item.mode | default(0644) }}"
+  become: "{{ item.become | default(false) }}"
+  become_method: sudo
+  with_items:
+    - "{{ configuration_files }}"
+
+- name: "Restart {{ component_name }} service"
+  when: restart_webapp is not defined or restart_webapp
+  service:
+    name: "{{ service_name }}"
+    state: restarted
+  become: true
+  become_method: sudo
+
+- name: "Wait for {{ component_name }} service to start"
+  when: restart_webapp is not defined or restart_webapp
+  wait_for:
+    host: "{{ wait_for_fqdn }}"
+    port: "{{ wait_for_port }}"
+    state: started
+    timeout: "{{ wait_for_timeout }}"

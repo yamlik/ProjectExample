@@ -1,0 +1,27 @@
+[Unit]
+Description=TEST Node Manager Service
+Wants=network-online.target
+After=network.target network-online.target el-timesten.service opt-TEST-TEST-data.mount opt-TEST-TEST-storage.mount opt-TEST-TEST-offline.mount opt-TEST-TEST-control.mount docker.service
+Requires=opt-TEST-TEST-data.mount opt-TEST-TEST-storage.mount opt-TEST-TEST-offline.mount opt-TEST-TEST-control.mount
+
+[Service]
+User={{ user }}
+Group={{ group }}
+Type=forking
+SuccessExitStatus=143
+EnvironmentFile=-/etc/sysconfig/el-node-manager
+ExecStartPre=/var/lib/scripts/db_conn.sh
+{% if ha_mode is defined and ha_mode == 'active-passive' %} 
+ExecStartPre=/bin/rm -f /opt/TEST/TEST/base/status/pidfile
+ExecStartPre=/bin/rm -f /opt/TEST/TEST/base/status/nm_proc.lock
+{% endif %}
+ExecStart={{ TEST_home }}/bin/TEST.pl start
+{% if ha_mode is defined and ha_mode == 'active-passive' %} 
+ExecStop={{ TEST_home }}/bin/TEST.pl stop
+{% else %} 
+ExecStop={{ TEST_home }}/bin/TEST.pl stop -nodes
+{% endif %}
+TimeoutSec={{ nm_service_timeout }}
+
+[Install]
+WantedBy=multi-user.target

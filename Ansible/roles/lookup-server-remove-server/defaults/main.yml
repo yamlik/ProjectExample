@@ -1,0 +1,11 @@
+---
+
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+lookup_bin_dir: "{{ install_dir }}/lookup_server/bin"
+TEST_home: /opt/TEST/TEST/base
+
+...
+

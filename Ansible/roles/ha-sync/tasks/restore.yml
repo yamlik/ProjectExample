@@ -1,0 +1,5 @@
+- name: restore files
+  include: ha-sync/restore.yml
+
+- name: restart confd
+  service: name=confd state=restarted

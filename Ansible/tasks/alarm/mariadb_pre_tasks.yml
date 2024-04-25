@@ -1,0 +1,31 @@
+---
+
+- name: Ensure mariadb is started
+  systemd:
+    name: mariadb
+    state: started
+    enabled: no
+
+- name: "Retrieve Mariadb password"
+  shell: "mariadb_passwd --user=root --get"
+  register: mariadb_password
+  failed_when: mariadb_password.rc != 0
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: Delete database calm_alma
+  mysql_db:
+    name: calm_alma
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_password.stdout }}"
+    login_port: "{{ mariadb_port }}"
+  become: true
+  become_method: sudo
+
+- name: Ensure mariadb is stopped
+  systemd:
+    name: mariadb
+    state: stopped
+    enabled: no

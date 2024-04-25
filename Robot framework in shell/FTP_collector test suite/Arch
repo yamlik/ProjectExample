@@ -1,0 +1,120 @@
+#!/bin/sh
+# $Revision: /main/5$
+# returns system's architecture identifier. Used by the Makefile-engine.
+# When used with argument -list a list of all known architectures is printed
+# to stdout.
+
+if [ "$1" = "-list" ]; then
+  echo "SunOS"
+  echo "AIX"
+  echo "OSF1"
+  echo "HP-UX"
+  echo "HP-UX.11"
+  echo "HP-UXita"
+  echo "LINUXintel"
+  echo "\nWith -spec option:\n"
+  echo "AIX4.3"
+  echo "AIX5.2"
+  echo "AIX5.3"
+  echo "SunOS.7"
+  echo "SunOS.8"
+  echo "SunOS.9"
+  echo "SunOS.10"
+  echo "OSF1.5"
+  echo "HP-UX.11.11"
+  echo "HP-UX.11.22"
+  echo "HP-UX.11.31"
+  echo "LINUXintel.x86_32"
+  echo "LINUXintel.x86_64"
+  exit
+fi
+
+if [ "$1" = "-spec" ]; then  
+
+    SPECIFIC=$1
+
+fi
+
+set `/bin/uname -a`
+
+
+ARCH=$1
+
+# at the moment only HP-UX and LINUX need special treatment
+# if needed, Solaris 7- and Compaq versions are also specified
+
+if [ "$ARCH" = "HP-UX" -a "$3" = "B.11.00" -o "$3" = "B.11.11" ]; then
+  ARCH=HP-UX.11
+fi
+
+if [ "$ARCH" = "HP-UX" -a "$3" = "B.11.22" -o "$3" = "B.11.23" -o "$3" = "B.11.31" ]; then
+  ARCH=HP-UXita
+fi
+
+if [ "$ARCH" = "Linux" ]; then
+  BITS=`/bin/uname -a | cut -d" " -f13`
+  ARCH="LINUXintel"
+fi
+
+if [ "$SPECIFIC" = "-spec" ]; then
+
+    if [ "$ARCH" = "AIX" -a "$4" = "4" -o "$3" = "3" ]; then
+            ARCH=AIX4.3
+    fi
+
+    if [ "$ARCH" = "AIX" -a "$4" = "5" -o "$3" = "2" ]; then
+            ARCH=AIX5.2
+    fi
+
+    if [ "$ARCH" = "AIX" -a "$4" = "5" -o "$3" = "3" ]; then
+            ARCH=AIX5.3
+    fi
+
+    if [ "$ARCH" = "SunOS" -a "$3" = "5.7" ]; then
+	    ARCH=SunOS.7
+    fi
+
+    if [ "$ARCH" = "SunOS" -a "$3" = "5.8" ]; then
+	ARCH=SunOS.8
+    fi
+
+    if [ "$ARCH" = "SunOS" -a "$3" = "5.9" ]; then
+	ARCH=SunOS.9
+    fi
+
+    if [ "$ARCH" = "SunOS" -a "$3" = "5.10" ]; then
+	ARCH=SunOS.10
+    fi
+
+    if [ "$ARCH" = "OSF1" -a "$3" = "V5.1" ]; then
+	ARCH=OSF1.5
+    fi
+
+    if [ "$ARCH" = "HP-UX.11" -a "$3" = "B.11.11" ]; then
+         ARCH=HP-UX.11.11
+    fi
+
+    if [ "$ARCH" = "HP-UXita" -a "$3" = "B.11.22" ]; then
+         ARCH=HP-UX.11.22
+    fi
+
+    if [ "$ARCH" = "HP-UXita" -a "$3" = "B.11.23" ]; then
+         ARCH=HP-UX.11.23
+    fi
+
+    if [ "$ARCH" = "HP-UXita" -a "$3" = "B.11.31" ]; then
+         ARCH=HP-UX.11.31
+    fi
+
+    if [ "$ARCH" = "LINUXintel" -a "$BITS" = "i686" ]; then
+         ARCH=LINUXintel.x86_32
+    fi
+
+    if [ "$ARCH" = "LINUXintel" -a "$BITS" = "x86_64" ]; then
+         ARCH=LINUXintel.x86_64
+    fi
+
+fi
+
+echo $ARCH
+

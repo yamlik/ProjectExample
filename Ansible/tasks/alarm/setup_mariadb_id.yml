@@ -1,0 +1,53 @@
+---
+
+- name: Retrieve Mariadb password
+  shell: "mariadb_passwd --user=root --get"
+  register: mariadb_password
+  failed_when: mariadb_password.rc != 0
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: Check ha_script user exists
+  shell: "mysql -u root -p{{ mariadb_password.stdout }} -P {{ mariadb_port }} -e \"SELECT user FROM mysql.user WHERE user = 'ha_script'\""
+  register: user_exists
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: Create ha_script user
+  mysql_user:
+    login_user: "root"
+    login_password: "{{ mariadb_password.stdout }}"
+    login_port: "{{ mariadb_port }}"
+    host: "%"
+    name: "ha_script"
+    priv: "*.*:SUPER,REPLICATION CLIENT"
+    state: present
+  when:
+  - user_exists.stdout == ""
+  become: true
+  become_method: sudo
+
+- name: Get Mariadb Server id
+  shell: "mysql -P {{ mariadb_port }} -u ha_script -h {{ cmdb_replication_host }} -e \"SELECT @@server_id as id;\" | sed -n '2p'"
+  register: server_id_output
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: Set default if unable to retrieve a mariadb master server_id
+  set_fact:
+    server_id: 1
+    gtid_domain_id: 1
+  become: true
+  become_method: sudo
+  when: server_id_output.rc != 0
+
+- name: Increase server id for mariadb replication target after reconfigure
+  set_fact:
+    server_id: "{{ server_id_output.stdout|int + 1 }}"
+    gtid_domain_id: "{{ server_id_output.stdout|int + 1 }}"
+  become: true
+  become_method: sudo
+  when: server_id_output.rc == 0

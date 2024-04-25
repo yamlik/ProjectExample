@@ -1,0 +1,135 @@
+---
+
+- include: setup_ssl.yml
+
+- name: update grafana.ini files
+  template:
+    src: grafana.ini.j2
+    dest: "/etc/grafana/grafana.ini"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+## grafana rpm installed in golden image and populate database file in default directory.
+## move the database files into mountpoints for HA
+
+# create dir data if not exist
+
+- name: "check if directory {{ grafana_data_dir }} exists."
+  stat:
+    path: "{{ grafana_data_dir }}"
+  register: grafana_dir_check
+
+- name: "create  {{ grafana_data_dir }} directory"
+  file:
+    path: "{{ grafana_data_dir }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0700
+  when: not grafana_dir_check.stat.exists
+  become: true
+  become_method: sudo
+
+- name: "Copy grafana database file into data directory"
+  copy:
+    src: "/var/lib/grafana/grafana.db"
+    dest: "{{ grafana_data_dir }}/grafana.db"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    remote_src: yes
+    force: no
+    mode: 0700
+  become: true
+  become_method: sudo
+
+- name: open grafana server http port
+  firewalld:
+    zone: public
+    port: "{{ grafana_server_http_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+
+- name: start service grafana-server
+  systemd:
+    name: grafana-server
+    enabled: no
+    state: restarted
+    daemon_reload: yes
+  register: grafana_status
+  until: "grafana_status is defined and grafana_status.state is defined and grafana_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: Import dashboard into grafana
+  uri:
+    url: "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}/api/dashboards/db"
+    url_username: "{{ grafana_security_admin_user }}"
+    url_password: "{{ grafana_security_admin_password }}"
+    method: POST
+    validate_certs: no
+    body: "{{ item }}"
+    force_basic_auth: yes
+    status_code: 200
+    body_format: json
+    return_content: yes
+  with_items:
+    - "{{ lookup('file','dr-dashboard.json') }}"
+    - "{{ lookup('file','nchf-dashboard.json') }}"
+  become: true
+  become_method: sudo
+
+- name: "Update RCFILE on dashboard url"
+  blockinfile:
+    block: |
+      program: grafana
+      login_url:  "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}"
+      dashboard_url: "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}/d/sysmon/system-monitoring"
+      nchf_dashboard_url: "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}/d/nchfmon/5g-nchf-monitoring"
+    dest: "{{ rc_file_location }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR CPRO-GRAFANA"
+  become: true
+  become_method: sudo
+
+- name: check if datasource prometheus exist, ignore if existed.
+  uri:
+    url: "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}/api/datasources/id/{{ grafana_datasource }}"
+    url_username: "{{ grafana_security_admin_user }}"
+    url_password: "{{ grafana_security_admin_password }}"
+    method: GET
+    validate_certs: no
+    force_basic_auth: yes
+    status_code: 404
+    body_format: json
+    return_content: yes
+  register: datasource_resp
+  become: true
+  become_method: sudo
+  ignore_errors: true
+
+- name: Import datasource prometheus if not exist
+  uri:
+    url: "{{ grafana_server_protocol }}://{{ grafana_server_host }}:{{ grafana_server_http_port }}/api/datasources/"
+    url_username: "{{ grafana_security_admin_user }}"
+    url_password: "{{ grafana_security_admin_password }}"
+    method: POST
+    validate_certs: no
+    body_format: json
+    body: '{ "name":"{{ grafana_datasource }}","type":"prometheus","url":"{{ grafana_server_protocol }}://{{ grafana_datasource_url }}","access":"proxy","basicAuth":false }'
+    force_basic_auth: yes
+    status_code: 200
+    return_content: yes
+  when: datasource_resp.status != 200
+  become: true
+  become_method: sudo
+
+...

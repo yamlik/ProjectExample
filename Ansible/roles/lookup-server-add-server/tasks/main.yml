@@ -1,0 +1,147 @@
+---
+
+  
+# check if lookup-server rpm is installed
+- name: check for lookup-server rpm
+  command: rpm -q lookup-server
+  args:
+    warn: no
+  register: rpm_check 
+
+# fail if lookup-server rpm not installed
+- name: fail when lookup-server not installed
+  fail: msg="lookup-server not installed"
+  when: rpm_check.rc == 1
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - lookup_server_name
+    - lookup_server_port
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "lookup_server_name", value: "{{ lookup_server_name }}" }
+    - { name: "lookup_server_port", value: "{{ lookup_server_port }}" }
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable contains space character
+  fail: msg="Variable '{{ item.name }}' should not contain space character"
+  when: '" " in item.value'
+  with_items:
+    - { name: "lookup_server_name", value: "{{ lookup_server_name }}" }
+  
+# Run add_server script
+- name: run add_server script
+  command: "{{ install_dir }}/lookup_server/bin/add_server {{ lookup_server_name }} {{ lookup_server_port }}"
+  register: script_result
+  become: "{{ user }}"
+
+# Open firewall open base on configured port number
+- name: open ports for lookup-server
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "{{ lookup_server_port }}"
+  when: script_result | success
+  become: true
+  become_method: sudo
+
+# Replace el-lookup-server with template file
+- name: update el-lookup-{{ lookup_server_name }}
+  template:
+    src: el-lookup-server.j2
+    dest: "/etc/sysconfig/el-lookup-{{ lookup_server_name }}"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+
+# Replace el-lookup-server.service with template file
+- name: update el-lookup-{{ lookup_server_name }}.service
+  template:
+    src: el-lookup-server.service.j2
+    dest: "/etc/systemd/system/el-lookup-{{ lookup_server_name }}.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+
+# Enable service el-lookup-server
+- name: enable service el-lookup-{{ lookup_server_name }}
+  systemd:
+    name: el-lookup-{{ lookup_server_name }}
+    daemon_reload: yes
+    enabled: yes
+  become: true
+  become_method: sudo
+  register: service_started
+
+# Database operations
+- name: "Generate select lookup server SQL"
+  template:
+    src: select-lookup-server.sql.j2
+    dest: "{{ TEST_home }}/sql/lookupserver/select-lookup-server.sql"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  when: service_started | success
+    
+# Execute select-lookup-server.sql
+- name: "Check if '{{ lookup_server_name }}' lookup server exists in DB"
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db EL
+                && run_db_script {{ TEST_home }}/sql/lookupserver/select-lookup-server.sql {{ TEST_home }}/log/select-lookup-server.sql.log"
+  register: script_result_select_lookup_server
+  changed_when: False
+
+- name: "Read output from lookup server check"
+  shell: "cat {{ TEST_home }}/log/select-lookup-server.sql.log"
+  register: select_lookup_server_log
+  when: script_result_select_lookup_server | success
+  changed_when: False
+
+- name: "Generate update lookup server SQL"
+  template:
+    src: update-lookup-server.sql.j2
+    dest: "{{ TEST_home }}/sql/lookupserver/update-lookup-server.sql"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  when: "'1 row' in select_lookup_server_log.stdout"
+
+# Execute update-lookup-server.sql
+- name: "Update entry for '{{ lookup_server_name }}' lookup server in DB"
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db EL
+                && run_db_script {{ TEST_home }}/sql/lookupserver/update-lookup-server.sql {{ TEST_home }}/log/update-lookup-server.sql.log"
+  when: "'1 row' in select_lookup_server_log.stdout"
+
+- name: "Generate insert lookup server SQL"
+  template:
+    src: insert-lookup-server.sql.j2
+    dest: "{{ TEST_home }}/sql/lookupserver/insert-lookup-server.sql"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  when: "'0 row' in select_lookup_server_log.stdout"
+
+# Execute insert-lookup-server.sql
+- name: "Insert entry for '{{ lookup_server_name }}' lookup server in DB"
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && init_db EL
+                && run_db_script {{ TEST_home }}/sql/lookupserver/insert-lookup-server.sql {{ TEST_home }}/log/insert-lookup-server.sql.log"
+  when: "'0 row' in select_lookup_server_log.stdout"
+
+
+...

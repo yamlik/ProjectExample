@@ -1,0 +1,752 @@
+{
+  "extVirtualLinks": [
+    {
+      "resourceId": "floating_network", 
+      "virtualLinkDescId": "Public", 
+      "vimConnectionId": "cbis", 
+      "id": "Public", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "type": "IPV4", 
+                        "numDynamicAddresses": 1
+                      }
+                    ]
+                  }, 
+                  "layerProtocol": "IP_OVER_ETHERNET"
+                }
+              ]
+            }
+          ], 
+          "cpdId": "ui_0_oam_FloatingECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "oam_v4", 
+      "vimConnectionId": "cbis", 
+      "id": "oam_v4", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.131", 
+                          "10.11.16.132", 
+                          "10.11.16.133", 
+                          "10.11.16.134", 
+                          "10.11.16.135", 
+                          "10.11.16.136", 
+                          "10.11.16.137", 
+                          "10.11.16.138", 
+                          "10.11.16.139", 
+                          "10.11.16.140"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingON_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.141", 
+                          "10.11.16.142"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_oam_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.143"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_oam_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.144", 
+                          "10.11.16.145"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_db_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.146"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_db_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.121", 
+                          "10.11.16.122", 
+                          "10.11.16.123", 
+                          "10.11.16.124", 
+                          "10.11.16.125", 
+                          "10.11.16.126", 
+                          "10.11.16.127", 
+                          "10.11.16.128", 
+                          "10.11.16.129", 
+                          "10.11.16.130"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingOFF_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.110", 
+                          "10.11.16.111", 
+                          "10.11.16.112"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_processingOFF_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.151", 
+                          "10.11.16.152", 
+                          "10.11.16.153", 
+                          "10.11.16.154", 
+                          "10.11.16.155", 
+                          "10.11.16.156"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_cgf_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.157", 
+                          "10.11.16.158", 
+                          "10.11.16.159"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_cgf_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.147", 
+                          "10.11.16.148"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_ui_0_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.149"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_ui_0_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.16.162", 
+                          "10.11.16.163", 
+                          "10.11.16.164"
+                        ], 
+                        "subnetId": "oam_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "oam_crdb_0_ECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "charging_dual", 
+      "vimConnectionId": "cbis", 
+      "id": "charging_dual", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.18.131", 
+                          "10.11.18.132", 
+                          "10.11.18.133", 
+                          "10.11.18.134", 
+                          "10.11.18.135", 
+                          "10.11.18.136", 
+                          "10.11.18.137", 
+                          "10.11.18.138", 
+                          "10.11.18.139", 
+                          "10.11.18.140"
+                        ], 
+                        "subnetId": "charging_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingON_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.18.121", 
+                          "10.11.18.122", 
+                          "10.11.18.123", 
+                          "10.11.18.124", 
+                          "10.11.18.125", 
+                          "10.11.18.126", 
+                          "10.11.18.127", 
+                          "10.11.18.128", 
+                          "10.11.18.129", 
+                          "10.11.18.130"
+                        ], 
+                        "subnetId": "charging_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingOFF_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.18.110", 
+                          "10.11.18.111", 
+                          "10.11.18.112"
+                        ], 
+                        "subnetId": "charging_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_processingOFF_1_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.18.151", 
+                          "10.11.18.152", 
+                          "10.11.18.153", 
+                          "10.11.18.154", 
+                          "10.11.18.155", 
+                          "10.11.18.156"
+                        ], 
+                        "subnetId": "charging_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_cgf_1_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.18.157", 
+                          "10.11.18.158", 
+                          "10.11.18.159"
+                        ], 
+                        "subnetId": "charging_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "charging_cgf_1_MovingECP"
+        }
+      ]
+    }, 
+    {
+      "resourceId": "billing_dual", 
+      "vimConnectionId": "cbis", 
+      "id": "billing_dual", 
+      "extCps": [
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.17.131", 
+                          "10.11.17.132", 
+                          "10.11.17.133", 
+                          "10.11.17.134", 
+                          "10.11.17.135", 
+                          "10.11.17.136", 
+                          "10.11.17.137", 
+                          "10.11.17.138", 
+                          "10.11.17.139", 
+                          "10.11.17.140"
+                        ], 
+                        "subnetId": "billing_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingON_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.17.121", 
+                          "10.11.17.122", 
+                          "10.11.17.123", 
+                          "10.11.17.124", 
+                          "10.11.17.125", 
+                          "10.11.17.126", 
+                          "10.11.17.127", 
+                          "10.11.17.128", 
+                          "10.11.17.129", 
+                          "10.11.17.130"
+                        ], 
+                        "subnetId": "billing_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingOFF_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.17.110", 
+                          "10.11.17.111", 
+                          "10.11.17.112"
+                        ], 
+                        "subnetId": "billing_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_processingOFF_2_MovingECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.17.151", 
+                          "10.11.17.152", 
+                          "10.11.17.153", 
+                          "10.11.17.154", 
+                          "10.11.17.155", 
+                          "10.11.17.156"
+                        ], 
+                        "subnetId": "billing_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_cgf_2_ECP"
+        }, 
+        {
+          "cpConfig": [
+            {
+              "cpProtocolData": [
+                {
+                  "layerProtocol": "IP_OVER_ETHERNET", 
+                  "ipOverEthernet": {
+                    "ipAddresses": [
+                      {
+                        "fixedAddresses": [
+                          "10.11.17.157", 
+                          "10.11.17.158", 
+                          "10.11.17.159"
+                        ], 
+                        "subnetId": "billing_ipv4", 
+                        "type": "IPV4"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ], 
+          "cpdId": "billing_cgf_2_MovingECP"
+        }
+      ]
+    }
+  ], 
+  "grantlessMode": true, 
+  "softwareImages": [
+    {
+      "vnfdSoftwareImageId": "processingON", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "oam", 
+      "vimSoftwareImageId": "REPLACE_OAM", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "db", 
+      "vimSoftwareImageId": "REPLACE_DB", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "processingOFF", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "cgf", 
+      "vimSoftwareImageId": "REPLACE_POFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "ui", 
+      "vimSoftwareImageId": "REPLACE_UI", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vnfdSoftwareImageId": "crdb", 
+      "vimSoftwareImageId": "REPLACE_CRDB", 
+      "vimConnectionId": "cbis"
+    }
+  ], 
+  "vimConnectionInfo": [
+    {
+      "interfaceInfo": {
+        "endpoint": "https://10.11.203.68:13000/v3"
+      }, 
+      "vimType": "OPENSTACK_V3", 
+      "accessInfo": {
+        "username": "cb0930sa", 
+        "userDomain": "Default", 
+        "region": "regionOne", 
+        "project": "CB0930", 
+        "projectDomain": "Default", 
+        "password": ""
+      }, 
+      "id": "cbis"
+    }
+  ], 
+  "extManagedVirtualLinks": [], 
+  "flavourId": "default", 
+  "apiVersion": "4.0", 
+  "zones": [
+    {
+      "vimConnectionId": "cbis", 
+      "id": "zone2", 
+      "zoneId": "Zone_2"
+    }, 
+    {
+      "vimConnectionId": "cbis", 
+      "id": "zone1", 
+      "zoneId": "Zone_1"
+    }
+  ],
+  "computeResourceFlavours": [
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "processingON", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "oam", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "db", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "processingOFF", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "cgf", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "m1.large", 
+      "vnfdVirtualComputeDescId": "ui", 
+      "vimConnectionId": "cbis"
+    }, 
+    {
+      "vimFlavourId": "c02_r08_d40", 
+      "vnfdVirtualComputeDescId": "crdb", 
+      "vimConnectionId": "cbis"
+    }
+  ]
+}

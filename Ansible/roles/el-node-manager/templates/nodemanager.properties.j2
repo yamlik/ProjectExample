@@ -1,0 +1,63 @@
+ad.sendinfo={{ ad_sendinfo }}
+ad.errlibconfig={{ install_dir  }}/config/el_errlib.config
+ad.errlibcategories={{ install_dir }}/config/el_errlib.categories
+
+nm.tracelog_maxsize={{ nm_tracelog_maxsize }}
+nm.tracelog_append={{ nm_tracelog_append }}
+
+nm.node.heartbeat={{ nm_node_heartbeat }}
+nm.node.heartbeattolerance={{ nm_node_heartbeattolerance }}
+nm.node.heartbeat_warning_interval={{ nm_node_heartbeat_warning_interval }}
+nm.node.zerothresholdshift={{ nm_node_zerothresholdshift }}
+nm.node.debug_next={{ nm_node_debug_next }}
+
+nm.node.kafka.session.timeout={{ nm_node_kafka_session_timeout }}
+nm.node.kafka.connection.timeout={{ nm_node_kafka_connection_timeout }}
+
+audit.plugins={{ audit_plugins }}
+audit.thread_assignment={{ audit_thread_assignment }}
+audit.thread_count={{ audit_thread_count }}
+
+# 0 - disable alarm sending
+# 1 - legacy alarm dispatcher 
+# 2 - unified logging alarm
+alarm.version={{ alarm_version }}
+{% if alarm_version == '1' %}
+alarm_host={{ oam_oam_vip }} 
+alarm_port={{ alarm_port }}
+alarm_send_warning={{ alarm_send_warning  }}
+{% endif %}
+
+# Unified logging alarm specific settings
+alarm.v2.mappingconfig={{ install_dir  }}/config/unifiedlogmapping.conf
+alarm.v2.sendcrit={{ alarm_v2_sendcrit }}
+alarm.v2.sendmajor={{ alarm_v2_sendmajor }}
+alarm.v2.sendminor={{ alarm_v2_sendminor }}
+alarm.v2.sendwarning={{ alarm_v2_sendwarning }}
+
+# Unified logging metric
+app.metric.enabled={{ app_metric_enabled }}
+
+nm.host={{ fqdn_host }}
+
+nm.operatingsystem=Linux
+nm.libpathname=LD_LIBRARY_PATH
+
+nm.node.password_fields=nm.dbpassword, dbpassword, dbpass, Password
+nm.maxConcurrentCollectorStartup={{ nm_maxConcurrentCollectorStartup }}
+
+## RCT Scheduler Settings
+nm.rctautocommitmonitor.interval=300000
+nm.scheduler.rct.correction.number_of_day_before=1
+nm.scheduler.rct.correction.diaglvl=0
+
+nm.crontabfile={{ nm_crontabfile }}
+
+audit.message_aggregation_threshold={{ audit_message_aggregation_threshold }}
+audit.message_aggregation_timelimit={{ audit_message_aggregation_timelimit }}
+
+#EL8.0.0 workaround for txe, please remove this in future after removing checking in txe "if (!"postgresql".equals(dbVendor))"
+nm.dbvendor=postgresql
+
+nm.jmx.user={{ nm_jmx_user }}
+nm.jmx.password={{ nm_jmx_password }}

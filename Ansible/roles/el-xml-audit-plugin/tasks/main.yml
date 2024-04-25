@@ -1,0 +1,28 @@
+---
+
+## Replace auditxml.plugin
+- name: replace auditxml.plugin
+  template:
+    src: auditxml.plugin.j2
+    dest: "{{ TEST_home }}/internal/manager/plugins/auditxml.plugin"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  tags: 
+    - install  
+    
+    
+## make sure spool directory exist
+- name: create spool directory when not exist
+  file:
+    path: "{{ xml_audit_spool_dir }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  tags: 
+    - install 
+
+...

@@ -1,0 +1,49 @@
+--liquibase formatted sql
+
+--changeset elink:1503302215153-377
+/*** These inserts will be needed for future integrations with admintools, um and etc
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('admintools', 'CCP Admin Tools', 100, 'CCP Admin Tools');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('reports', 'Report', 200, 'Reports');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('admin', 'Administration', 9999, 'Administer the users and settings of this user interface.');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('blt', 'TEST Business Logic Tool', 8, '');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('er', 'TEST Record Correction Tool', 8, '');
+*/
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('TEST', 'TEST', 9, '');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('lookup', 'Lookup Parameters', 10, 'lookup parameter maintenance.');
+INSERT INTO gui_modules (id, title, display_order, description) VALUES ('lookup_admin', 'Lookup Server', 20, 'Lookup Server maintenance.');
+
+--changeset elink:1503302215153-378
+/*** These inserts will be needed for future integrations with admintools, um and etc
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'date_format', 'DD.MM.YYYY HH24:MI:SS');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'audittrail/delete_older', '30');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'audittrail/rows_per_page', '15');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'users/rows_per_page', '20');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'refresh_level_1', '1');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'refresh_level_2', '2');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'refresh_level_3', '3');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'password/minlength', '3');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'password/digits', '1');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'password/specialchar', '0');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'password/upperlower', '1');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('admin', 'password/expires', '30');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('blt', 'rows_per_page', '20');
+*/
+
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('TEST', 'db_id', '{{ db_el_name }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('TEST', 'db_passwd', '{{ encrypted_db_passwd.stdout }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('TEST', 'db_user', '{{ db_el_user }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('TEST', 'date_format', 'DD.MM.YYYY HH24:MI:SS');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('TEST', 'rows_per_page', '20');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'screens_menu_threshold', '10');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'rows_per_page', '15');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'activate_type', 'server');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'activate_command', 'lookup_server');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'db_user', '{{ db_el_user }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'db_passwd', '{{ encrypted_db_passwd.stdout }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup', 'db', '{{ db_el_name }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'db_user', '{{ db_el_user }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'db_passwd', '{{ encrypted_db_passwd.stdout }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'db', '{{ db_el_name }}');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'rows_per_page', '15');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'empty_rows', '15');
+INSERT INTO gui_module_config (moduleid, parameter, value) VALUES ('lookup_admin', 'ls_admin', '{{ lookup_server_bin }}/ls_admin');

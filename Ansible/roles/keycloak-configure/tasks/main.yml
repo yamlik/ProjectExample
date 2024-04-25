@@ -1,0 +1,237 @@
+---
+- assert:
+    that:
+      - "kc_admin_user is defined"
+      - "kc_admin_password is defined"
+      - "kc_realm_admin_user is defined"
+      - "kc_realm_admin_password is defined"
+
+- name: Create directory for Postgresql DB connection check script
+  file:
+    path: /var/lib/scripts
+    state: directory
+    mode: 0755
+  become: yes
+  become_method: sudo
+
+- name: Template Postgresql DB connection check script to /var/lib/scripts
+  template:
+    src: db_conn.sh.j2
+    owner: root
+    group: root
+    dest: /var/lib/scripts/db_conn.sh
+    mode: 0777
+  become: yes
+  become_method: sudo
+
+- name: Replace keycloak systemd service file
+  copy:
+    src: keycloak.service
+    owner: root
+    group: root
+    dest: /etc/systemd/system/keycloak.service
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: Enable and reload keycloak service
+  register: service_enabled
+  systemd:
+    name: "{{ kc_service_name }}"
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+  become: true
+  become_method: sudo
+
+- name: "Create super administrator"
+  register: super_admin_created
+  command: "bin/add-user-keycloak.sh --realm master --user {{ kc_admin_user }} --password '{{ kc_admin_password }}'"
+  args:
+    chdir: "{{ kc_install_dir }}"
+    creates: "{{ kc_sa_conf_dir }}/keycloak-add-user.json"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_user: "{{ kc_user }}"
+  become_method: sudo
+
+# Server needs to be restarted for the super admin user to be created
+- name: "Restart Keycloak service"
+  when: super_admin_created|success
+  register: service_restarted
+  service:
+    name: "{{ kc_service_name }}"
+    state: restarted
+  become: true
+  become_method: sudo
+
+# Force delay - Keycloak service start returns too quickly and reports success, even when the startup process is still on going
+- name: "Wait for Keycloak service to start"
+  when: service_restarted|success
+  register: service_started
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "{{ item }}"
+    timeout: "{{ kc_start_wait_timeout }}"
+    delay: 10
+  with_items:
+    - "{{ kc_http_port }}"
+    - "{{ kc_https_port }}"
+
+- name: "Wait for Keycloak admin port to be ready"
+  when: service_started|success
+  register: admin_port_ready
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "9990"
+    timeout: "120"
+    delay: 10
+
+- name: "Wait for Keycloak service port to start"
+  when: service_restarted|success
+  register: service_started
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "8666"
+    timeout: "120"
+    delay: 10
+
+# The CSF components have created default admin user with default password and the password has to be changed
+- name: Obtain auth token for admin cli
+  shell: expect -c "set echo \"-noecho\"; set timeout 20s; spawn -noecho /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8665/auth --realm master --user admin --password Admin123!; expect timeout { exit 1 } eof { exit 0 }"
+  retries: 3
+  delay: 1
+  register: result
+  until: result.rc == 0
+  become: true
+  become_method: sudo
+  when: ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+# Always change the default password of admin user
+- name: Force the admin password change using kcadmin cli
+  shell: sh /opt/keycloak/bin/kcadm.sh set-password -r master --username admin --new-password '{{ kc_admin_password }}'
+  become: true
+  become_method: sudo
+  when: ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+- name: Force the {{ kc_admin_user }} password change using kcadmin cli
+  shell: sh /opt/keycloak/bin/kcadm.sh set-password -r master --username {{ kc_admin_user }} --new-password '{{ kc_admin_password }}'
+  become: true
+  become_method: sudo
+  when: (kc_admin_user != 'admin') and ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+- name: "Create TEST realm"
+  when: service_started|success
+  register: realm_created
+  create_realm:
+    keycloak_server: "{{ kc_https_url }}"
+    admin_user: "{{ kc_admin_user }}"
+    admin_password: "{{ kc_admin_password }}"
+    realm_representation: "{{ kc_realm_file }}"
+    truststore: "{{ kc_keystore_file }}"
+    truststore_password: "{{ kc_keystore_password }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+
+- name: "Create TEST realm administrator"
+  when: realm_created|success
+  register: realm_admin_created
+  command: "bin/add-user-keycloak.sh --realm {{ kc_realm_name }} --user {{ kc_realm_admin_user }} --password '{{ kc_realm_admin_password }}'"
+  args:
+    chdir: "{{ kc_install_dir }}"
+    creates: "{{ kc_sa_conf_dir }}/keycloak-add-user.json"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_user: "{{ kc_user }}"
+  become_method: sudo
+
+# Server needs to be restarted for the realm admin user to be created
+- name: "Restart Keycloak service"
+  when: realm_admin_created|success
+  register: service_restarted
+  service:
+    name: "{{ kc_service_name }}"
+    state: restarted
+  become: true
+  become_method: sudo
+
+# Force delay - Keycloak service start returns too quickly and reports success, even when the startup process is still on going
+- name: "Wait for Keycloak service to start"
+  when: service_restarted|success
+  register: service_started
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "{{ item }}"
+    timeout: "{{ kc_start_wait_timeout }}"
+    delay: 10
+  with_items:
+    - "{{ kc_http_port }}"
+    - "{{ kc_https_port }}"
+
+- name: "Wait for Keycloak admin port to be ready"
+  when: service_started|success
+  register: admin_port_ready
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "9990"
+    timeout: "120"
+    delay: 10
+
+- name: "Wait for Keycloak service port to start"
+  when: service_restarted|success
+  register: service_started
+  wait_for:
+    host: "127.0.0.1"
+    state: started
+    port: "8666"
+    timeout: "120"
+    delay: 10
+
+- name: Obtain auth token for admin cli
+  shell: sh /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8665/auth --realm master --user admin --password '{{ kc_admin_password }}'
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  when: ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+- name: Force the realmadmin password change using kcadmin cli
+  shell: sh /opt/keycloak/bin/kcadm.sh set-password -r {{ kc_realm_name }} --username realmadmin --new-password '{{ kc_realm_admin_password }}'
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  when: (kc_realm_admin_user == 'realmadmin') and ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+- name: Force the {{ kc_admin_user }} password change using kcadmin cli
+  shell: sh /opt/keycloak/bin/kcadm.sh set-password -r {{ kc_realm_name }} --username {{ kc_realm_admin_user }} --new-password '{{ kc_realm_admin_password }}'
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+  when: (kc_realm_admin_user != 'realmadmin') and ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])
+
+- name: "Create client template for Shiro-based clients"
+  when: service_started|success
+  register: client_template_created
+  create_client_template:
+    keycloak_server: "{{ kc_https_url }}"
+    realm: "{{ kc_realm_name }}"
+    realm_admin_user: "{{ kc_realm_admin_user }}"
+    realm_admin_password: "{{ kc_realm_admin_password }}"
+    client_template: "{{ kc_client_template_file }}"
+    policy: "{{ kc_allowed_client_templates_file }}"
+    truststore: "{{ kc_keystore_file }}"
+    truststore_password: "{{ kc_keystore_password }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+
+- name: Remove the auth token
+  shell: rm /root/.keycloak/kcadm.config
+  become: true
+  become_method: sudo
+  when: ((reconfigure is not defined) or (reconfigure != True)) and (inventory_hostname == groups['vdu-ui'][0])

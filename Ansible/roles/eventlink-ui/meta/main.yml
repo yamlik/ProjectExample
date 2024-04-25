@@ -1,0 +1,19 @@
+galaxy_info:
+  author: TEST Corporation
+  description: TEST UI Ansible roles
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags: []
+
+dependencies: 
+  - { role: TEST-ui-install }
+  - { role: TEST-ui-db }

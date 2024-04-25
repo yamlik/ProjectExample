@@ -1,0 +1,78 @@
+global_defs {
+  script_user root
+  enable_script_security
+}
+
+vrrp_script system_monitor {
+  script /usr/libexec/keepalived/ha-keepalived-check
+{% if host_type == "cgf" %}
+  timeout 1
+  interval 0.5
+  fall 1
+  rise 1
+{% else %}
+  timeout 20
+  interval 10
+  fall 5
+  rise 3
+{% endif %}
+}
+
+{% if ip_groups[1] is defined %}
+vrrp_sync_group ha {
+  group {
+
+{% for group in ip_groups %}
+  vrrp_ha_{{ group.ha_vrid }}
+{% endfor %}
+
+  }
+  notify /usr/libexec/keepalived/ha-keepalived-notify
+}
+{% endif %}
+
+{% for group in ip_groups %}
+
+vrrp_instance vrrp_ha_{{ group.ha_vrid }} {
+{% if ip_groups|length == 1 %}
+  notify /usr/libexec/keepalived/ha-keepalived-notify
+{% endif %}
+  accept
+  state BACKUP
+  nopreempt
+  interface {{ group.ha_interface }}
+  track_script {
+    system_monitor
+  }
+  virtual_router_id {{ group.ha_vrid }}
+  priority 100
+{% if host_type == "cgf" %}
+  advert_int 1
+{% else %}
+  advert_int 10
+{% endif %}
+  version 3
+  authentication {
+    auth_type PASS
+    auth_pass 0097
+  }
+{% if vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv6' and group.ha_interface != ansible_local.interfaces.devices.internal_interface %}
+  native_ipv6
+{% endif %}
+{% if ansible_ssh_host == ip_groups[0].ip0 %}
+  unicast_src_ip {{ group.ip0 }}
+  unicast_peer {
+      {{ group.ip1 }}
+  }
+{% elif ansible_ssh_host == ip_groups[0].ip1 %}
+  unicast_src_ip {{ group.ip1 }}
+  unicast_peer {
+      {{ group.ip0 }}
+  }
+{% endif %}
+  virtual_ipaddress {
+    {{ group.ha_vip }}/{{ group.netmask }}
+  }
+}
+
+{% endfor %}

@@ -1,0 +1,10 @@
+---
+# tasks file for el-devtool-ui rpm installation
+
+- name: "Install {{ el_devtool_ui_package_name }}."
+  register: el_devtool_ui_installed
+  package:
+    name={{ el_devtool_ui_package_name }}
+    state="{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo

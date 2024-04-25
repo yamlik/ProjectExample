@@ -1,0 +1,180 @@
+---
+- include: setup_ssl.yml
+  when: crmq_enable_ssl
+
+- name: "Ensure group {{ group }} exists"
+  group:
+    name: "{{ group }}"
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: Add user and group "{{ user }}"
+  user: name={{ user }} group={{ group }}  home=/opt/rabbitmq createhome=yes
+  become: yes
+  become_method: sudo
+
+- name: update rabbitmq.conf files
+  template:
+    src: rabbitmq.conf.j2
+    dest: "/etc/rabbitmq/rabbitmq.conf"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: update rabbitmq-env.conf files
+  template:
+    src: rabbitmq-env.conf.j2
+    dest: "/etc/rabbitmq/rabbitmq-env.conf"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: create rabbitmq ssl directories
+  file:
+    path: "/etc/rabbitmq.tls.conf/server/"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+  when: crmq_enable_ssl
+  become: true
+  become_method: sudo
+
+- name: open SSL ports for rabbitmq
+  firewalld:
+    zone: public
+    port: "{{ crmq_tcp_ssl_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  when: crmq_enable_ssl
+
+- name: open ports for rabbitmq and rabbitmq admin
+  firewalld:
+    zone: public
+    port: "{{ crmq_tcp_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  when: not crmq_enable_ssl
+  
+- name: Open port for rabbitmq admin
+  firewalld:
+    zone: public
+    port: "{{ crmq_admin_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  when: not crmq_enable_ssl
+  
+- name: Open port for rabbitmq admin with ssl
+  firewalld:
+    zone: public
+    port: "{{ crmq_admin_ssl_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  when: crmq_enable_ssl
+
+- name: start service rabbitmq-server
+  systemd:
+    name: rabbitmq-server
+    enabled: no
+    state: restarted
+    daemon_reload: yes
+  register: rabbitmq_status
+  until: "rabbitmq_status is defined and rabbitmq_status.state is defined and rabbitmq_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+# Need to temporary change the default umask due to rabbitmq user cannot read enabled_plugins file
+- name: "Enables the rabbitmq_management plugin"
+  shell: "umask 022 && rabbitmq-plugins enable rabbitmq_management"
+  become: true
+  become_method: sudo
+  
+#- name: "Enables the rabbitmq_management plugin"
+#  rabbitmq_plugin:
+#    names: rabbitmq_management
+#    state: enabled
+#  become: true
+#  become_method: sudo
+
+- name: change rabbitmq plugin file permission
+  file:
+    path: "/etc/rabbitmq/enabled_plugins"
+    state: file
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: Restart service rabbitmq-server
+  systemd:
+    name: rabbitmq-server
+    enabled: no
+    state: restarted
+    daemon_reload: yes
+  register: rabbitmq_status
+  until: "rabbitmq_status is defined and rabbitmq_status.state is defined and rabbitmq_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: "Install rabbitmqadmin binaries"
+  get_url:
+    url: http://localhost:15672/cli/rabbitmqadmin
+    dest: /usr/sbin/rabbitmqadmin
+    mode: '0550'
+  become: true
+  become_method: sudo
+
+- name: "create alma user for alarms"
+  rabbitmq_user:
+    user: "{{ mq_username }}"
+    password: "{{ mq_password }}"
+    vhost: /
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    state: present
+    tags: administrator
+  become: true
+  become_method: sudo
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: "Create queue for alarms"
+  rabbitmq_queue:
+    name: alma
+  become: true
+  become_method: sudo
+  when: not crmq_enable_ssl
+  
+- name: "Create queue for alarms with ssl"
+  shell: "rabbitmqadmin --ssl --ssl-disable-hostname-verification --ssl-ca-cert-file={{ crmq_cert_dir }}/rabbitmq_ca.crt --host={{ fqdn_temp }} --port={{ crmq_admin_ssl_port }} -V / declare queue name=alma"
+  register: command_success
+  failed_when: command_success.rc != 0
+  when: crmq_enable_ssl
+  become: true
+  become_method: sudo
+
+...

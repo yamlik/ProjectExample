@@ -1,0 +1,10 @@
+---
+# Defaults for configure-webapp
+wait_for_fqdn: "{{ inventory_hostname }}"
+wait_for_timeout: 60
+restart_webapp: true
+
+#TEST Install directory (DR-853)
+install_directory: '/opt/TEST/TEST'
+TEST_home: '{{ install_directory }}/base'
+TEST_bin: '{{ TEST_home }}/bin'

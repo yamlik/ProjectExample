@@ -1,0 +1,364 @@
+heat_template_version: 2016-10-14
+
+parameters:
+  cbam:
+    type: json
+  prefix:
+    type: string
+  internal_network:
+    type: string
+
+resources:
+
+  internal_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: { list_join: [ "-", [ { get_param: prefix }, internal_subnet ] ] }
+      network: { get_param: internal_network }
+      cidr: { list_join: [ "", [ { get_param: [ cbam, extensions, internal_net_prefix ]}, ".0/24" ] ] }
+      gateway_ip: { list_join: [ "", [ { get_param: [ cbam, extensions, internal_net_prefix ]}, ".254" ] ] }
+      ip_version: 4
+      enable_dhcp: false
+
+  online_server_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:  online_servergroup
+      policies: [ 'anti-affinity' ]
+
+  crdb_server_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:  crdb_servergroup
+      policies: [ 'anti-affinity' ]
+
+  keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name: { get_param: prefix }
+      public_key: { get_param: [ cbam, publicSshKey ] }
+
+  el_common_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, common ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        - { direction: egress, ethertype: IPv4, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'icmp', remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 22, port_range_max: 22, remote_ip_prefix: '0.0.0.0/0' }
+        # VRRP protocol
+        - { direction: ingress, ethertype: IPv4, protocol: 112, remote_ip_prefix: '0.0.0.0/0' }
+        # IPv6 RULES
+        ##
+        - { direction: egress, ethertype: IPv6, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'icmp', remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 22, port_range_max: 22, remote_ip_prefix: '::/0' }
+        # VRRP protocol
+        - { direction: ingress, ethertype: IPv6, protocol: 112, remote_ip_prefix: '::/0' }
+
+  internal_network_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, internal ] ] }
+      rules:
+        - { direction: ingress, ethertype: IPv4, remote_ip_prefix: { list_join: [ "", [ { get_param: [ cbam, extensions, internal_net_prefix ]}, '.0/24' ] ] } }
+        - { direction: ingress, ethertype: IPv6, remote_ip_prefix: '::/0' }
+
+  oam_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, oam ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # The following for httpd (to share Ansible scripts + stream/node packages)
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 443,  port_range_max: 443,  remote_ip_prefix : '0.0.0.0/0' }
+        # The following for Backup/Restore
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 1556,  port_range_max: 1556,  remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 2049,  port_range_max: 2049,  remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 7937,  port_range_max: 9936,  remote_ip_prefix : '0.0.0.0/0' }
+        # The following for Zabbix
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 10050, port_range_max: 10051, remote_ip_prefix : '0.0.0.0/0' }
+        # The following for Backup/Restore
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 13722, port_range_max: 13722, remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 13724, port_range_max: 13724, remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 13782, port_range_max: 13783, remote_ip_prefix : '0.0.0.0/0' }
+        # For event management
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 44660, port_range_max: 44660, remote_ip_prefix: '0.0.0.0/0' }
+        # IPv6 RULES
+        ##
+        # The following for httpd (to share Ansible scripts + stream/node packages)
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 443,  port_range_max: 443,  remote_ip_prefix : '::/0' }
+        # The following for Backup/Restore
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 1556,  port_range_max: 1556,  remote_ip_prefix : '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 2049,  port_range_max: 2049,  remote_ip_prefix : '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 7937,  port_range_max: 9936,  remote_ip_prefix : '::/0' }
+        # The following for Zabbix
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 10050, port_range_max: 10051, remote_ip_prefix : '::/0' }
+        # The following for Backup/Restore
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 13722, port_range_max: 13722, remote_ip_prefix : '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 13724, port_range_max: 13724, remote_ip_prefix : '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 13782, port_range_max: 13783, remote_ip_prefix : '::/0' }
+        # For event management
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 44660, port_range_max: 44660, remote_ip_prefix: '::/0' }
+
+  db_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, db ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # PostgreSQL db port
+        - { direction: ingress, ethertype: { get_param: [ cbam, extensions, ip_protocol_version_hot ]}, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, postgresql_server_port ] }, port_range_max: { get_param: [ cbam, extensions, postgresql_server_port ] }, remote_ip_prefix: { list_join: [ "/", [  { get_param: [ cbam, externalConnectionPoints, db_oam_ecp, addresses, 0, ip ] }, { get_param: [ cbam, extensions, oam_network_netmask ] } ] ] } }
+       # Mariadb
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 3306,  port_range_max: 3306,  remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9100,  port_range_max: 9100,  remote_ip_prefix : '0.0.0.0/0' }
+
+        # IPv6 RULES
+        ##
+        # PostgreSQL db port
+        #- { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 5432, port_range_max: 5432, remote_ip_prefix: { list_join: [ "/", [  { get_param: [ cbam, externalConnectionPoints, db_oam_ecp, addresses, 0, ip ] }, { get_param: [ cbam, extensions, oam_network_netmask ] } ] ] } }
+       # Mariadb
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 3306, port_range_max: 3306, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '::/0' }
+
+  el_cgf_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, el-cgf ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # GTP Collector ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'udp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '0.0.0.0/0' }
+        # Diameter Rf port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: '132', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '0.0.0.0/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 4200, port_range_max: 4200, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8181, port_range_max: 8181, remote_ip_prefix: '0.0.0.0/0' }
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '0.0.0.0/0' }
+        # Collector UI port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '0.0.0.0/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '0.0.0.0/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, cgf_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, cgf_lookup_server_port ]}, remote_ip_prefix: '0.0.0.0/0' }
+
+        # IPv6 RULES
+        ##
+        # GTP Collector ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'udp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '::/0' }
+        # Diameter Rf port
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: '132', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '::/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 4200, port_range_max: 4200, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8181, port_range_max: 8181,remote_ip_prefix: '::/0' }
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '::/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '::/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '::/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, cgf_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, cgf_lookup_server_port ]}, remote_ip_prefix: '::/0' }
+
+  el_online_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, el-online ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # GTP Collector ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'udp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '0.0.0.0/0' }
+        # Diameter Rf port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: '132', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '0.0.0.0/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 4200, port_range_max: 4200, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8181, port_range_max: 8181, remote_ip_prefix: '0.0.0.0/0' }
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '0.0.0.0/0' }
+        # Collector UI port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '0.0.0.0/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '0.0.0.0/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, online_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, online_lookup_server_port ]}, remote_ip_prefix: '0.0.0.0/0' }
+
+        # IPv6 RULES
+        ##
+        # GTP Collector ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'udp', port_range_min: { get_param: [ cbam, extensions, gtp_prime_min_port ] }, port_range_max: { get_param: [ cbam, extensions, gtp_prime_max_port ] }, remote_ip_prefix: '::/0' }
+        # Diameter Rf port
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: '132', port_range_min: 3868, port_range_max: 3868, remote_ip_prefix: '::/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 4200, port_range_max: 4200, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8181, port_range_max: 8181,remote_ip_prefix: '::/0' }
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '::/0' }
+        # Collector UI ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '::/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '::/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, online_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, online_lookup_server_port ]}, remote_ip_prefix: '::/0' }
+
+  el_offline_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, el-offline ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 62500, port_range_max: 62600, remote_ip_prefix: '0.0.0.0/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, offline_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, offline_lookup_server_port ]}, remote_ip_prefix: '0.0.0.0/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '0.0.0.0/0' }
+
+        # IPv6 RULES
+        ##
+        # TEST operational ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55500, port_range_max: 56000, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 62404, port_range_max: 62404, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 62500, port_range_max: 62600, remote_ip_prefix: '::/0' }
+        # Lookup server port
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: { get_param: [ cbam, extensions, offline_lookup_server_port ]}, port_range_max: { get_param: [ cbam, extensions, offline_lookup_server_port ]}, remote_ip_prefix: '::/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 24231, port_range_max: 24231, remote_ip_prefix: '::/0' }
+
+  ui_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, ui ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # UI operational ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 22,   port_range_max: 22,   remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 443,   port_range_max: 443,   remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 3000,  port_range_max: 3000,  remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8080,  port_range_max: 8080,  remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'udp', port_range_min: 8649,  port_range_max: 8649,  remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8649,  port_range_max: 8649,  remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8665,  port_range_max: 8666,  remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 45080, port_range_max: 45081, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 46080, port_range_max: 46080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 47037, port_range_max: 47039, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 47080, port_range_max: 47080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 49080, port_range_max: 49080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55080, port_range_max: 55080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55000, port_range_max: 55000, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 55009, port_range_max: 55009, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 56080, port_range_max: 56080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 57009, port_range_max: 57009, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 57080, port_range_max: 57080, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 58080, port_range_max: 58081, remote_ip_prefix: '0.0.0.0/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 1161, port_range_max: 1161, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 3000, port_range_max: 3000, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 5671, port_range_max: 5671, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '0.0.0.0/0' }
+        #FM/PM debug ports
+        #- { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 9090, port_range_max: 9090, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 15671, port_range_max: 15671, remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 15672, port_range_max: 15672, remote_ip_prefix: '0.0.0.0/0' }
+        # Gen3gppxml
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8081,  port_range_max: 8081,  remote_ip_prefix : '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 8084,  port_range_max: 8084,  remote_ip_prefix : '0.0.0.0/0' }
+
+        # IPv6 RULES
+        ##
+        # UI operational ports
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 22,   port_range_max: 22,   remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 443,   port_range_max: 443,   remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8080,  port_range_max: 8080,  remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'udp', port_range_min: 8649,  port_range_max: 8649,  remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8649,  port_range_max: 8649,  remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8665,  port_range_max: 8666,  remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 45080, port_range_max: 45081, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 46080, port_range_max: 46080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 47037, port_range_max: 47039, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 47080, port_range_max: 47080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 49080, port_range_max: 49080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55000, port_range_max: 55000, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55009, port_range_max: 55009, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 55080, port_range_max: 55080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 56080, port_range_max: 56080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 57009, port_range_max: 57009, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 57080, port_range_max: 57080, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 58080, port_range_max: 58081, remote_ip_prefix: '::/0' }
+        # FM/PM
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 1161, port_range_max: 1161, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 3000, port_range_max: 3000, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 5671, port_range_max: 5671, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9100, port_range_max: 9100, remote_ip_prefix: '::/0' }
+        #FM/PM debug ports
+        #- { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 9090, port_range_max: 9090, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 15671, port_range_max: 15671, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 15672, port_range_max: 15672, remote_ip_prefix: '::/0' }
+        # Gen3gppxml
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8081, port_range_max: 8081, remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 8084, port_range_max: 8084, remote_ip_prefix: '::/0' }
+
+  crdb_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ["-", [ { get_param: prefix }, crdb ] ] }
+      rules:
+        # IPv4 RULES
+        ##
+        # crdb operational ports
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 6379,   port_range_max: 6379,   remote_ip_prefix: '0.0.0.0/0' }
+        - { direction: ingress, ethertype: IPv4, protocol: 'tcp', port_range_min: 26379,  port_range_max: 26379,  remote_ip_prefix: '0.0.0.0/0' }
+        # IPv6 RULES
+        ##
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 6379,   port_range_max: 6379,   remote_ip_prefix: '::/0' }
+        - { direction: ingress, ethertype: IPv6, protocol: 'tcp', port_range_min: 26379, port_range_max: 26379, remote_ip_prefix: '::/0' }
+
+outputs:
+  el_common_security_group_id:
+    value: { get_resource: el_common_security_group }
+  oam_security_group_id:
+    value: { get_resource: oam_security_group }
+  internal_network_security_group_id:
+    value: { get_resource: internal_network_security_group }
+  db_security_group_id:
+    value: { get_resource: db_security_group }
+  el_cgf_security_group_id:
+    value: { get_resource: el_cgf_security_group }
+  el_online_security_group_id:
+    value: { get_resource: el_online_security_group }
+  el_offline_security_group_id:
+    value: { get_resource: el_offline_security_group }
+  internal_subnet:
+    value: { get_resource: internal_subnet }
+  ui_security_group_id:
+    value: { get_resource: ui_security_group }
+  crdb_security_group_id:
+    value: { get_resource: crdb_security_group }
+  online_server_group_id:
+    value: { get_resource: online_server_group }
+  crdb_server_group_id:
+    value: { get_resource: crdb_server_group }

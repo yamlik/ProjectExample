@@ -1,0 +1,50 @@
+---
+- assert:
+    that:
+      - "component_name is defined"
+      - "add_solution_config_entry is defined"
+      - "link_solution_config is defined"
+
+- name: "Add {{ component_name }} Solution Sonfig menu item entry"
+  when:
+    - solution_config_installed is defined
+    - solution_config_installed|success
+    - add_solution_config_entry
+    - menu_items is defined
+  solutionconfig:
+    menuitem:
+      label: "{{ item.label | default('') }}"
+      tooltip: "{{ item.tooltip | default('') }}"
+      url: "{{ item.url | default('') }}"
+      permissions: "{{ item.permissions | default('') }}"
+      openNewTab: "{{ item.openNewTab | default('') }}"
+      state: "{{ item.state | default('present') }}"
+  with_items:
+    - "{{ menu_items }}"
+
+- name: "Add {{ component_name }} Solution Config system item entry"
+  when:
+    - solution_config_installed is defined
+    - solution_config_installed|success
+    - add_solution_config_entry
+    - system_items is defined
+  solutionconfig:
+    systemitem:
+      label: "{{ item.label | default('') }}"
+      tooltip: "{{ item.tooltip | default('') }}"
+      url: "{{ item.url | default('') }}"
+      permissions: "{{ item.permissions | default('') }}"
+      state: "{{ item.state | default('present') }}"
+  with_items:
+    - "{{ system_items }}"
+
+- name: "Link Solution Config to {{ component_name }} instance"
+  when:
+    - solution_config_installed is defined
+    - solution_config_installed|success
+    - link_solution_config
+    - webapps_dir is defined
+  file:
+    src: "{{ solution_config_dir }}"
+    dest: "{{ webapps_dir }}/solution-config"
+    state: link

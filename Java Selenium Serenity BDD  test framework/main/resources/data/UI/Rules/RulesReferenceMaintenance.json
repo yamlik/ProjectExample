@@ -1,0 +1,50 @@
+{
+  "TC-58879": {
+    "XlsxTable": {
+      "TableId": "80",
+      "TableName": "XlsxTable",
+      "FileType": "XLSX",
+      "TableStatus": "Last Update"
+    },
+    "XlsTable": {
+      "TableId": "81",
+      "TableName": "XlsTable",
+      "FileType": "XLS",
+      "TableStatus": "Last Update"
+    },
+    "CsvTable": {
+      "TableId": "82",
+      "TableName": "CsvTable",
+      "FileType": "CSV",
+      "TableStatus": "Last Update"
+    },
+    "TxtTable": {
+      "TableId": "83",
+      "TableName": "TxtTable",
+      "FileType": "TXT",
+      "TableStatus": "Last Update"
+    },
+    "DataForZIP": {
+      "FieldName": "ZIP",
+      "ValueType": "int",
+      "CalSyntax": "Null",
+      "ActiveCheckBox": "Yes"
+    },
+    "DataForCardNo": {
+      "FieldName": "CardNo",
+      "ValueType": "decimal",
+      "CalSyntax": "Null",
+      "ActiveCheckBox": "No"
+    },
+    "DataForName": {
+      "FieldName": "Name",
+      "ValueType": "nvarchar",
+      "CalSyntax": "Null",
+      "ActiveCheckBox": "Yes"
+    },
+    "ListOfHeaders": {
+      "header0": "ZIP",
+      "header1": "Name"
+    }
+  }
+}

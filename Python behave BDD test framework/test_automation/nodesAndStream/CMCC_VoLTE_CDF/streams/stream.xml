@@ -1,0 +1,3259 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<stream elversion="6.1">
+    <name>CMDL-928C_free_scaled</name>
+    <default_host>hki-blade11_a</default_host>
+    <previous_version>0</previous_version>
+    <priority>VERY_LOW</priority>
+    <synchronised_commit>false</synchronised_commit>
+    <transport_compress>false</transport_compress>
+    <parameters>
+     	<parameter name="collection_path">
+                <value>/TEST/elink/CM62_CI_CLEAN/hosta/C3_data/collection</value>
+                <description>Collection Path</description>
+        </parameter>
+        <parameter name="delivery_path">
+                <value>/TEST/elink/CM62_CI_CLEAN/hosta/C3_data/delivery</value>
+                <description>Delivery Path</description>
+        </parameter>
+        <parameter name="install_dir">
+                <value>/TEST/elink/CM62_CI_CLEAN/hosta</value>
+                <description>EL installation directory</description>
+        </parameter>
+    </parameters>
+    <nodes>
+        <node name="C BL">
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>true</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <configuration defect="0" major="1" minor="1" name="C3_CFG_C_BL_NODE" patch=""/>
+            <scalability>
+                <none/>
+            </scalability>
+            <libraries/>
+            <links>
+                <link copy_number="0" name="CBLNODE_OUT" writing_node_name="C BL">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="0" name="OUT" writing_node_name="BM_GPRS_Decoder">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="LoopCount">
+                    <value>1</value>
+                    <description>Defines how many times a non-intrusive logic operation is executed. Use to quickly increase/decrese the amount of operations executed within the node.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="Raw_Backup">
+            <destination_id>RAW</destination_id>
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>true</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="6" major="2" minor="1" name="EL_APP_FTP_DISTRIBUTOR" patch=""/>
+            <configuration defect="3" major="1" minor="4" name="EL_CFG_BACKUP" patch=""/>
+            <scalability>
+                <free number_of_processes="1"/>
+            </scalability>
+            <libraries>
+                <library defect="2" major="1" minor="2" name="EL_LIB_SFTP" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="1" name="COLLECTED" writing_node_name="GPRS Collector">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="BehaviourOnError">
+                    <value>Restart</value>
+                    <description>Action taken in error situations.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Abort</element>
+                            <element>Restart</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="BlockSize">
+                    <value/>
+                    <description>The used block size in FTP transfer. In FTP files are transferred in blocks.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Cipher">
+                    <value/>
+                    <description>Cipher used in encryption.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>3des-cbc</element>
+                            <element>aes128-cbc</element>
+                            <element>aes192-cbc</element>
+                            <element>aes256-cbc</element>
+                            <element>arcfour</element>
+                            <element>blowfish-cbc</element>
+                            <element>cast128-cbc</element>
+                            <element>rijndael-cbc@lysator.liu.se</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CleanUpInterval">
+                    <value>12h</value>
+                    <description>The interval for cleaning up old backup files in seconds (default), minutes (m) or hours (h).
+               Recommended value is 12h or more so that disk activity is not high. 
+               Use shorter duration like 6h if disk space is not sufficient.
+				If both MaxDays and MaxFiles node parameters are zero, this parameter is not required.
+				If either MaxDays or MaxFiles node parameters are non zero, both CleanUpInterval and CleanUpTime parameters cannot be empty at the same time.  
+				If both CleanUpInterval and CleanUpTime parameters are filled up, CleanUpTime parameter will be used instead of CleanUpInterval.               
+            </description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CleanUpTime">
+                    <value/>
+                    <description>Specific time for daily cleaning up old backup files in 24 hours format "hh:mm".
+			If both MaxDays and MaxFiles node parameters are zero, this parameter is not required.
+			If either MaxDays or MaxFiles node parameters are non zero, both CleanUpInterval and CleanUpTime parameters cannot be empty at the same time.  
+			If both CleanUpInterval and CleanUpTime parameters are filled up, CleanUpTime parameter will be used instead of CleanUpInterval.              
+            </description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Compression">
+                    <value/>
+                    <description>Compress data.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CompressionMethod">
+                    <value>no compression</value>
+                    <description>Compression program to be used.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>gzip</element>
+                            <element>bzip2</element>
+                            <element>compress</element>
+                            <element>no compression</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionEstablishmentTimeout">
+                    <value/>
+                    <description>Defines the time in seconds how long a connection establishment is waited for before timing out</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the connection creation fails. Maximum value is 100.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between connection retries. Maximum value is 600 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="600"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DailyDirectories">
+                    <value>no</value>
+                    <description>Defines whether a day specific subdirectories are created for backups.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>yes</element>
+                            <element>no</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DestinationHost">
+                    <value/>
+                    <description>The address or name of the host where collected files are located</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ExternalCommand">
+                    <value/>
+                    <description>External command executed for each file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="FlagFileSuffix">
+                    <value/>
+                    <description>Create a flag file with this parameter as a suffix if defined.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Kex">
+                    <value/>
+                    <description>Key exchange algorithm</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>diffie-hellman-group1-sha1</element>
+                            <element>diffie-hellman-group14-sha1</element>
+                            <element>diffie-hellman-group-exchange-sha1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaxDays">
+                    <value>30</value>
+                    <description>Expiration time in days.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaxFiles">
+                    <value>10000</value>
+                    <description>Maximum amount of files in backup directory.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumReconnectionInterval">
+                    <value/>
+                    <description>Defines the maximum reconnection interval. If defined, the interval sequence starts from 1 minute and is doubled after every failed reconnection attempt until the maximum value is met. After the maximum value is met, it is used as the reconnection interval until the MaximumSustainedNetworkDowntime has elapsed.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                            <element>4</element>
+                            <element>8</element>
+                            <element>16</element>
+                            <element>32</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumSustainedNetworkDowntime">
+                    <value/>
+                    <description>Defines the maximum sustained network downtime before aborting the node. Given in minutes.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="MaximumReconnectionInterval" values="1,2,4,8,16,32"/>
+                    <value_type>
+                        <numeric max_value="1440"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="OriginalFilenameMask">
+                    <value/>
+                    <description>Regular expression mask to correct original filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Password">
+                    <value/>
+                    <description>Password for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <password/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Port">
+                    <value/>
+                    <description>The port number which is used to create the connection</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="65536" min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PrivateKey">
+                    <value/>
+                    <description>Absolut path of the privatekey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PublicKey">
+                    <value/>
+                    <description>Absolut path of the publickey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteOS">
+                    <value/>
+                    <description>Flavour of the remote operating system</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemotePrefix">
+                    <value/>
+                    <description>Additional prefix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteSuffix">
+                    <value/>
+                    <description>Additional suffix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Ruleset">
+                    <value>backup.pm</value>
+                    <description>Do not touch this parameter.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SourceIdDirectories">
+                    <value>no</value>
+                    <description>Defines whether a SourceId specific subdirectories are created for backups.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>yes</element>
+                            <element>no</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TargetDirectory">
+                    <value>${delivery_path}/coll_backup</value>
+                    <description>The target directory where transferred files are put</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempDirectory">
+                    <value/>
+                    <description>Temporary directory on the remote host where files are put before moving them to the correct output location.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempSuffix">
+                    <value/>
+                    <description>Temporary suffix which is removed after successfull transfer.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferMode">
+                    <value/>
+                    <description>Chooses the FTP transfer mode between ascii and binary.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>ascii</element>
+                            <element>binary</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferProtocol">
+                    <value>Local</value>
+                    <description>FTP, SFTP or Local</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>FTP</element>
+                            <element>SFTP</element>
+                            <element>Local</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the file transfer fails. Maximum value is 100 retries.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between failed file transfer retries. Maximum value is 1000 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="1000"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferType">
+                    <value/>
+                    <description>Chooses the FTP transfer type between active and passive.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>active</element>
+                            <element>passive</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Username">
+                    <value/>
+                    <description>Username for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="Encoded_Backup">
+            <destination_id>ENC</destination_id>
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>true</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="6" major="2" minor="1" name="EL_APP_FTP_DISTRIBUTOR" patch=""/>
+            <configuration defect="3" major="1" minor="4" name="EL_CFG_BACKUP" patch=""/>
+            <scalability>
+                <free number_of_processes="1"/>
+            </scalability>
+            <libraries>
+                <library defect="2" major="1" minor="2" name="EL_LIB_SFTP" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="1" name="MFEOUT" writing_node_name="MIS MFE">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="BehaviourOnError">
+                    <value>Restart</value>
+                    <description>Action taken in error situations.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Abort</element>
+                            <element>Restart</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="BlockSize">
+                    <value/>
+                    <description>The used block size in FTP transfer. In FTP files are transferred in blocks.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Cipher">
+                    <value/>
+                    <description>Cipher used in encryption.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>3des-cbc</element>
+                            <element>aes128-cbc</element>
+                            <element>aes192-cbc</element>
+                            <element>aes256-cbc</element>
+                            <element>arcfour</element>
+                            <element>blowfish-cbc</element>
+                            <element>cast128-cbc</element>
+                            <element>rijndael-cbc@lysator.liu.se</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CleanUpInterval">
+                    <value>12h</value>
+                    <description>The interval for cleaning up old backup files in seconds (default), minutes (m) or hours (h).
+               Recommended value is 12h or more so that disk activity is not high. 
+               Use shorter duration like 6h if disk space is not sufficient.
+				If both MaxDays and MaxFiles node parameters are zero, this parameter is not required.
+				If either MaxDays or MaxFiles node parameters are non zero, both CleanUpInterval and CleanUpTime parameters cannot be empty at the same time.  
+				If both CleanUpInterval and CleanUpTime parameters are filled up, CleanUpTime parameter will be used instead of CleanUpInterval.               
+            </description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CleanUpTime">
+                    <value/>
+                    <description>Specific time for daily cleaning up old backup files in 24 hours format "hh:mm".
+			If both MaxDays and MaxFiles node parameters are zero, this parameter is not required.
+			If either MaxDays or MaxFiles node parameters are non zero, both CleanUpInterval and CleanUpTime parameters cannot be empty at the same time.  
+			If both CleanUpInterval and CleanUpTime parameters are filled up, CleanUpTime parameter will be used instead of CleanUpInterval.              
+            </description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Compression">
+                    <value/>
+                    <description>Compress data.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CompressionMethod">
+                    <value>no compression</value>
+                    <description>Compression program to be used.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>gzip</element>
+                            <element>bzip2</element>
+                            <element>compress</element>
+                            <element>no compression</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionEstablishmentTimeout">
+                    <value/>
+                    <description>Defines the time in seconds how long a connection establishment is waited for before timing out</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the connection creation fails. Maximum value is 100.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between connection retries. Maximum value is 600 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="600"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DailyDirectories">
+                    <value>no</value>
+                    <description>Defines whether a day specific subdirectories are created for backups.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>yes</element>
+                            <element>no</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DestinationHost">
+                    <value/>
+                    <description>The address or name of the host where collected files are located</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ExternalCommand">
+                    <value/>
+                    <description>External command executed for each file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="FlagFileSuffix">
+                    <value/>
+                    <description>Create a flag file with this parameter as a suffix if defined.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Kex">
+                    <value/>
+                    <description>Key exchange algorithm</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>diffie-hellman-group1-sha1</element>
+                            <element>diffie-hellman-group14-sha1</element>
+                            <element>diffie-hellman-group-exchange-sha1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaxDays">
+                    <value>30</value>
+                    <description>Expiration time in days.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaxFiles">
+                    <value>10000</value>
+                    <description>Maximum amount of files in backup directory.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumReconnectionInterval">
+                    <value/>
+                    <description>Defines the maximum reconnection interval. If defined, the interval sequence starts from 1 minute and is doubled after every failed reconnection attempt until the maximum value is met. After the maximum value is met, it is used as the reconnection interval until the MaximumSustainedNetworkDowntime has elapsed.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                            <element>4</element>
+                            <element>8</element>
+                            <element>16</element>
+                            <element>32</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumSustainedNetworkDowntime">
+                    <value/>
+                    <description>Defines the maximum sustained network downtime before aborting the node. Given in minutes.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="MaximumReconnectionInterval" values="1,2,4,8,16,32"/>
+                    <value_type>
+                        <numeric max_value="1440"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="OriginalFilenameMask">
+                    <value/>
+                    <description>Regular expression mask to correct original filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Password">
+                    <value/>
+                    <description>Password for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <password/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Port">
+                    <value/>
+                    <description>The port number which is used to create the connection</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="65536" min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PrivateKey">
+                    <value/>
+                    <description>Absolut path of the privatekey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PublicKey">
+                    <value/>
+                    <description>Absolut path of the publickey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteOS">
+                    <value/>
+                    <description>Flavour of the remote operating system</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemotePrefix">
+                    <value/>
+                    <description>Additional prefix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteSuffix">
+                    <value/>
+                    <description>Additional suffix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Ruleset">
+                    <value>backup.pm</value>
+                    <description>Do not touch this parameter.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SourceIdDirectories">
+                    <value>no</value>
+                    <description>Defines whether a SourceId specific subdirectories are created for backups.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>yes</element>
+                            <element>no</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TargetDirectory">
+                    <value>${delivery_path}/dist_backup</value>
+                    <description>The target directory where transferred files are put</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempDirectory">
+                    <value/>
+                    <description>Temporary directory on the remote host where files are put before moving them to the correct output location.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempSuffix">
+                    <value/>
+                    <description>Temporary suffix which is removed after successfull transfer.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferMode">
+                    <value/>
+                    <description>Chooses the FTP transfer mode between ascii and binary.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>ascii</element>
+                            <element>binary</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferProtocol">
+                    <value>Local</value>
+                    <description>FTP, SFTP or Local</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>FTP</element>
+                            <element>SFTP</element>
+                            <element>Local</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the file transfer fails. Maximum value is 100 retries.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between failed file transfer retries. Maximum value is 1000 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="1000"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferType">
+                    <value/>
+                    <description>Chooses the FTP transfer type between active and passive.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>active</element>
+                            <element>passive</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Username">
+                    <value/>
+                    <description>Username for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="MIS Distributor">
+            <description>-</description>
+            <destination_id>MIS</destination_id>
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>true</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="6" major="2" minor="1" name="EL_APP_FTP_DISTRIBUTOR" patch=""/>
+            <configuration defect="0" major="2" minor="1" name="EL_CFG_FTP_DISTRIBUTOR" patch=""/>
+            <scalability>
+                <none/>
+            </scalability>
+            <libraries>
+                <library defect="2" major="1" minor="2" name="EL_LIB_SFTP" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="MFEOUT" writing_node_name="MIS MFE">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type/>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="BehaviourOnError">
+                    <value>Restart</value>
+                    <description>Action taken in error situations.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Abort</element>
+                            <element>Restart</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="BlockSize">
+                    <value/>
+                    <description>The used block size in FTP transfer. In FTP files are transferred in blocks.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Cipher">
+                    <value/>
+                    <description>Cipher used in encryption.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>3des-cbc</element>
+                            <element>aes128-cbc</element>
+                            <element>aes192-cbc</element>
+                            <element>aes256-cbc</element>
+                            <element>arcfour</element>
+                            <element>blowfish-cbc</element>
+                            <element>cast128-cbc</element>
+                            <element>rijndael-cbc@lysator.liu.se</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Compression">
+                    <value/>
+                    <description>Compress data.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionEstablishmentTimeout">
+                    <value/>
+                    <description>Defines the time in seconds how long a connection establishment is waited for before timing out</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between connection retries. Maximum value is 600 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="600"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DestinationHost">
+                    <value>mis_host</value>
+                    <description>The address or name of the host where collected files are located</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ExternalCommand">
+                    <value/>
+                    <description>External command executed for each file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Kex">
+                    <value/>
+                    <description>Key exchange algorithm</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>diffie-hellman-group1-sha1</element>
+                            <element>diffie-hellman-group14-sha1</element>
+                            <element>diffie-hellman-group-exchange-sha1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumReconnectionInterval">
+                    <value/>
+                    <description>Defines the maximum reconnection interval. If defined, the interval sequence starts from 1 minute and is doubled after every failed reconnection attempt until the maximum value is met. After the maximum value is met, it is used as the reconnection interval until the MaximumSustainedNetworkDowntime has elapsed.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                            <element>4</element>
+                            <element>8</element>
+                            <element>16</element>
+                            <element>32</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumSustainedNetworkDowntime">
+                    <value/>
+                    <description>Defines the maximum sustained network downtime before aborting the node. Given in minutes.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="MaximumReconnectionInterval" values="1,2,4,8,16,32"/>
+                    <value_type>
+                        <numeric max_value="1440"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Password">
+                    <value/>
+                    <description>Password for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <password/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Port">
+                    <value/>
+                    <description>The port number which is used to create the connection</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="65536" min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PrivateKey">
+                    <value/>
+                    <description>Absolut path of the privatekey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PublicKey">
+                    <value/>
+                    <description>Absolut path of the publickey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteOS">
+                    <value/>
+                    <description>Flavour of the remote operating system</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemotePrefix">
+                    <value/>
+                    <description>Additional prefix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteSuffix">
+                    <value/>
+                    <description>Additional suffix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Ruleset">
+                    <value>default_ruleset.pm</value>
+                    <description>File that contains user defined logic</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TargetDirectory">
+                    <value>${delivery_path}/BM_aggregation/1</value>
+                    <description>The target directory where transferred files are put</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempDirectory">
+                    <value/>
+                    <description>Temporary directory on the remote host where files are put before moving them to the correct output location.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TempSuffix">
+                    <value>_writing</value>
+                    <description>Temporary suffix which is removed after successfull transfer.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferMode">
+                    <value/>
+                    <description>Chooses the FTP transfer mode between ascii and binary.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>ascii</element>
+                            <element>binary</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferProtocol">
+                    <value>Local</value>
+                    <description>FTP, SFTP or Local</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>FTP</element>
+                            <element>SFTP</element>
+                            <element>Local</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the file transfer fails. Maximum value is 100 retries.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between failed file transfer retries. Maximum value is 1000 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="1000"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferType">
+                    <value/>
+                    <description>Chooses the FTP transfer type between active and passive.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>active</element>
+                            <element>passive</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Username">
+                    <value/>
+                    <description>Username for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="GPRS Collector">
+            <description>-</description>
+            <source_id>GPRS1</source_id>
+            <type>
+                <collector>true</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="7" major="2" minor="1" name="EL_APP_FTP_COLLECTOR" patch=""/>
+            <configuration defect="0" major="2" minor="1" name="EL_CFG_FTP_COLLECTOR" patch=""/>
+            <scalability>
+                <none/>
+            </scalability>
+            <libraries>
+                <library defect="2" major="1" minor="2" name="EL_LIB_SFTP" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="COLLECTED" writing_node_name="GPRS Collector">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="1" name="COLLECTED" writing_node_name="GPRS Collector">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="BehaviourOnError">
+                    <value>Restart</value>
+                    <description>Action taken in error situations.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Abort</element>
+                            <element>Restart</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="BlockSize">
+                    <value/>
+                    <description>The used block size in FTP transfer. In FTP files are transferred in blocks.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Cipher">
+                    <value/>
+                    <description>Cipher used in encryption.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>3des-cbc</element>
+                            <element>aes128-cbc</element>
+                            <element>aes192-cbc</element>
+                            <element>aes256-cbc</element>
+                            <element>arcfour</element>
+                            <element>blowfish-cbc</element>
+                            <element>cast128-cbc</element>
+                            <element>rijndael-cbc@lysator.liu.se</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Compression">
+                    <value/>
+                    <description>Compress data.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionEstablishmentTimeout">
+                    <value/>
+                    <description>Defines the time in seconds how long a connection establishment is waited for before timing out</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ConnectionRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between connection retries. Maximum value is 600 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="600"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DeleteSource">
+                    <value>Yes</value>
+                    <description>If 'Yes' the source files will be deleted after successfull transfer.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ExternalCommand">
+                    <value/>
+                    <description>External command executed for each file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="FileTransferCount">
+                    <value/>
+                    <description>Defines how many files will be transferred despite the amount of available files.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Filename">
+                    <value/>
+                    <description>Filename or a glob pattern used to define the files to be collected</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="IgnoreEmptyDirError">
+                    <value/>
+                    <description>If 'Yes' errors listing directory contents are ignored.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>Yes</element>
+                            <element>No</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="InputFileList">
+                    <value/>
+                    <description>A list of files to be collected</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Kex">
+                    <value/>
+                    <description>Key exchange algorithm</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>diffie-hellman-group1-sha1</element>
+                            <element>diffie-hellman-group14-sha1</element>
+                            <element>diffie-hellman-group-exchange-sha1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumReconnectionInterval">
+                    <value/>
+                    <description>Defines the maximum reconnection interval. If defined, the reconnection interval starts from 1 minute and is doubled after every failed reconnection attempt until the defined maximum value is met. After the maximum value is met, it is used as the reconnection interval until the MaximumSustainedNetworkDowntime has elapsed. Successfull reconnection resets the value.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                            <element>4</element>
+                            <element>8</element>
+                            <element>16</element>
+                            <element>32</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaximumSustainedNetworkDowntime">
+                    <value/>
+                    <description>Defines the maximum sustained network downtime before aborting the node. Given in minutes.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="MaximumReconnectionInterval" values="1,2,4,8,16,32"/>
+                    <value_type>
+                        <numeric max_value="1440"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MoveSrcToDirectory">
+                    <value/>
+                    <description>The directory where successfully transferred source files are moved to.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Password">
+                    <value/>
+                    <description>Password for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <password/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Port">
+                    <value/>
+                    <description>The port number which is used to create the connection</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="65536" min_value="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PrivateKey">
+                    <value/>
+                    <description>Absolut path of the privatekey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="PublicKey">
+                    <value/>
+                    <description>Absolut path of the publickey file.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RegexFilename">
+                    <value>.*dat</value>
+                    <description>Filename or a regular expression used to define the files to be collected</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteOS">
+                    <value/>
+                    <description>Flavour of the remote operating system</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemotePrefix">
+                    <value/>
+                    <description>Additional prefix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoteSuffix">
+                    <value/>
+                    <description>Additional suffix added to the transferred file's filename.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Ruleset">
+                    <value>default_ruleset.pm</value>
+                    <description>File that contains user defined logic</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SourceDirectory">
+                    <value>${collection_path}/BM_aggregation/1</value>
+                    <description>The source directory of the files to be collected</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SourceHost">
+                    <value>gtp_host</value>
+                    <description>The address or name of the host where collected files are located</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferMode">
+                    <value/>
+                    <description>Chooses the FTP transfer mode between ascii and binary.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>ascii</element>
+                            <element>binary</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferProtocol">
+                    <value>Local</value>
+                    <description>FTP, SFTP or Local</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>FTP</element>
+                            <element>SFTP</element>
+                            <element>Local</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryCount">
+                    <value/>
+                    <description>Defines the amount of retries in case the file transfer fails. Maximum value is 100 retries.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="100"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferRetryInterval">
+                    <value/>
+                    <description>Defines the time interval in seconds between failed file transfer retries. Maximum value is 1000 seconds.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <numeric max_value="1000"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TransferType">
+                    <value/>
+                    <description>Chooses the FTP transfer type between active and passive.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP"/>
+                    <value_type>
+                        <list>
+                            <element>active</element>
+                            <element>passive</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Username">
+                    <value/>
+                    <description>Username for the connection.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="TransferProtocol" values="FTP,SFTP"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="MIS MFE">
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>true</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="12" major="1" minor="5" name="EL_APP_MULTI_FORMAT_ENCODER" patch=""/>
+            <configuration defect="0" major="1" minor="2" name="CTL_CFG_GPRS_MIS_MFE" patch=""/>
+            <scalability>
+                <free number_of_processes="1"/>
+            </scalability>
+            <libraries>
+                <library defect="8" major="1" minor="5" name="EL_LIB_CML" patch=""/>
+                <library defect="3" major="1" minor="5" name="EL_LIB_FNL" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="MFEOUT" writing_node_name="MIS MFE">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type/>
+                </link>
+                <link copy_number="1" name="MFEOUT" writing_node_name="MIS MFE">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="0" name="OUT1" writing_node_name="aggregation">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type/>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="CloseFilesAtSchedule">
+                    <value>1</value>
+                    <description>Defines if the output files can be closed in schedule.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CreateEmptyOutputFileOnFlush">
+                    <value/>
+                    <description>Defines whether an empty output files shall be created when node is flushed.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="CreateEmptyOutputFiles" values="1"/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CreateEmptyOutputFileOnSeparation">
+                    <value/>
+                    <description>Defines whether the handling of an input file that does not contain any records or contains the control records only is indicated to the following node with an empty output file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="CreateEmptyOutputFiles">
+                    <value/>
+                    <description>Defines whether an empty output files shall be created.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="FileSizeLimit">
+                    <value/>
+                    <description>Defines the maximum size of an output file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="InputFileNameExtractionMask">
+                    <value>(.*).dat</value>
+                    <description>Defines the regular expression that is used extract information from original input file name for the output file name.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MaxAgeOfFile">
+                    <value/>
+                    <description>Defines the maximum period of time that a file can be open after creation.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="MinAgeOfFile">
+                    <value/>
+                    <description>Defines the minimum period that a file must be open after its creation before it can be closed.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="OutputDescriptionFileName">
+                    <value>default_description.xml</value>
+                    <description>Defines the name of the output description file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="OutputFileNameCreationMask">
+                    <value>$1_&amp;SEQ(5)_&amp;COUNT(*).dat</value>
+                    <description>Defines the output file name creation pattern to be used for output files. </description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RealTimeDelivery">
+                    <value>0</value>
+                    <description>Defines whether a control record is created containing the output record's length and offset in the output file.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RecordLimit">
+                    <value/>
+                    <description>Defines the maximum number of records in a file before it will be closed.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RecordWaitingTimeLimit">
+                    <value/>
+                    <description>Defines the maximum period of time that a file can be open after last record has been written to it.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoveFileTemplates">
+                    <value>0</value>
+                    <description>Defines whether memory structures of the output files are deleted after the file is sent.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RemoveFileTemplatesTimeout">
+                    <value/>
+                    <description>Defines the period of time that the output files memory structures are kept waiting for further files to be created after the file has been sent.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="RemoveFileTemplates" values="1"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="ResetInterval">
+                    <value>0</value>
+                    <description>Defines how often the file sequence numbers in output file names are reset.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                            <element>3</element>
+                            <element>4</element>
+                            <element>5</element>
+                            <element>6</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SeparateSequenceNumbersInFileNames">
+                    <value>0</value>
+                    <description>Defines if the output file names have common or independent sequence numbering.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SeparateSequenceNumbersInOutput">
+                    <value>1</value>
+                    <description>Defines if the file and record sequence counters in encoded output data have common or independent sequence numbering.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SeparateSourceID">
+                    <value>0</value>
+                    <description>Defines whether the input records from different sources are written to separate output files.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SeparationCondition">
+                    <value/>
+                    <description>Defines whether input records with different values for metadata or input field are written to separate output files.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="UniqueOutputFileNames">
+                    <value>1</value>
+                    <description>Defines if unique output file names are required.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="aggregation">
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>true</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>true</application_commit>
+                <schedulable>false</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <configuration defect="0" major="1" minor="3" name="EL_CFG_BM_AGGREGATION" patch="FREE"/>
+            <scalability>
+             <free number_of_processes="6"/>
+		</scalability>
+            <libraries>
+                <library defect="2" major="1" minor="3" name="EL_LIB_TRS" patch=""/>
+                <library defect="10" major="1" minor="1" name="EL_LIB_AGGREGATION" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="LOOKUP_OUT" writing_node_name="BL_Lookup">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="0" name="OUT1" writing_node_name="aggregation">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type/>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="Aggregation.DFDFileName">
+                    <value>dfd.xml</value>
+                    <description>Name of the data format definition file</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any max_length="255" min_length="5"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Aggregation.DescriptionFileName">
+                    <value>scheme.xml</value>
+                    <description>Name of the aggregation instance configuration file</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any max_length="255" min_length="5"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Aggregation.Instance">
+                    <value>CMDL928</value>
+                    <description>Name of the aggregation instance</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any max_length="7" min_length="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TRS.Config">
+                    <value/>
+                    <description>Table configuration file</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TRS.ConnectString">
+                    <value/>
+                    <description>Connection string</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TRS.DataStorage">
+                    <value>Smoke6DS</value>
+                    <description>Name of the data store</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TRS.DataStorageSize">
+                    <value/>
+                    <description>Size of the data store in megabytes.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric min_value="0"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="TRS.UseScalability">
+                    <value>1</value>
+                    <description>Handling of node scalability. 1=yes 0=no</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="BM_GPRS_Decoder">
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>true</decoder>
+                <businesslogic>false</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>false</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <application defect="10" major="1" minor="2" name="EL_APP_ASN1_DECODER" patch=""/>
+            <configuration defect="1" major="1" minor="0" name="C3_CFG_BENCHMARK_PS_v360_DECODER" patch="PRE2"/>
+            <scalability>
+                <free number_of_processes="4"/>
+            </scalability>
+            <libraries>
+                <library defect="7" major="2" minor="0" name="EL_LIB_RULE_ENGINE" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="COLLECTED" writing_node_name="GPRS Collector">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="0" name="OUT" writing_node_name="BM_GPRS_Decoder">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="ConfigurationFilename">
+                    <value>dfd.cfg</value>
+                    <description>Name of the configuration file describing the decoding rules. </description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="UsePreConvertedDFD" values="0"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DescriptionConflictResolution">
+                    <value/>
+                    <description>Defines how to recover in case if an undescribed ASN.1 item is found from the input data.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                            <element>2</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DescriptionFilename">
+                    <value>Nortel_3.6.0.asn</value>
+                    <description>Name of the ASN.1 description file describing the input data. </description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="UsePreConvertedDFD" values="0"/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DiscardFailureThreshold">
+                    <value>15</value>
+                    <description>Number of consecutive input file discardations that lead to ASN.1 Decoder execution failure</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric max_value="10000" min_value="0"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="DiscardedFilesLink">
+                    <value/>
+                    <description>Defines the output link where discarded file is discarded to.</description>
+                    <check_regexp pattern=""/>
+                    <dependency parameter="SendDiscardedFilesToLink" values="1"/>
+                    <value_type>
+                        <any max_length="20" min_length="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="HexadecimalOutputFormat">
+                    <value/>
+                    <description>Defines whether hexadecimal values have lowercase or uppercase letters in the ASN.1 Decoder output.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="OutputFilesLink">
+                    <value>OUT</value>
+                    <description>Defines the output link where output files are sent to.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any max_length="20" min_length="1"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="RuleEngine.NumberOfDiagnosedRecords">
+                    <value>1000</value>
+                    <description>Defines the number of records that has the instruction based diagnostic given when the execution starts.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <numeric min_value="0"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="SendDiscardedFilesToLink">
+                    <value/>
+                    <description>Defines whether the discarded files are stored to the disk or sent to the a second output link.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="UsePreConvertedDFD">
+                    <value>0</value>
+                    <description>Defines if the ASN.1 description to DFD conversion should be bypassed and ready made DFD used.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>true</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="UseRecordSequenceNumbers">
+                    <value/>
+                    <description>Defines if the sequence number should be added to output records.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>0</element>
+                            <element>1</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+        <node name="BL_Lookup">
+            <type>
+                <collector>false</collector>
+                <intermediate>false</intermediate>
+                <decoder>false</decoder>
+                <businesslogic>true</businesslogic>
+                <blt>false</blt>
+                <encoder>false</encoder>
+                <distributor>false</distributor>
+                <standalone>false</standalone>
+                <interface>false</interface>
+            </type>
+            <attributes>
+                <application_commit>false</application_commit>
+                <schedulable>true</schedulable>
+                <realtime>false</realtime>
+            </attributes>
+            <configuration defect="0" major="1" minor="0" name="C3_CFG_LOOKUP_BUSINESS_LOGIC" patch="PRE4"/>
+            <scalability>
+                <free number_of_processes="1"/>
+            </scalability>
+            <libraries>
+                <library defect="4" major="3" minor="2" name="EL_LIB_LOOKUP" patch=""/>
+            </libraries>
+            <links>
+                <link copy_number="0" name="CBLNODE_OUT" writing_node_name="C BL">
+                    <direction>I</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+                <link copy_number="0" name="LOOKUP_OUT" writing_node_name="BL_Lookup">
+                    <direction>O</direction>
+                    <remove_link>false</remove_link>
+                    <type>F</type>
+                </link>
+            </links>
+            <parameters>
+                <parameter name="Lookup.AbortOnReloadFailure">
+                    <value>1</value>
+                    <description>Causes the lookup library to automatically abort the node when a lookup table reloading fails.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <list>
+                            <element>1</element>
+                            <element>0</element>
+                        </list>
+                    </value_type>
+                    <attributes>
+                        <mandatory>false</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="Lookup.ShmidDirectory">
+                    <value>${install_dir}/TEST/lookup_server3/tmp</value>
+                    <description>Directory where Lookup Server shared memory id file is located.</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any max_length="1024" min_length="0"/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>true</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="LookupServerName">
+                    <value>benchmark_server1</value>
+                    <description>Lookup Server instance</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+                <parameter name="LookupTableName">
+                    <value>LS_ROAMING_CONFIG_O</value>
+                    <description>Lookup table name</description>
+                    <check_regexp pattern=""/>
+                    <value_type>
+                        <any/>
+                    </value_type>
+                    <attributes>
+                        <mandatory>true</mandatory>
+                        <installation_specific>false</installation_specific>
+                        <environment>false</environment>
+                        <hidden>false</hidden>
+                    </attributes>
+                </parameter>
+            </parameters>
+        </node>
+    </nodes>
+    <groups/>
+</stream>

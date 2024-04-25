@@ -1,0 +1,73 @@
+---
+# Set up keepalived plugin
+- name:
+  file:
+    name: /opt/vrrp
+    state: directory
+
+- name: Copy el-failover script
+  template:
+    src: "failover.py.j2"
+    owner: root
+    group: root
+    dest: "/opt/vrrp/failover.py"
+    mode: 0700
+
+- name: Create directories for custom lifecycle scripts
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+  with_items:
+    - /opt/vrrp/pre_start
+    - /opt/vrrp/post_start
+    - /opt/vrrp/post_stop
+
+- name: Copy lifecycle management scripts
+  copy:
+    src: clear_txe_pid.sh
+    dest: /opt/vrrp/pre_start/clear_txe_pid.sh
+    owner: root
+    group: root
+    mode: 0700
+  when: host_type != "em"
+
+- name: Copy post_stop script to kill nodes in case node-manager has crashed
+  copy:
+    src: kill_nodes.sh
+    dest: /opt/vrrp/post_stop/kill_nodes.sh
+    owner: root
+    group: root
+    mode: 0700
+  when: host_type != "em"
+
+- name: Copy HA plugins.json (active-passive)
+  copy:
+    src: plugins.json
+    owner: root
+    group: root
+    dest: /etc/ha/plugins.json
+    mode: 0700
+  when: ha_mode == "active-passive"
+  
+- name: Copy HA plugins.json (active-active)
+  copy:
+    src: plugins_active.json
+    owner: root
+    group: root
+    dest: /etc/ha/plugins.json
+    mode: 0700
+  when: ha_mode == "active-active"
+
+#- name: Modify TEST start script
+#  lineinfile:
+#    dest: /app/install/systemd.sh
+#    line: sleep 10
+#    insertafter: ^.*env bash$
+
+- name: Stop keepalived to prevent failovers during commissioning
+  service: 
+    name: keepalived
+    state: stopped

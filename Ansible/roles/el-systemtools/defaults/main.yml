@@ -1,0 +1,35 @@
+---
+# defaults file for el-systemtools
+
+install_directory: '/opt/TEST/TEST'
+
+# Default variables for Keycloak
+kc_fqdn: "{{ inventory_hostname }}"
+kc_https_port: 8666
+kc_https_url: "https://{{ kc_fqdn }}:{{ kc_https_port }}/auth"
+kc_token_life_span: 100000
+kc_realm_name: "TEST"
+kc_certificate_name: "keycloak-certificate"
+kc_ssl_certificate_file: "{{ ansible_dir }}/{{ kc_certificate_name }}"
+client_local_conf_TEST_ui: "{{ lookup('file', '/tmp/ansible_tmp/TEST-ui-keycloak.json') | from_json }}"
+
+# Java system-wide keystore with CA certificates
+java_truststore_password: "changeit"
+#
+# Package properties
+systemtools_package_name: TEST-system-tools
+
+# RC file properties
+rc_system_tools_module: system_tools
+
+# Variables for Keycloak
+kc_TEST_ui_client_id: "TEST_ui"
+
+# Files and directories location
+rc_file_location: '{{ install_directory }}/.mds.rc'
+db_properties_location: '{{ install_directory }}/etc/db/db.properties'
+TEST_home: '{{ install_directory }}/base'
+TEST_bin: "{{ TEST_home }}/bin"
+java_cacerts_file: "/usr/lib/jvm/jre/lib/security/cacerts"
+
+...

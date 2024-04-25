@@ -1,0 +1,17 @@
+---
+# defaults file for devtool-db
+# Database properties
+
+db_el_port: "{{ postgresql_server_port }}"
+db_el_name: "TEST"
+el_db_url: "{{ el_db_prefix | default('postgresql://') }}{{ db_el_host }}:{{ db_el_port }}/{{ db_el_name }}"
+el_db_jdbc_url: "{{ el_db_jdbc_prefix | default('jdbc:') }}{{ el_db_url }}"
+
+devtool_install_dir: "/opt/TEST/devtool-backend"
+templates_path: "templates/"
+
+xml_db_filename: "createTables-devtool-db.xml"
+
+dt_db_changelog_files_dict:
+  - {src: "{{ templates_path }}{{ xml_db_filename }}.j2", dest: "{{ devtool_install_dir }}/{{ xml_db_filename }}"}
+...

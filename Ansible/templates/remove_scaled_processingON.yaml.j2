@@ -1,0 +1,56 @@
+---
+{% raw %}
+- name: Remove scaled node hostname when scaling down processingON
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  max_fail_percentage: 50
+  vars_files:
+    - vars/processing_online_var.yml
+  tasks:
+
+    - name: call el-remove-host role for processingON nodes
+      include_role:
+        name: el-remove-host
+      vars:
+        instance_host_name: "{{ hostvars[groups['vdu-processingON'][outer_item | int]]['fqdn_host'] }}"
+        txe_host: "{{ hostvars[groups['vdu-processingON'][outer_item | int]]['inventory_hostname'] }}"
+        operation: "scale-in"
+      with_sequence: start="{{ vnf_context_data.nfv_model.aspects.processingONAspect.count - vnf_context_data.operation_params.numberOfSteps }}" end="{{ vnf_context_data.nfv_model.aspects.processingONAspect.count - 1 }}"
+      loop_control:
+        loop_var: outer_item
+      run_once: true
+
+- name: Remove lookup server when scaling down
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  tasks:
+    - set_fact:
+        lookup_server_port: 51260
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.online_lookup_server_name }}-ON-{{ groups['vdu-processingON'].index(inventory_hostname) }}"
+      when: vnf_context_data.stack_params.cbam.extensions.online_lookup_server_name != ""
+
+    - name: call lookup-server-remove role when scaling down processingON node
+      include_role:
+        name: lookup-server-remove-server
+      when: vnf_context_data.stack_params.cbam.extensions.online_lookup_server_name != ""
+
+- name: Main play to update prometheus scrape targets in vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+    - vars/alarm_var.yml
+  vars:
+    dr_server_lists: ""
+    dr_proc_server_lists: ""
+    post_scaling: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cpro-server }  
+
+{% endraw %}
+

@@ -1,0 +1,320 @@
+{
+  "TC-58738": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1",
+      "Field Name2": "Applicant.First Name",
+      "Cross Check Field2": "Applicant.First Name"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58738001",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "OTH"
+    },
+    "Applicant": {
+      "Id Number 1": "83SFDG2",
+      "First Name": "Adam"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58738002",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant1": {
+      "Id Number 1": "83SFDG2",
+      "First Name": "Adam"
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "Automation58738002"
+    },
+    "verifyAutoCheckGridResults": {
+      "verifyRow1": {
+        "Application Number": "Automation58738001",
+        "Matched Fields": "(Applicant.First Name,Applicant.First Name);(Applicant.Id Number1,Applicant.Id Number1)"
+      }
+    },
+    "applicationToAutoCheck": {
+      "Application Number": "Automation58738001"
+    },
+    "actionDetails": {
+      "Decision Reason": "FORGED DOCUMENTS",
+      "Nature of Fraud": "PERSONAL BLACKLIST"
+    }
+  },
+  "TC-58739": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1",
+      "Field Name2": "Applicant.First Name",
+      "Cross Check Field2": "Applicant.First Name"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58739001",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "OTH"
+    },
+    "Applicant": {
+      "Id Number 1": "KFDFHG234",
+      "First Name": "Peter"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58739002",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant1": {
+      "Id Number 1": "KFDFHG234",
+      "First Name": "Peter"
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "Automation58739002"
+    },
+    "verifyAutoCheckGridResults": {
+      "verifyRow1": {
+        "Application Number": "Automation58739001",
+        "Matched Fields": "(Applicant.First Name,Applicant.First Name);(Applicant.Id Number1,Applicant.Id Number1)"
+      }
+    },
+    "applicationToAutoCheck": {
+      "Application Number": "Automation58739001"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  },
+  "TC-58740": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1",
+      "Field Name2": "Applicant.First Name",
+      "Cross Check Field2": "Applicant.First Name"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58740001",
+      "Expiry Date": "10/10/2021",
+      "Application Date": "11/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Id Number 1": "235AJDH",
+      "First Name": "Steve"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58740002",
+      "Expiry Date": "13/10/2021",
+      "Application Date": "14/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "235AJDH",
+      "First Name": "Steve"
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "Automation58740002"
+    },
+    "verifyAutoCheckGridResults": {
+      "verifyRow1": {
+        "Application Number": "Automation58740001",
+        "Matched Fields": "(Applicant.First Name,Applicant.First Name);(Applicant.Id Number1,Applicant.Id Number1)"
+      }
+    },
+    "applicationToAutoCheck": {
+      "Application Number": "Automation58740001"
+    },
+    "actionDetails": {
+      "Decision Reason": "STOLEN ID DOCUMENTS",
+      "Nature of Fraud": "FUNNY MONEY"
+    }
+  },
+  "TC-58812": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 2",
+      "Cross Check Field1": "Applicant.Id Number 2"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation5881201",
+      "Expiry Date": "10/10/2021",
+      "Application Date": "11/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Id Number 2": "143A",
+      "Company Name": "NESTLE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation5881202",
+      "Expiry Date": "10/10/2021",
+      "Application Date": "11/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant1": {
+      "Id Number 2": "143A",
+      "Company Name": "NESTLE"
+    },
+    "Application2": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation5881203",
+      "Expiry Date": "10/10/2021",
+      "Application Date": "11/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant2": {
+      "Id Number 2": "143A",
+      "Company Name": "NESTLE"
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "Automation5881203"
+    },
+    "verifyAutoCheckGridResults": {
+      "verifyRow1": {
+        "Application Number": "Automation5881201",
+        "Matched Fields": "(Applicant.Id Number2,Applicant.Id Number2)"
+      },
+      "verifyRow2": {
+        "Application Number": "Automation5881202",
+        "Matched Fields": "(Applicant.Id Number2,Applicant.Id Number2)"
+      }
+    },
+    "applicationToAutoCheck": {
+      "Application Number": "Automation5881201"
+    },
+    "actionDetails": {
+      "Decision Reason": "STOLEN ID DOCUMENTS",
+      "Nature of Fraud": "FUNNY MONEY"
+    }
+  },
+
+
+
+  "TC-58741": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1",
+      "Field Name2": "Applicant.First Name",
+      "Cross Check Field2": "Applicant.First Name"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58741001",
+      "Expiry Date": "10/10/2021",
+      "Application Date": "11/10/2020",
+      "Application Type": "OD"
+    },
+    "Applicant": {
+      "Id Number 1": "DH456WEG",
+      "First Name": "Smith"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58741002",
+      "Expiry Date": "13/10/2021",
+      "Application Date": "14/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "DH456WEG",
+      "First Name": "Smith"
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "Automation58741002"
+    },
+    "verifyAutoCheckGridResults": {
+      "verifyRow1": {
+        "Application Number": "Automation58741001",
+        "Matched Fields": "(Applicant.First Name,Applicant.First Name);(Applicant.Id Number1,Applicant.Id Number1)"
+      }
+    },
+    "applicationToAutoCheck": {
+      "Application Number": "Automation58741001"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FOR REFERENCE ONLY"
+    }
+  },
+  "TC-61467": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Id Number 1",
+      "Cross Check Field1": "Applicant.Id Number 1",
+      "Field Name2": "Applicant.First Name",
+      "Cross Check Field2": "Applicant.First Name"
+    },
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||614670001||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest2": "{{organisation}}|{{country}}||614670002||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest3": "{{organisation}}|{{country}}||614670003||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest4": "{{organisation}}|{{country}}||614670004||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest5": "{{organisation}}|{{country}}||614670005||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest6": "{{organisation}}|{{country}}||614670006||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest7": "{{organisation}}|{{country}}||614670007||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest8": "{{organisation}}|{{country}}||614670008||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest9": "{{organisation}}|{{country}}||614670009||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest10": "{{organisation}}|{{country}}||6146700010||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest11": "{{organisation}}|{{country}}||6146700011||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest12": "{{organisation}}|{{country}}||6146700012||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest13": "{{organisation}}|{{country}}||6146700013||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest14": "{{organisation}}|{{country}}||6146700014||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest15": "{{organisation}}|{{country}}||6146700015||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest16": "{{organisation}}|{{country}}||6146700016||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest17": "{{organisation}}|{{country}}||6146700017||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest18": "{{organisation}}|{{country}}||6146700018||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest19": "{{organisation}}|{{country}}||6146700019||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest20": "{{organisation}}|{{country}}||6146700020||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest21": "{{organisation}}|{{country}}||6146700021||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest22": "{{organisation}}|{{country}}||6146700022||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest23": "{{organisation}}|{{country}}||6146700023||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest24": "{{organisation}}|{{country}}||6146700024||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest25": "{{organisation}}|{{country}}||6146700025||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest26": "{{organisation}}|{{country}}||6146700026||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest27": "{{organisation}}|{{country}}||6146700027||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest28": "{{organisation}}|{{country}}||6146700028||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest29": "{{organisation}}|{{country}}||6146700029||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest30": "{{organisation}}|{{country}}||6146700030||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest31": "{{organisation}}|{{country}}||6146700031||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest32": "{{organisation}}|{{country}}||6146700032||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest33": "{{organisation}}|{{country}}||6146700033||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest34": "{{organisation}}|{{country}}||6146700034||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest35": "{{organisation}}|{{country}}||6146700035||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest36": "{{organisation}}|{{country}}||6146700036||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest37": "{{organisation}}|{{country}}||6146700037||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest38": "{{organisation}}|{{country}}||6146700038||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest39": "{{organisation}}|{{country}}||6146700039||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest40": "{{organisation}}|{{country}}||6146700040||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest41": "{{organisation}}|{{country}}||6146700041||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest42": "{{organisation}}|{{country}}||6146700042||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest43": "{{organisation}}|{{country}}||6146700043||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest44": "{{organisation}}|{{country}}||6146700044||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest45": "{{organisation}}|{{country}}||6146700045||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest46": "{{organisation}}|{{country}}||6146700046||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest47": "{{organisation}}|{{country}}||6146700047||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest48": "{{organisation}}|{{country}}||6146700048||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest49": "{{organisation}}|{{country}}||6146700049||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest50": "{{organisation}}|{{country}}||6146700050||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest51": "{{organisation}}|{{country}}||6146700051||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest52": "{{organisation}}|{{country}}||6146700052||||{{current_date}}|MTGE||||||||||||||||||||||||||||||||||||||A|61467|||||AUTOMATION61467||||||||||||||||||||||||||||||||||||||||||||"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "614670001",
+      "value2": ""
+    },
+    "verifyAutoCheckHeader": {
+      "Main Application Number": "614670001"
+    }
+  }
+}

@@ -1,0 +1,262 @@
+#!/usr/bin/bash
+
+########################
+# binaries
+########################
+SED=$(which sed)
+CHMOD=$(which chmod)
+MV=$(which mv)
+MKDIR=$(which mkdir)
+CP=$(which cp)
+TR=$(which tr)
+RM=$(which rm)
+GETCONF=$(which getconf)
+LN=$(which ln)
+GREP=$(which egrep)
+CUT=$(which cut)
+WC=$(which wc)
+HEAD=$(which head)
+TAIL=$(which tail)
+CAT=$(which cat)
+
+########################
+# global variable/constant
+########################
+TEST_HOME="{{ TEST_home }}"
+LOG_DIR="${TEST_HOME}/log"
+FILE_DB_TOOLS="${TEST_HOME}/bin/db_tools.sh"
+
+EL_INST_PORTSERVER_PORT={{ portserver_port }}
+EL_INST_PORTSERVER_RANGE_MIN={{ portserver_range_min }}
+EL_INST_PORTSERVER_RANGE_MAX={{ portserver_range_max }}
+EL_INST_ORISERVER_PORT={{ oriserver_port }}
+EL_INST_NM_RECORD_DIR="{{ record_dir }}"
+EL_INST_NM_CONTROL_DIR="{{ control_dir }}"
+EL_INST_NM_OFFLINE_DIR="{{ offline_dir }}"
+EL_INST_NM_STORAGE_DIR="{{ storage_dir }}"
+
+#parameters
+EL_INST_NM_USE_ALARM={{ alarm_version }}
+EL_INST_NM_AD_HOST={{ alarm_host }}
+EL_INST_NM_AD_PORT={{ alarm_port }}
+EL_INST_NM_AD_SEND_WARNING={{ alarm_send_warning }}
+EL_INST_NM_HOST_ADDRESS={{ host_address }}
+EL_INST_NM_RECORD_DIR_THRESHOLD={{ record_dir_threshold }}
+EL_INST_NM_CONTROL_DIR_THRESHOLD={{ control_dir_threshold }}
+EL_INST_NM_STORAGE_DIR_THRESHOLD={{ storage_dir_threshold }}
+EL_INST_EL_NAME={{ fqdn_host }}
+EL_INST_NM_TIMEZONE={{ timezone }}
+EL_INST_NM_MAX_DIAG_MESSAGES={{ max_diagnostic_messages }}
+EL_INST_NM_MAX_DIAG_FILES={{ max_diagnostic_files }}
+EL_INST_NM_NODE_ZERO_THRESHOLD={{ node_zero_threshold }}
+EL_INST_NM_EXEC_LOG_DAYS={{ exec_log_days }}
+EL_INST_NM_TRS_WARNING_THRESHOLD={{ trs_warning_threshold }}
+
+EL_INST_JMX_PORT="{{ jmx_port }}"
+
+ODBC_INI_PATH="{{ odbcini }}"
+
+# Need to influence the date command to use target timezone instead of current local timezone
+TZ=${EL_INST_NM_TIMEZONE}
+
+########################
+    # functions
+########################
+
+function cleanup()
+{
+  for elem in "${TMP_FILES[@]}"; do
+        ${RM} -f "${elem}"
+  done
+}
+
+function make_temp_file_tracked()
+{
+  make_temp_file $*
+  TMP_FILES+=("${TMPFILE}")
+}
+
+function init_setup()
+{
+    . ${FILE_DB_TOOLS}
+}
+
+# Add single quote(') to hostname, disable host value when configure not to use Alarm Dispatcher
+function overwrite_host_parameters()
+{
+    if (( EL_INST_NM_USE_ALARM != 1 )); then
+        EL_INST_NM_AD_HOST=NULL
+        EL_INST_NM_AD_PORT=0
+        EL_INST_NM_AD_SEND_WARNING=0
+    else
+        EL_INST_NM_AD_HOST="'${EL_INST_NM_AD_HOST}'"
+    fi
+}
+
+## Note : this script to retrieve timezone offset for all platform
+function get_local_timezone()
+{
+    # Example: 20140610 21+02*60
+    utc=$( date -u '+%Y%m%d %M+%H*60' )
+    local=$( date '+%Y%m%d %M+%H*60' )
+
+    # Retrieve date from variable
+    utc_date=${utc:0:8}
+    local_date=${local:0:8}
+
+    # Remove date from value
+    utc=${utc:9}
+    local=${local:9}
+
+    if (( local_date < utc_date )); then
+        hour=${local:3:2}
+        hour_diff=$(( 24 - ${hour} ))
+        local=${local/+${hour}/+00}
+
+        hour=${utc:3:2}
+        add_hour=$(( ${hour} + ${hour_diff} ))
+        utc=${utc/+${hour}/+${add_hour}}
+    elif (( local_date > utc_date )); then
+        hour=${utc:3:2}
+        hour_diff=$(( 24 - ${hour} ))
+        utc=${utc/+${hour}/+00}
+
+        hour=${local:3:2}
+        add_hour=$(( ${hour} + ${hour_diff} ))
+        local=${local/+${hour}/+${add_hour}}
+    fi
+    TIMEZONEOFFSET=$( echo ${local}-\(${utc}\) | bc )
+}
+
+# Expected init_db to be executed before this.
+function configure_el_system_config_sql()
+{
+    make_temp_file_tracked "install_config.sql.${$}"
+    if [[ -a ${TMPFILE} ]]; then
+        ${MV} ${TMPFILE} ${TMPFILE}.sql
+    fi
+    TMPFILE=${TMPFILE}.sql
+    TMP_FILES+=("${TMPFILE}")
+      
+    cat > ${TMPFILE} << __EOF__
+INSERT INTO EL_SYSTEM_CONFIG (SYSTEMTIMEZONE, DIAGFILES, DIAGROWSPERFILE, DATAZEROTHRESHOLD,
+ALARMDISPATCHERHOST, ALARMDISPATCHERPORT, SENDWARNINGS, EXECLOGDAYS, TRSWARNINGTHRESHOLD, SYSTEMCONFIGID)
+SELECT '${EL_INST_NM_TIMEZONE}', ${EL_INST_NM_MAX_DIAG_FILES}, ${EL_INST_NM_MAX_DIAG_MESSAGES}, ${EL_INST_NM_NODE_ZERO_THRESHOLD},
+${EL_INST_NM_AD_HOST}, ${EL_INST_NM_AD_PORT}, ${EL_INST_NM_AD_SEND_WARNING}, ${EL_INST_NM_EXEC_LOG_DAYS},
+${EL_INST_NM_TRS_WARNING_THRESHOLD}, 1
+WHERE NOT EXISTS (SELECT 1 FROM EL_SYSTEM_CONFIG WHERE SYSTEMCONFIGID=1);
+
+UPDATE EL_SYSTEM_CONFIG SET SYSTEMTIMEZONE='${EL_INST_NM_TIMEZONE}', DIAGFILES=${EL_INST_NM_MAX_DIAG_FILES}, DIAGROWSPERFILE=${EL_INST_NM_MAX_DIAG_MESSAGES}, DATAZEROTHRESHOLD=${EL_INST_NM_NODE_ZERO_THRESHOLD}, ALARMDISPATCHERHOST=${EL_INST_NM_AD_HOST}, ALARMDISPATCHERPORT=${EL_INST_NM_AD_PORT}, SENDWARNINGS=${EL_INST_NM_AD_SEND_WARNING}, EXECLOGDAYS=${EL_INST_NM_EXEC_LOG_DAYS}, TRSWARNINGTHRESHOLD=${EL_INST_NM_TRS_WARNING_THRESHOLD} WHERE SYSTEMCONFIGID=1;
+
+\q
+__EOF__
+    
+    run_db_script ${TMPFILE} "${LOG_DIR}/configure_el_system_config_sql.log"
+}
+
+function configure_el_hosts_sql()
+{
+    make_temp_file_tracked "install_hosts.sql.${$}"
+    if [[ -a ${TMPFILE} ]]; then
+        ${MV} ${TMPFILE} ${TMPFILE}.sql
+    fi
+    TMPFILE=${TMPFILE}.sql
+    TMP_FILES+=("${TMPFILE}")
+    
+    cat > ${TMPFILE} << __EOF__
+INSERT INTO EL_HOSTS
+(HOST, ADDRESS, PORTSERVERPORT, PORTRANGEMIN, PORTRANGEMAX, ORISERVERPORT, LOCALTZ)
+SELECT '${EL_INST_EL_NAME}', '${EL_INST_NM_HOST_ADDRESS}', ${EL_INST_PORTSERVER_PORT}, ${EL_INST_PORTSERVER_RANGE_MIN}, ${EL_INST_PORTSERVER_RANGE_MAX},
+${EL_INST_ORISERVER_PORT}, ${TIMEZONEOFFSET}
+WHERE NOT EXISTS (SELECT 1 FROM EL_HOSTS WHERE HOST='${EL_INST_EL_NAME}');
+
+UPDATE EL_HOSTS SET ADDRESS='${EL_INST_NM_HOST_ADDRESS}', PORTSERVERPORT=${EL_INST_PORTSERVER_PORT}, PORTRANGEMIN=${EL_INST_PORTSERVER_RANGE_MIN}, PORTRANGEMAX=${EL_INST_PORTSERVER_RANGE_MAX}, ORISERVERPORT=${EL_INST_ORISERVER_PORT}, LOCALTZ=${TIMEZONEOFFSET} WHERE HOST='${EL_INST_EL_NAME}';
+
+
+\q
+__EOF__
+
+    run_db_script ${TMPFILE} "${LOG_DIR}/configure_el_hosts_sql.log"
+
+    if (( EL_INST_NM_RECORD_DIR_THRESHOLD == -1 )); then
+        EL_INST_NM_RECORD_DIR_THRESHOLD=NULL
+    fi
+    if (( EL_INST_NM_CONTROL_DIR_THRESHOLD == -1 )); then
+        EL_INST_NM_CONTROL_DIR_THRESHOLD=NULL
+    fi
+    if (( EL_INST_NM_STORAGE_DIR_THRESHOLD == -1 )); then
+        EL_INST_NM_STORAGE_DIR_THRESHOLD=NULL
+    fi
+
+    make_temp_file_tracked "install_host_directories.sql.${$}"
+    if [[ -a ${TMPFILE} ]]; then
+        ${MV} ${TMPFILE} ${TMPFILE}.sql
+    fi
+    TMPFILE=${TMPFILE}.sql
+    TMP_FILES+=("${TMPFILE}")
+    
+    cat > ${TMPFILE} << _EOF_
+INSERT INTO EL_HOST_DIRECTORIES (HOST, TYPE, PATH, THRESHOLD) 
+SELECT '${EL_INST_EL_NAME}', 'data1', '${EL_INST_NM_RECORD_DIR}', ${EL_INST_NM_RECORD_DIR_THRESHOLD}
+WHERE NOT EXISTS (SELECT 1 FROM EL_HOST_DIRECTORIES WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='data1');
+
+UPDATE EL_HOST_DIRECTORIES SET PATH='${EL_INST_NM_RECORD_DIR}', THRESHOLD=${EL_INST_NM_RECORD_DIR_THRESHOLD} WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='data1';
+
+INSERT INTO EL_HOST_DIRECTORIES (HOST, TYPE, PATH, THRESHOLD) 
+SELECT '${EL_INST_EL_NAME}', 'control', '${EL_INST_NM_CONTROL_DIR}', ${EL_INST_NM_CONTROL_DIR_THRESHOLD}
+WHERE NOT EXISTS (SELECT 1 FROM EL_HOST_DIRECTORIES WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='control');
+
+UPDATE EL_HOST_DIRECTORIES SET PATH='${EL_INST_NM_CONTROL_DIR}', THRESHOLD=${EL_INST_NM_CONTROL_DIR_THRESHOLD} WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='control';
+
+INSERT INTO EL_HOST_DIRECTORIES (HOST, TYPE, PATH, THRESHOLD) 
+SELECT '${EL_INST_EL_NAME}', 'storage', '${EL_INST_NM_STORAGE_DIR}', ${EL_INST_NM_STORAGE_DIR_THRESHOLD}
+WHERE NOT EXISTS (SELECT 1 FROM EL_HOST_DIRECTORIES WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='storage');
+
+UPDATE EL_HOST_DIRECTORIES SET PATH='${EL_INST_NM_STORAGE_DIR}', THRESHOLD=${EL_INST_NM_STORAGE_DIR_THRESHOLD} WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='storage';
+
+INSERT INTO EL_HOST_DIRECTORIES (HOST, TYPE, PATH, THRESHOLD) 
+SELECT '${EL_INST_EL_NAME}', 'offline', '${EL_INST_NM_OFFLINE_DIR}', NULL
+WHERE NOT EXISTS (SELECT 1 FROM EL_HOST_DIRECTORIES WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='offline');
+
+UPDATE EL_HOST_DIRECTORIES SET PATH='${EL_INST_NM_OFFLINE_DIR}', THRESHOLD=NULL WHERE HOST='${EL_INST_EL_NAME}' AND TYPE='offline';
+
+\q
+_EOF_
+
+    run_db_script ${TMPFILE} "${LOG_DIR}/install_host_directories.sql.log"
+}
+
+function configure_jmx_port()
+{
+    sudo ${SED} -i "s/export TEST_JMX_PORT=.*/export TEST_JMX_PORT=${EL_INST_JMX_PORT}/" /etc/profile.d/el-node-manager.sh \
+			|| { echo -e "ERROR: Fail to configure JMX port..."; exit 1; }
+}
+
+function configure_time_zone()
+{
+    sudo ${SED} -i "s#export TZ=.*#export TZ=${EL_INST_NM_TIMEZONE}#" /etc/profile.d/el-node-manager.sh \
+			|| { echo -e "ERROR: Fail to configure time zone..."; exit 1; }
+}
+
+function configure_odbc_ini()
+{
+	${GREP} "ODBCINI" -q /etc/profile.d/el-node-manager.sh || echo "export ODBCINI=${ODBC_INI_PATH}" >> /etc/profile.d/el-node-manager.sh \
+			|| { echo -e "ERROR: Fail to update ODBCINI..."; exit 1; }
+}
+
+#########################################
+# TEST_node_manager_main_function
+#########################################
+set -e
+echo -e "INFO: Setup ${COMPONENT_NAME} package..."
+
+trap 'cleanup' SIGINT SIGTERM EXIT
+init_setup
+init_db "${DBID_EL}"
+overwrite_host_parameters
+get_local_timezone
+configure_el_system_config_sql
+configure_el_hosts_sql
+configure_jmx_port
+configure_time_zone
+configure_odbc_ini

@@ -1,0 +1,69 @@
+---
+# defaults file for devtool-backend
+el_devtool_backend_http_port: 58080
+el_devtool_backend_ajp_port: 58009
+el_devtool_backend_shutdown_port: 58005
+el_devtool_backend_redirect_port: 58081
+
+el_ui_fqdn: "{{ inventory_hostname }}"
+el_devtool_backend_fqdn: "{{ el_ui_fqdn }}"
+
+el_devtool_backend_tomcat_service_path: "{{ tomcat_dir }}/devtool-backend/conf"
+httpd_listening_port: 55000
+
+# RC File vars
+
+el_ui_host_url:   "{{ protocol | default('http') }}://{{ el_ui_fqdn }}:{{ httpd_listening_port }}/TEST"
+el_devtool_backend_max_node_package_filesize_mb:    500
+el_devtool_backend_max_stream_package_filesize_mb:  1024
+el_devtool_backend_response_timeout_sec:            600
+
+# Keycloak required vars
+kc_client_id_devtool_backend: "{{ el_devtool_backend_package_name }}"
+kc_client_name_devtool_backend: "{{ el_devtool_backend_package_name }}"
+kc_client_description_devtool_backend: "{{ el_devtool_backend_component_name }}"
+kc_client_conf_file_devtool_backend: "{{ el_devtool_backend_kc_client_conf_file }}"
+client_local_conf_devtool_backend: "{{ ansible_dir }}/devtool-backend-keycloak.json"
+product_client_roles_devtool_backend: "{{ el_devtool_backend_permission_dictionary }}"
+certificate_alias_devtool_backend: "devtool-backend"
+keystore_file_name_devtool_backend: "{{ certificate_alias }}.jks"
+truststore_file_name_devtool_backend: "trusted-certs.jks"
+product_install_dir_devtool_backend: "/opt/TEST/devtool-backend"
+product_kc_http_port_devtool_backend: "{{ el_devtool_backend_http_port }}"
+product_kc_origins_devtool_backend:
+  - "{{ protocol | default('http') }}://{{ el_devtool_backend_fqdn }}:{{ el_devtool_backend_http_port }}"
+product_redirect_uris_devtool_backend:
+  - "{{ protocol | default('http') }}://{{ el_devtool_backend_fqdn }}:{{ el_devtool_backend_http_port }}/*"
+product_kc_base_url_devtool_backend: "{{ protocol | default('http') }}://{{ el_devtool_backend_fqdn }}:{{ el_devtool_backend_http_port }}/devtool-backend"
+product_kc_admin_url_devtool_backend: "{{ protocol | default('http') }}://{{ el_devtool_backend_fqdn }}:{{ el_devtool_backend_http_port }}/devtool-backend"
+kc_client_scope_mappings_devtool_backend:
+  - { client_id: "TEST_ui", role_name: "TEST.browse" }
+  - { client_id: "devtool", role_name: "devtool.read" }
+  - { client_id: "devtool", role_name: "devtool.write" }
+  - { client_id: "devtool", role_name: "devtool.workspace.read" }
+  - { client_id: "devtool", role_name: "devtool.workspace.write" }
+  - { client_id: "devtool", role_name: "testtool.read" }
+
+el_devtool_backend_package_name: "el-devtool-backend"
+el_devtool_backend_service_name: "tomcat@devtool-backend"
+el_devtool_backend_component_name: "TEST Mediation DevTool Backend"
+el_devtool_backend_kc_client_conf_file: "{{ tomcat_dir }}/devtool-backend/conf/dt-backend-keycloak.json"
+
+el_devtool_rc_name: "devtool"
+
+rc_file_location: '/opt/TEST/TEST/.mds.rc'
+tomcat_dir: '/opt/TEST/tomcat'
+ansible_dir: '/tmp/ansible_tmp'
+
+el_crypto_path: '/usr/share/java/el-crypto/el-crypto.jar'
+el_devtool_crypto_link_path: "{{ tomcat_dir }}/devtool-backend/lib/el-crypto.jar"
+
+# vars for audittrail
+TEST_install_directory: '/opt/TEST/TEST'
+at_audit_files_location: "{{ TEST_install_directory }}/audit/TEST-audit.log"
+moduleid_devtool_backend: "devtool"
+at_module_name_devtool_backend: "{{ el_devtool_backend_component_name }}"
+
+context_xml_file_src_devtool_backend: "context.xml.j2"
+context_xml_file_dest_devtool_backend: "{{ tomcat_dir }}/devtool-backend/conf/context.xml"
+...

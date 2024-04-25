@@ -1,0 +1,368 @@
+#! groovy
+pipeline {
+    options {
+      timeout(time: 600, unit: 'MINUTES')
+      buildDiscarder(logRotator(daysToKeepStr: '30',  artifactDaysToKeepStr: '0', numToKeepStr: '50'))
+      //disableConcurrentBuilds()
+      timestamps()
+    }
+
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl..com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+
+    environment {
+        //OS_USER_CREDS = credentials('PL_008_OS_CREDS')
+        //OS_AUTH_URL = 'https://10.75.237.4:13000/v2.0'
+        //OS_USERNAME = "$OS_USER_CREDS_USR"
+        //OS_PASSWORD = "$OS_USER_CREDS_PSW"
+        //OS_PROJECT = 'v8603_DI_DR'
+        //OS_PROJECT_NAME = 'v8603_DI_DR'
+        //OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+        //OS_DOMAIN = 'default'
+        //OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+        TF_VAR_ENDUSER_CREDS = credentials('TF_VAR_ENDUSER_CREDS')
+        TF_VAR_enduser = "$TF_VAR_ENDUSER_CREDS_USR"
+        TF_VAR_enduser_pass = "$TF_VAR_ENDUSER_CREDS_PSW"
+        TF_VAR_USER_CREDS = credentials('TF_VAR_USER')
+        TF_VAR_team = 'DevOps'
+        TF_VAR_user = "$TF_VAR_USER_CREDS_USR"
+        TF_VAR_password = "$TF_VAR_USER_CREDS_PSW"
+        TF_VAR_host= '10.93.138.2'
+        STACK_FOLDER = '/home/jenkins/workspace//DevOps/golden_image_building/internal/tools/stack/'
+        vault_password = credentials('vault_password')
+        DB_EL_USER_CREDS = credentials('db_el_user')
+        db_el_user = "$DB_EL_USER_CREDS_USR"
+        db_el_password = "$DB_EL_USER_CREDS_PSW"
+        DB_LOGIN_USER_CREDS = credentials('db_login_user')
+        db_login_user = "$DB_LOGIN_USER_CREDS_USR"
+        db_login_password = "$DB_LOGIN_USER_CREDS_PSW"
+        UM_DB_USER_CREDS = credentials('um_db_user')
+        um_db_user = "$UM_DB_USER_CREDS_USR"
+        um_db_password = "$UM_DB_USER_CREDS_PSW"
+        UM_DB_LOGIN_USER_CREDS = credentials('um_db_login_user')
+        um_db_login_user = "$UM_DB_LOGIN_USER_CREDS_USR"
+        um_db_login_password = "$UM_DB_LOGIN_USER_CREDS_PSW"
+        VI_DB_USER_CREDS = credentials('vi_db_user')
+        vi_db_user = "$VI_DB_USER_CREDS_USR"
+        vi_db_password = "$VI_DB_USER_CREDS_PSW"
+        VI_DB_LOGIN_USER_CREDS = credentials('vi_db_login_user')
+        vi_db_login_user = "$VI_DB_LOGIN_USER_CREDS_USR"
+        vi_db_login_password = "$VI_DB_LOGIN_USER_CREDS_PSW"
+        AT_DB_USER_CREDS = credentials('at_db_user')
+        at_db_user = "$AT_DB_USER_CREDS_USR"
+        at_db_password = "$AT_DB_USER_CREDS_PSW"
+        AT_DB_LOGIN_USER_CREDS = credentials('at_db_login_user')
+        at_db_login_user = "$AT_DB_LOGIN_USER_CREDS_USR"
+        at_db_login_password = "$AT_DB_LOGIN_USER_CREDS_PSW"
+        openam_admin_password = credentials('openam_admin_password')
+        openam_ldap_user_password = credentials('openam_ldap_user_password')
+        openam_opends_dir_manager_password = credentials('openam_opends_dir_manager_password')
+        DB_ADMIN_USER_CREDS = credentials('db_admin_user')
+        db_admin_user = "$DB_ADMIN_USER_CREDS_USR"
+        db_admin_password = "$DB_ADMIN_USER_CREDS_PSW"
+        UM_ADMIN_USER_CREDS = credentials('um_admin_user')
+        um_admin_user = "$UM_ADMIN_USER_CREDS_USR"
+        um_admin_password = "$UM_ADMIN_USER_CREDS_PSW"
+        processing_name = sh(script: 'current_timestamp=$(date +%Y%m%d%H%M%S); echo "$release_version-processing-$os_type-$os_version-$current_timestamp"', , returnStdout: true).trim()
+        ui_name = sh(script: 'current_timestamp=$(date +%Y%m%d%H%M%S); echo "$release_version-UI-$os_type-$os_version-$current_timestamp"', , returnStdout: true).trim()
+        db_name = sh(script: 'current_timestamp=$(date +%Y%m%d%H%M%S); echo "$release_version-DB-$os_type-$os_version-$current_timestamp"', , returnStdout: true).trim()
+    }
+    parameters {
+        choice(name: 'Invoke_Parameters', choices:"No\nYes", description: "Do you whish to do a dry run to grab parameters?" )
+        string(name: 'GIT_BRANCH', defaultValue: 'develop', description: 'Git Branch to build on.', trim: true)
+        choice(name: 'os_type', choices: ['rhel', 'centos'], description: 'Which os to use for repositories')
+        string(name: 'os_version', defaultValue: '7.8', description: 'OS Version')
+        string(name: 'release_version', defaultValue: 'DR2006', description: 'Release version of Data Refinery', trim: true)
+        string(name: 'STACK_FOLDER', defaultValue: '/home/jenkins/workspace//DevOps/golden_image_building/golden-image-building/internal/tools/stack', description: 'Path to the directory which has the stack code.', trim: false)
+        choice(name: 'platform', choices: ['openstack', 'vmware'], description: 'The platform where to build the images.')
+        booleanParam(name: 'protected', defaultValue: false, description: 'Image protection for deletion.')
+        choice(
+            name: 'visibility',
+            choices: [
+                'private',
+                'community',
+                'shared',
+                'public',
+            ],
+            description: 'Visibility value for the created golden images.'
+        )
+        choice(
+            name: 'timezone',
+            choices: [
+                'Europe/Helsinki',
+                'Asia/Kuala_Lumpur',
+                'Europe/Sofia',
+            ],
+            description: 'Timezone to have for TEST installation.'
+        )
+        string(name: 'content_base_image', defaultValue: 'LATEST', description: 'Sets base image for content host.', trim: false)
+        //string(name: 'processing_name', defaultValue: 'EL8_v.0.1', description: 'Name for the processing host golden image.', trim: false)
+        string(name: 'processing_base_image', defaultValue: 'LATEST', description: 'Sets base image for content host.', trim: false)
+        string(name: 'processing_min_disk', defaultValue: '0', description: 'Minimum allowed disk space for processing golden image in GB.', trim: false)
+        string(name: 'processing_min_ram', defaultValue: '0', description: 'Minimum allowed amount of RAM for processing golden image in GB.', trim: false)
+        string(name: 'processing_tags', defaultValue: 'TEST', description: 'Tags to be added to processing golden image. A single string or multiple values separated by comma e.g rc1,processing.', trim: false)
+        choice(name: 'secondary', choices: ['true', 'false'], description: 'Parameter for processing node.')
+        //string(name: 'ui_name', defaultValue: 'EL8_UI_v.0.1', description: 'Name for the ui host golden image.', trim: false)
+        string(name: 'ui_base_image', defaultValue: 'LATEST', description: 'Sets base image for ui node.', trim: false)
+        string(name: 'ui_min_disk', defaultValue: '0', description: 'Minimum allowed disk space for ui golden image in GB.', trim: false)
+        string(name: 'ui_min_ram', defaultValue: '0', description: 'Minimum allowed amount of RAM for ui golden image in GB.', trim: false)
+        string(name: 'ui_tags', defaultValue: 'TEST', description: 'Tags to be added to ui golden image. A single string or multiple values separated by comma e.g rc1,processing.', trim: false)
+        //string(name: 'db_name', defaultValue: 'EL8_DB_v.0.1', description: 'Name for the db golden image.', trim: false)
+        string(name: 'db_base_image', defaultValue: 'LATEST', description: 'Sets base image for db node.', trim: false)
+        string(name: 'db_min_disk', defaultValue: '0', description: 'Minimum allowed disk space for udb golden image in GB.', trim: false)
+        string(name: 'db_min_ram', defaultValue: '0', description: 'Minimum allowed amount of RAM for db golden image in GB.', trim: false)
+        string(name: 'db_tags', defaultValue: 'TEST', description: 'Tags to be added to db golden image. A single string or multiple values separated by comma e.g rc1,processing.', trim: false)
+        choice(name: 'debug', choices: ['', 'yes, please'], description: 'Whether to enable stack debug logging. ')
+        choice(
+            name: 'build_lab',
+            choices: [
+                'pl-008',
+                'pl-036'
+            ],
+            description: 'Select a vLab for the build.'
+        )
+    }
+
+    stages {
+
+        stage("Parameterizing") {
+            steps {
+                script {
+                    currentBuild.description = "processing_name = $processing_name<br/>ui_name = $ui_name<br/>db_name = $db_name"
+                    
+                    env.processing_name = processing_name
+                    env.ui_name = ui_name
+                    env.db_name = db_name
+
+                    sh 'printenv|sort'
+                    if ("${params.Invoke_Parameters}" == "Yes") {
+                        currentBuild.description = "DRY RUN<br/>" + currentBuild.description
+                        currentBuild.result = 'SUCCESS'
+                        println "DRY RUN COMPLETED. JOB PARAMETERIZED."
+                    }
+                }
+            }
+        }
+
+        stage("Set vLab pl-008 variables") {
+          when {
+            environment name: 'build_lab', value: 'pl-008'
+          }
+          steps {
+            script {
+              withCredentials([usernamePassword(credentialsId: 'PL_008_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                env.OS_AUTH_URL = 'https://10.75.237.4:13000/v2.0'
+                env.OS_PROJECT = 'v8603_DI_DR'
+                env.OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+                env.OS_PROJECT_NAME = 'v8603_DI_DR'
+                env.OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+                env.OS_DOMAIN = 'default'
+                env.OS_VOLUME_API_VERSION = '2'
+                env.OS_USERNAME = lab_user_name
+                env.OS_PASSWORD = lab_user_password
+                env.os_ext_network_id = '2fee903a-eacc-4a9f-af3d-1cf620da0587'
+                env.TF_VAR_os_ext_network_id = '2fee903a-eacc-4a9f-af3d-1cf620da0587'
+              }
+            }
+          }
+        }
+              
+        stage("Set vLab pl-036 variables") {
+          when {
+            environment name: 'build_lab', value: 'pl-036'
+          }
+          steps {
+            script {
+              withCredentials([usernamePassword(credentialsId: 'PL_036_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                env.OS_AUTH_URL = 'https://10.75.11.196:13000/v3'
+                env.OS_IDENTITY_API_VERSION = '3'
+                env.OS_PROJECT = 'CB0643'
+                env.OS_PROJECT_ID = '4d9ac580707a4bd2bcd6934a2f7af975'
+                env.OS_PROJECT_NAME = 'CB0643'
+                env.OS_NETWORK_ID = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+                env.OS_CACERT = '/certs/vlab-os_cacert-pl-036.pem'
+                env.OS_REGION_NAME = "regionOne"
+                env.OS_INTERFACE ='public'
+                env.OS_USER_DOMAIN_NAME = 'Default'
+                env.OS_USERNAME = lab_user_name
+                env.OS_PASSWORD = lab_user_password
+                env.os_ext_network_id = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+                env.TF_VAR_os_ext_network_id = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+              }
+              sh """
+                cd /certs
+                wget --no-check-certificate https://10.75.217.187/vlabs/vlab-os_cacert-pl-036.pem
+                printenv
+              """
+            }
+          }
+        }
+
+        stage('Validate build parameters') {
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps {
+                echo "Validating build parameters"
+                sh '''
+                  #!/bin/sh
+                  echo -e "\nDoing preliminary check for some of the build parameters...\n"
+
+                  variables=( \
+                      "$processing_min_disk" \
+                      "$processing_min_ram" \
+                      "$ui_min_disk" \
+                      "$ui_min_ram" \
+                      "$db_min_disk" \
+                      "$db_min_ram" 
+                  )
+
+                  for i in "${variables[@]}"
+                  do
+                      eval echo "Checking if $i argument is an integer..."
+                      eval expr "$i" + 1   
+                  done
+
+                  printenv | sort
+
+                  variables=( \
+                  "$processing_tags" \
+                  "$ui_tags" \
+                  "$db_tags" \
+                  "$processing_min_disk" \
+                  "$processing_min_ram" \
+                  "$ui_min_disk" \
+                  "$ui_min_ram" \
+                  "$db_min_disk" \
+                  "$db_min_ram" \
+                  "$content_base_image" \
+                  "$processing_base_image" \
+                  "$ui_base_image" \
+                  "$db_base_image" \
+                  )
+
+
+                  for i in "${variables[@]}"
+                  do
+                      eval echo "Checking if $i argument has some value..."
+                      eval value=\$"{$i}"
+                      check=${#value}
+                      if [ "$check" -lt 1 ]; then
+                      echo 'No value'
+                      exit 1
+                      fi
+                  done
+                '''
+            }
+        }
+
+        stage('Write variables'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps{
+                echo "Writing variables"
+
+                sh '''
+                    #!/bin/bash
+
+                    echo "Writing variables to ${STACK_FOLDER}/TEST/terraform.tfvars"
+
+                    variables=( \
+                    "timezone" \
+                    "secondary" \
+                    "vault_password" \
+                    "db_el_user" \
+                    "db_el_password" \
+                    "db_login_user" \
+                    "db_login_password" \
+                    "um_db_user" \
+                    "um_db_password" \
+                    "um_db_login_user" \
+                    "um_db_login_password" \
+                    "vi_db_user" \
+                    "vi_db_password" \
+                    "vi_db_login_user" \
+                    "vi_db_login_password" \
+                    "at_db_user" \
+                    "at_db_password" \
+                    "at_db_login_user" \
+                    "at_db_login_password" \
+                    "openam_admin_password" \
+                    "openam_ldap_user_password" \
+                    "openam_opends_dir_manager_password" \
+                    "db_admin_user" \
+                    "db_admin_password" \
+                    "um_admin_user" \
+                    "um_admin_password" \
+                    "os_ext_network_id" \
+                    )
+
+                    for i in "${variables[@]}"
+                    do
+                        eval echo "$i = \"{$i}\"" >> ${STACK_FOLDER}/TEST/terraform.tfvars
+                    done
+
+                    # debug
+                    cat ${STACK_FOLDER}/TEST/terraform.tfvars
+                '''
+
+            }
+        }
+
+        stage('Create stack'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps{
+                println processing_name
+                println ui_name
+                println db_name
+
+                echo "Creating stack"
+                sh 'sh $WORKSPACE/internal/jenkins/pipelines/golden_image_building/scripts/createStack.sh'
+
+            }
+        }
+
+        stage('Snapshot nodes'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps{
+                sh 'printenv | sort'
+
+                echo "Snapshotting nodes"
+                sh 'sh $WORKSPACE/internal/jenkins/pipelines/golden_image_building/scripts/snapshotProcessing.sh'
+                sh 'sh $WORKSPACE/internal/jenkins/pipelines/golden_image_building/scripts/snapshotUI.sh'
+                sh 'sh $WORKSPACE/internal/jenkins/pipelines/golden_image_building/scripts/snapshotDB.sh'
+
+            }
+        }
+
+        stage('Destroy the stack'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps{
+                sh 'printenv | sort'
+
+                echo "Destroying the stack"
+                sh 'sh $WORKSPACE/internal/jenkins/pipelines/golden_image_building/scripts/destroyStack.sh'
+            }
+        }
+    }
+}

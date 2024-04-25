@@ -1,0 +1,39 @@
+{
+  "TC-58884": {
+    "createAUser1": {
+      "UserId": "tester90",
+      "UserName": "tester90",
+      "ProfileName": "Testing",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@22",
+      "ReEnterPassword": "productUnderTest@22"
+    },
+    "tester90": {
+      "password": "productUnderTest@22",
+      "database": "Default",
+      "newPassword": "productUnderTest@2"
+    },
+    "Application": {
+      "Org": "{{organisation}}",
+      "Application Number": "Automation337",
+      "Expiry Date": "20/10/2023",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD",
+      "Decision Reason": "COLLUSION"
+    },
+    "Applicant": {
+      "Id Number 1": "337",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "Automation337",
+      "value2": ""
+    }
+  }
+}

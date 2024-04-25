@@ -1,0 +1,87 @@
+---
+# tasks file for el-postgresql-create
+
+- assert:
+    that:
+      - "hba_network_address is defined"
+    msg: "'Variable hba_network_address is not defined'"
+
+- assert:
+    that:
+      - "( hba_network_address is not none ) and ( hba_network_address != '' )"
+    msg: "'Variable hba_network_address should not be empty'"
+
+- name: "Configure host based authentication (if entries are configured)"
+  template:
+    src: "templates/pg_hba.conf.j2"
+    dest: "{{ postgresql_config_path }}/pg_hba.conf"
+    owner: "{{ postgresql_user }}"
+    group: "{{ postgresql_group }}"
+    mode: 0600
+    backup: yes
+  when: postgresql_hba_entries
+  become: true
+  become_method: sudo
+
+- name: "Open ports for Postgresql service"
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ db_login_port }}"
+
+- name: Replace postgresql service file
+  template:
+    src: postgresql.service.j2
+    owner: root
+    group: root
+    dest: /etc/systemd/system/postgresql.service
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: Stop keepalived since next the DB-0 will be forced as active
+  systemd:
+    name: keepalived
+    state: stopped
+  become: true
+  become_method: sudo
+  when: (reconfigure is not defined) or (reconfigure != True)
+
+- name: Pause for a while since the keepalived takes a while to shutdown
+  pause: seconds=30
+
+- name: "Ensure PostgreSQL is stopped and disabled on boot"
+  systemd:
+    name: "{{ postgresql_daemon }}"
+    enabled: no
+    masked: no
+    state: stopped
+    daemon_reload: yes
+  when: (((reconfigure is defined) and (reconfigure == True)) or (inventory_hostname != groups['vdu-db'][0]))
+  become: true
+  become_method: sudo
+
+- name: "Ensure PostgreSQL is started and disabled on boot"
+  systemd:
+    name: "{{ postgresql_daemon }}"
+    enabled: no
+    masked: no
+    state: restarted
+    daemon_reload: yes
+  when: ((reconfigure is not defined) or (reconfigure != True) and (inventory_hostname == groups['vdu-db'][0]))
+  register: start_pg
+  retries: 3
+  delay: 20
+  until: start_pg | success
+  become: true
+  become_method: sudo
+
+- name: Make sure postgres comes up
+  wait_for: host=127.0.0.1 state=started port={{ postgresql_server_port }} delay=5 timeout=300 connect_timeout=10
+  when: ((reconfigure is not defined) or (reconfigure != True) and (inventory_hostname == groups['vdu-db'][0]))

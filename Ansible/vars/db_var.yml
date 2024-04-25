@@ -1,0 +1,38 @@
+---
+host_type: "db"
+priv_net_cidr: 0.0.0.0/0
+postgresql_daemon: postgresql
+db_el_host: "{{ ansible_ssh_host }}"
+postgresql_max_locks_per_transaction: 1024
+
+ip_groups:
+  - ha_interface: "{{ ansible_local.interfaces.devices.oam_interface }}"
+    ha_vrid: 62
+    ha_vip: "{{ db_oam_vip }}"
+    ip0: "{{ db_oam_0 }}"
+    ip1: "{{ db_oam_1 }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.oam_network_netmask }}"
+
+cinder_volumes:
+  - name: data
+    filesystem: xfs
+    label: data
+    opts: '-b size=4096 -L data'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['db']['pgdata_mount_id'][0:20] }}"
+    mount_point: /var/lib/pgsql/data
+    mount_point_dash: var-lib-pgsql-data
+    keep_mounted: false
+    owner: postgres
+    group: postgres
+    mode: "0700"
+  - name: cmdb-data
+    filesystem: xfs
+    label: data
+    opts: '-b size=4096 -L data'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['db']['cmdb_mount_id'][0:20] }}"
+    mount_point: /mariadb/data
+    mount_point_dash: mariadb-data
+    keep_mounted: true
+    owner: mysql
+    group: mysql
+    mode: "0755"

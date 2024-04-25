@@ -1,0 +1,75 @@
+- name: allow vrrp traffic of ivp4 for ip0
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv4'
+   - ansible_ssh_host == ip_groups[0].ip0
+
+- name: allow vrrp traffic of ivp4 for ip1
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv4'
+   - ansible_ssh_host == ip_groups[0].ip1
+
+- name: allow vrrp traffic of ipv6 for ip0
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv6'
+   - ansible_ssh_host == ip_groups[0].ip0
+
+- name: allow vrrp traffic of ipv6 for ip1
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv6'
+   - ansible_ssh_host == ip_groups[0].ip1
+
+- name: allow vrrp traffic of ivp4 for GFS OAM_ip0
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv4'
+   - ip_groups[0].OAM_ip0 is defined
+   - ansible_ssh_host == ip_groups[0].OAM_ip0
+
+- name: allow vrrp traffic of ivp4 for GFS OAM_ip1
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv4'
+   - ip_groups[0].OAM_ip0 is defined
+   - ansible_ssh_host == ip_groups[0].OAM_ip1
+
+- name: allow vrrp traffic of ipv6 for GFS OAM_ip0
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv6'
+   - ip_groups[0].OAM_ip0 is defined
+   - ansible_ssh_host == ip_groups[0].OAM_ip0
+
+- name: allow vrrp traffic of ipv6 for GFS OAM_ip1
+  command: "{{ item }}"
+  with_items:
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter INPUT 0 --in-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip1 }}" --protocol vrrp -j ACCEPT
+   - firewall-cmd --direct --permanent --add-rule ipv6 filter OUTPUT 0 --out-interface '{{outer_item.ha_interface}}' --destination "{{ outer_item.ip0 }}" --protocol vrrp -j ACCEPT
+  when:
+   - vnf_context_data.stack_params.cbam.extensions.ip_protocol_version|lower == 'ipv6'
+   - ip_groups[0].OAM_ip0 is defined
+   - ansible_ssh_host == ip_groups[0].OAM_ip1

@@ -1,0 +1,85 @@
+{
+  "TC-58876_1": {
+    "noteFieldsToSelect": {
+      "Note Prompt 1": "Application.Application Number",
+      "Note Prompt 2": "Applicant.Surname"
+    },
+    "notePromptToInsert": {
+      "notePromptToInsert": " are the details."
+    },
+    "notePromptToVerify": {
+      "notePromptToVerify": "<<<Application.Application_Number>>><<<Applicant.Surname>>> are the details."
+    },
+    "noteToAddAndVerify": {
+      "noteToAdd": "Automation58876001Jackson are the details."
+    },
+    "noteRecordsToVerify": {
+      "Source": "Application",
+      "Note Row 1": "Automation58876001Jackson are the details.",
+      "Note Details 1": "NONADMIN | Application | 0"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58876001",
+      "Application Date": "09/02/2022",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Surname": "Jackson",
+      "Home Address 1": "Amazon street",
+      "Home Address 2": "Netflix Road",
+      "Home Postcode": "3094"
+    }
+  },
+  "TC-58876_2": {
+    "noteFieldsToSelect": {
+      "Note Prompt 1": "Application.Application Number",
+      "Note Prompt 2": "Applicant.First Name"
+    },
+    "notePromptToInsert": {
+      "notePromptToInsert": " are the details."
+    },
+    "notePromptToVerify": {
+      "notePromptToVerify": "<<<Application.Application_Number>>><<<Applicant.First_Name>>> are the details."
+    },
+    "noteToAddAndVerify": {
+      "noteToAdd": "Automation58876002Smith are the details."
+    },
+    "noteRecordsToVerify": {
+      "Source": "Watchlist",
+      "Note Row 1": "Automation58876002Smith are the details.",
+      "Note Details 1": "NONADMIN | Watchlist | 0"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58876002",
+      "Application Date": "09/02/2022",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "First Name": "Smith",
+      "Home Address 1": "Amazon street",
+      "Home Address 2": "Netflix Road",
+      "Home Postcode": "3094"
+    }
+  },
+  "TC-61413": {
+    "noteFieldsToSelect": {
+      "Note Prompt 1": "Application.Application Number",
+      "Note Prompt 2": "Applicant.Id Number 1"
+    },
+    "notePromptToInsert": {
+      "notePromptToInsert": " are the details."
+    },
+    "notePromptToVerify": {
+      "notePromptToVerify": "<<<Application.Application_Number>>><<<Applicant.Id_Number1>>> are the details."
+    },
+    "noteFieldsToSelectWithChange": {
+      "Note Prompt 1": "Application.Application Number",
+      "Note Prompt 2": "Applicant.Id Number 2"
+    },
+    "notePromptToVerifyWithChange": {
+      "notePromptToVerify": "<<<Application.Application_Number>>><<<Applicant.Id_Number2>>>"
+    }
+  }
+}

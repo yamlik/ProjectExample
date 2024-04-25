@@ -1,0 +1,37 @@
+- name: stop el-node-manager for TimesTen backup
+  systemd:
+    name: el-node-manager
+    state: stopped
+  become: true
+  become_method: sudo
+
+- name: Create backup directory
+  file:
+    path: "{{ tt_backup_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  become: yes
+  become_method: sudo
+
+- name: Read ODBC ini
+  slurp:
+    src: "{{ odbc_ini_location }}/.odbc.ini"
+  register: odbc_output
+
+- debug:
+    msg: "{{odbc_output['content'] | b64decode | regex_findall('\\[(.+)\\]') }}"
+
+- set_fact:
+    datastores: "{{odbc_output['content'] | b64decode | regex_findall('\\[(.+)\\]') }}"
+
+- name: Backup TimesTen ODBC ini
+  shell: "cp {{ odbc_ini_location }}/.odbc.ini {{ tt_backup_dir }}/.odbc.ini"
+
+- name: Backup TimesTen data
+  shell: "ttMigrate -c {{ item }} database_{{item}}_export.dat"
+  args:
+    chdir: "{{ tt_backup_dir }}"
+  with_items:
+    - "{{ datastores }}"

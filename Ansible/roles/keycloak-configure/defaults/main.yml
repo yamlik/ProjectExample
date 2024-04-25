@@ -1,0 +1,20 @@
+---
+kc_realm_template: TEST-realm.json.j2
+kc_realm_file: "{{ kc_conf_dir }}/TEST-realm.json"
+kc_realm_name: TEST
+kc_realm_login_theme: TEST-csf
+kc_realm_enabled: true
+
+kc_client_template_template: shiro-client-template.json.j2
+kc_client_template_file: "{{ kc_conf_dir }}/shiro-client-template.json"
+kc_client_template_name: shiro-client
+kc_client_template_protocol: openid-connect
+kc_client_template_description: "Client template for clients utilizing Shiro-based authorization"
+kc_client_template_groups_claim_name: groups
+
+kc_client_initial_access_local_file: "/opt/TEST/ansible/initial-access-token"
+kc_client_initial_access_count: 10
+kc_client_initial_access_expiration: 300
+
+kc_allowed_client_templates_template: allowed-client-templates.json.j2
+kc_allowed_client_templates_file: "{{ kc_conf_dir }}/allowed-client-templates.json"

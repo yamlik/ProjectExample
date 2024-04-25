@@ -1,0 +1,10 @@
+[
+    {
+        "name": "ha-role",
+        "path": "/usr/libexec/ha/ha-role"
+    },
+    {
+        "name": "em-failover",
+        "path": "/opt/vrrp/em-failover.py"
+    }
+]

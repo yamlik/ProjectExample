@@ -1,0 +1,73 @@
+---
+
+- name: Update 'root' and 'TEST' passwords.
+  no_log: "{{ hide_sensitive_debug_info }}"
+  user:
+    name: "{{ item.username }}"
+    update_password: always
+    password: "{{ item.password|password_hash('sha512') }}"
+  become: yes
+  with_items:
+    - { username: root, password: "{{ unix_root_password }}" }
+    - { username: TEST, password: "{{ unix_user_password }}" }
+
+- name: Check private key file
+  stat:
+    path: "~TEST/.ssh/id_rsa"
+  register: host_private_key
+
+- name: create key
+  shell: "yes y |ssh-keygen -t rsa -N '' -f ~TEST/.ssh/id_rsa"
+  when: not host_private_key.stat.exists
+
+- name: Create public key
+  shell: ssh-keygen -y -f ~TEST/.ssh/id_rsa > ~TEST/.ssh/id_rsa.pub
+
+- name: change owner
+  shell: chown -R TEST:TEST ~TEST/.ssh/
+  become: true
+
+- name: Fetch public key to Ansible container
+  fetch: 
+    src: ~TEST/.ssh/id_rsa.pub
+    dest: "{{ inventory_dir }}/public_keys/id_rsa-{{ inventory_hostname }}.pub"
+    flat: yes
+  register: download_result
+  until: download_result | success
+  retries: 3
+  delay: 1
+
+- name: Set authorized key for 'TEST' user taken from extension parameters.
+  authorized_key:
+    user: TEST
+    state: present
+    key: "{{ authorized_key }}"
+  become: yes
+  when: authorized_key != ""
+
+- name: Template SSH daemon configuration (security hardening)
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    group: root
+    owner: root
+    mode: 0644
+  become: yes
+
+- name: Restart SSH demon
+  systemd:
+    name: sshd
+    state: restarted
+  become: yes
+
+- name: Disable root console access
+  copy:
+    content: ""
+    dest: /etc/securetty
+    owner: root
+    group: root
+    force: yes
+    mode: 0400
+  become: yes
+  when: disable_console_access
+

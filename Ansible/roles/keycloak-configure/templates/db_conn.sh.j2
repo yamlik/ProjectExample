@@ -1,0 +1,21 @@
+#!/bin/bash
+tries=1
+maxtries=30
+wait=5
+db_host={{ db_oam_vip }}
+db_port={{ postgresql_server_port }}
+
+echo "Verifying connection to Postgresql database at $db_host..."
+until echo > /dev/tcp/$db_host/$db_port > /dev/null 2>&1
+do
+  (( tries++ ))
+  if [[ $tries -le $maxtries ]]; then
+    echo "Connection to Postgresql DB ($db_host) unsuccessful. Re-trying in $wait seconds..."
+    sleep $wait
+  else
+    echo "Unable to connect to database: Aborting the service start."
+    exit 1
+  fi
+done
+echo "Connection to Postgresql database successful."
+

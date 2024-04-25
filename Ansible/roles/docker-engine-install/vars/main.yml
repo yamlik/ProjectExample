@@ -1,0 +1,10 @@
+---
+# Default variables for docker-engine-install
+docker_registry_port: 5000
+user: TEST
+docker_group: docker
+
+install_dir: /opt/TEST/TEST
+rcfile: "{{ install_dir }}/.mds.rc"
+
+...

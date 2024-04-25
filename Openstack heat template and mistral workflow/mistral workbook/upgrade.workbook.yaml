@@ -1,0 +1,2043 @@
+---
+version: '2.0'
+name: upgrade
+workflows:
+
+########################################
+################# MAIN #################
+########################################
+  upgrade_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the upgrade_starting flow.") %>
+    tasks:
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+
+  upgrade_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+    tasks:
+
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - force_publish_nfvModel
+
+      force_publish_nfvModel:
+        action: std.javascript
+        input:
+          context:
+           count: <% $.vnfInventory.nfvModel.aspects.cgfAspect.count %>
+           nfvModel: <% $.vnfInventory.nfvModel %>
+          script: |
+            if($.count > 0){
+               if(typeof $.nfvModel.extensions["vdu_cgf"] == "undefined"){
+                  $.nfvModel.extensions["vdu_cgf"]=[]
+                  for(var i = 0; i < $.count; i++ ){
+                    $.nfvModel.extensions["vdu_cgf"][i]= { "active_instance": "server1"}
+                  }
+               }
+            }
+            return $.nfvModel
+        publish:
+          modified_nfv_model: <% task(force_publish_nfvModel).result %>
+        publish-on-error:
+          error_message: <% task(force_publish_nfvModel).result %>
+        on-success:
+          - update_nfv_model_with_cgf
+
+      update_nfv_model_with_cgf:
+        action: cbam.update_vnf_inventory
+        input:
+          nfv_model: <% $.modified_nfv_model %>
+        publish-on-error:
+          error_message: <% task(update_nfv_model_with_cgf).result %>
+        on-success:
+         - get_updated_vnf_inventory
+        on-error:
+          - finalize_on_error
+
+      get_updated_vnf_inventory:
+        action: cbam.query_vnf_inventory
+        publish:
+          vnfInventory: <% task(get_updated_vnf_inventory).result %>
+        publish-on-error:
+          error_message: <% task(get_updated_vnf_inventory).result %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - user_inputs_pass_verification
+
+      user_inputs_pass_verification:
+        action: std.javascript
+        input:
+          context:
+            params: <% $.operationParams.additionalParams %>
+            resources: <% $.stackParams.cbam.resources %>
+          script: |
+            var imageParamValues = [
+              $.params.current_oam_image,
+              $.params.current_ui_image,
+              $.params.current_db_image
+            ]
+
+            if (($.resources.processingON_aspect_group.count > 0) && ($.resources.processingOFF_aspect_group.count > 0) && ($.resources.cgf_aspect_group.count > 0) && ($.params.current_processingon_image == $.params.current_processingoff_image == $.params.current_cgf_image)) {
+              imageParamValues.push($.params.current_processingon_image)
+            } else if (($.resources.processingON_aspect_group.count > 0) && ($.resources.processingOFF_aspect_group.count > 0) && ($.resources.cgf_aspect_group.count > 0)) {
+              imageParamValues.push($.params.current_processingon_image)
+              imageParamValues.push($.params.current_processingoff_image)
+              imageParamValues.push($.params.current_cgf_image)
+            } else if ($.resources.processingON_aspect_group.count > 0) {
+              imageParamValues.push($.params.current_processingon_image)
+            } else if ($.resources.processingOFF_aspect_group.count > 0) {
+              imageParamValues.push($.params.current_processingoff_image)
+            } else if ($.resources.cgf_aspect_group.count > 0) {
+              imageParamValues.push($.params.current_cgf_image)
+            }
+            
+            
+            if (hasEmptyString(imageParamValues)) {
+              return ('Not all needed parameters are given for current images')
+            }
+            
+            //if (hasDuplicates(imageParamValues)) {
+            //  return ('Parameters given for current images include same value twice. Values needs to be unique, since every type of VM needs its own image')
+            //} 
+
+            if ($.params.current_oam_image == $.resources["oam_aspect_group"]["0"]["server1"].server.imageId) {
+              return ('Based on your inputs the current OAM image matches the new one. Nothing to upgrade.')
+            } else if ($.params.current_ui_image == $.resources["ui_aspect_group"]["0"].server.imageId) {
+              return ('Based on your inputs the current UI image matches the new one. Nothing to upgrade.')
+            } else if ($.params.current_db_image == $.resources["db_aspect_group"]["0"]["server1"].server.imageId) {
+              return ('Based on your inputs the current DB image matches the new one. Nothing to upgrade.')
+            } else if (($.resources.processingON_aspect_group.count > 0) && ($.params.current_processingon_image == $.resources["processingON_aspect_group"]["0"].server.imageId)) {
+              return ('Based on your inputs the current ProcessingON image matches the new one. Nothing to upgrade.')
+            } else if (($.resources.processingOFF_aspect_group.count > 0) && ($.params.current_processingoff_image == $.resources["processingOFF_aspect_group"]["0"].processingOFF_node["0"].server.imageId)) {
+              return ('Based on your inputs the current ProcessingOFF image matches the new one. Nothing to upgrade.')
+            } else if (($.resources.cgf_aspect_group.count > 0) && ($.params.current_cgf_image == $.resources["cgf_aspect_group"]["0"].cgf_node["0"].server.imageId)) {
+              return ('Based on your inputs the current CGF image matches the new one. Nothing to upgrade.')
+            }
+
+            return 'true'
+
+            // FUNCTIONS
+
+            function hasDuplicates(array) {
+              var valuesSoFar = Object.create(null);
+              for (var i = 0; i < array.length; ++i) {
+                var value = array[i];
+                if (value in valuesSoFar) {
+                  return true;
+                }
+                valuesSoFar[value] = true;
+              }
+              return false;
+            }
+
+            function hasEmptyString(array){
+              for (var i=0; i<array.length; i++){
+                if (array[i] == '') {
+                  return true;
+                }
+              }
+              return false;
+            }
+        publish: 
+          error_message:  <% task(user_inputs_pass_verification).result %>
+        publish-on-error:
+          error_message: <% task(user_inputs_pass_verification).result %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - current_images_to_stack_params: <% task(user_inputs_pass_verification).result = 'true' %>
+          - finalize_on_error: <% task(user_inputs_pass_verification).result != 'true' %>
+
+      current_images_to_stack_params:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.current_processingon_image
+            }
+            for (i=0; i <  $.stack_params.cbam.resources.processingOFF_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingOFF_aspect_group"][String(i)].processingOFF_node["0"].server.imageId = $.additional_params.current_processingoff_image
+              $.stack_params.cbam.resources["processingOFF_aspect_group"][String(i)].processingOFF_node["1"].server.imageId = $.additional_params.current_processingoff_image
+            }
+            for (i=0; i <  $.stack_params.cbam.resources.db_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["db_aspect_group"][String(i)]["server1"].server.imageId = $.additional_params.current_db_image
+              $.stack_params.cbam.resources["db_aspect_group"][String(i)]["server2"].server.imageId = $.additional_params.current_db_image
+            }
+            for (i=0; i <  $.stack_params.cbam.resources.ui_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["ui_aspect_group"]["0"].server.imageId = $.additional_params.current_ui_image
+              $.stack_params.cbam.resources["ui_aspect_group"]["1"].server.imageId = $.additional_params.current_ui_image
+            }
+            for (i=0; i <  $.stack_params.cbam.resources.oam_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["oam_aspect_group"][String(i)]["server1"].server.imageId = $.additional_params.current_oam_image
+              $.stack_params.cbam.resources["oam_aspect_group"][String(i)]["server2"].server.imageId = $.additional_params.current_oam_image
+            }
+            for (i=0; i <  $.stack_params.cbam.resources.cgf_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["cgf_aspect_group"][String(i)].cgf_node["0"].server.imageId = $.additional_params.current_cgf_image
+              $.stack_params.cbam.resources["cgf_aspect_group"][String(i)].cgf_node["1"].server.imageId = $.additional_params.current_cgf_image
+            }
+            return $.stack_params
+        publish:
+          stackParams: <% task(current_images_to_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(current_images_to_stack_params).result %>
+        on-success:
+          - call_ha
+
+      call_ha:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_ha.workbook.ha_processing' %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: "There was a problem running LCM HA action from the upgrade workflow. Therefore upgrade has been cancelled. Make sure that e.g 'keepalived' service is running on all of the high-available VMs." 
+        on-success:
+          - get_vnf_inventory
+        on-error:
+          - finalize_on_error
+
+      get_vnf_inventory:
+        action: cbam.query_vnf_inventory
+        publish:
+          vnfInventory: <% task(get_vnf_inventory).result %>
+        publish-on-error:
+          error_message: <% task(get_vnf_inventory).result %>
+        on-success:
+          - generate_model_from_config2
+
+      generate_model_from_config2:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config2).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config2).result %>
+        on-success:
+          - calculate_stack_params2
+
+      calculate_stack_params2:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params2).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params2).result.error_message %>
+        on-success:
+          - set_extra_var2
+
+      set_extra_var2:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var2).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var2).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - generate_ha_status_lists
+
+      generate_ha_status_lists:
+        action: std.javascript
+        input:
+          context:
+            inventory: <% $.ansibleInventory %>
+            additional_params: <% $.operationParams.additionalParams %>
+            stack_params: <% $.stackParams %>
+          script: |
+            var standby_list={};
+            var active_list={};
+            standby_list.vdu_processingON=[]
+            standby_list.vdu_ui=[]
+            active_list.vdu_processingON=[]
+            active_list.vdu_ui=[]
+
+            // Fill in standbys for those VDUs that we have a ha state information kept
+            var vdu_types = ["processing", "db", "oam", "cgf"]
+            for(var i=0; i < vdu_types.length; i++){
+              standby_list["vdu_"+vdu_types[i]] = []
+              active_list["vdu_"+vdu_types[i]] = []
+              if (typeof $.stack_params.cbam.resources[vdu_types[i]+'_active_list'] !== 'undefined') {
+                for (var y=0; y < $.stack_params.cbam.resources[vdu_types[i]+'_active_list'].length; y++) {
+                  if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "server1"){
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server2", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server2.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server1", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server1.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "server2"){
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server1", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server1.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server2", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server2.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "0"){
+                   if(vdu_types[i] == "processing"){
+                     var holder = "processingOFF"
+                   } else if(vdu_types[i] == "cgf"){
+                     var holder = "cgf"
+                   }
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "1", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.'+ holder + '_node.1.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "0", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.' + holder +'_node.0.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "1"){
+                   if(vdu_types[i] == "processing"){
+                     var holder = "processingOFF"
+                   } else if(vdu_types[i] == "cgf"){
+                     var holder = "cgf"
+                   }
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "0", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.'+ holder + '_node.0.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "1", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.' + holder + '_node.1.server'][0]
+                    }
+                  }
+                }
+              }
+            } 
+            // Fill in standby for UI VDU statically
+            standby_list.vdu_ui[0] = {
+              "instance": "0",
+              "instance_id": $.inventory['ui_aspect_group.0.server'][0]
+            }
+            active_list.vdu_ui[0] = {
+              "instance": "1", 
+              "instance_id": $.inventory['ui_aspect_group.1.server'][0]
+            }
+
+            return [standby_list, active_list]
+        publish:
+          standbyList: <% task(generate_ha_status_lists).result[0] %>
+          activeList: <% task(generate_ha_status_lists).result[1] %>
+        publish-on-error:
+          error_message: <% task(generate_ha_status_lists).result %>
+        on-success:
+          - verify_ansible
+
+      verify_ansible:
+        workflow: verify_ansible_execution
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          stackParams: <% $.stackParams %>
+          vmsToBeConfigured: <% $.standbyList %>
+          activeList: <% $.activeList %>
+        publish-on-error:
+          error_message: <% task(verify_ansible).result.error_message %>
+        on-success:
+          - generate_mapping_values
+        on-error:
+          - finalize_on_error
+ 
+      generate_mapping_values:
+        action: std.javascript
+        input:
+          context:
+          script: |
+            var vdus = [
+              {type: 'oam', vip: 'OAM_IPv4_virtual_ECP'}, 
+              {type: 'db', vip: 'DB_OAM_IPv4_virtual_ECP'}, 
+              {type: 'processingOFF', vip:'processingOFF_OAM_IPv4_virtual_ECP'},
+              {type: 'cgf', vip:'cgf_OAM_IPv4_virtual_ECP'}
+            ]
+            return vdus
+        publish:
+          vdus: <% task(generate_mapping_values).result %>
+        publish-on-error:
+          error_message: <% task(generate_mapping_values).result %>
+        on-success:
+          - call_ha_check
+
+      call_ha_check:
+        workflow: shutdown_ha
+        with-items: vdu in <% $.vdus %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          stackParams: <% $.stackParams %>
+          standbyList: <% $.standbyList %>
+          vdu: <% $.vdu %>
+        publish-on-error:
+          error_message:  <% 'Upgrade is cancelled because the preparation tasks failed for the following reasons; ' + task(call_ha_check).result.where($.error_message != "true").select($.error_message).join("") %>
+        on-success:
+          - shutdown_ha_on_standby_ui
+        on-error:
+          - make_sure_ha_shutdown_reverted
+
+      make_sure_ha_shutdown_reverted:
+        workflow: verify_ha_running
+        with-items: vdu in <% $.vdus %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          stackParams: <% $.stackParams %>
+          standbyList: <% $.standbyList %>
+          vdu: <% $.vdu %>
+        publish-on-error:
+          error_message:  <% $.error_message + task(make_sure_ha_shutdown_reverted).result.where($.error_message != "true").select($.error_message).join("") %>
+        on-success:
+          - finalize_on_error
+        on-error:
+          - finalize_on_error
+
+      shutdown_ha_on_standby_ui:
+        action: cbam.run_playbook_extension
+        wait-before: 30
+        wait-after: 60
+        with-items: vdu_group in <% $.standbyList.vdu_ui %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            inventory_group: "vdu-ui"
+            host: <% $.vdu_group.instance_id %>
+            host2: <% $.vdu_group.instance %>
+            service_to_stop: <% list("httpd") %>
+        publish-on-error:
+          error_message: <% 'Shutting down keepalived service on standby UI failed, and therefore upgrade is cancelled.'  + task(shutdown_ha_on_standby_ui).result %>
+        on-success:
+          - update_image_id_for_active_instances
+        on-error:
+          - finalize_on_error
+
+      update_image_id_for_active_instances:
+        action: std.javascript
+        input:
+          context:
+            active_list: <% $.activeList %>
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            for (var i = 0; i < Object.keys($.active_list).length; i++){
+              for (var y = 0; y < $.active_list[Object.keys($.active_list)[i]].length; y++){
+                if(Object.keys($.active_list)[i] == "vdu_processing"){
+                  $.stack_params.cbam.resources["processingOFF_aspect_group"][String(y)].processingOFF_node[$.active_list.vdu_processing[y].instance].server.imageId = $.additional_params.current_processingoff_image
+                }
+                else if(Object.keys($.active_list)[i] == "vdu_ui"){
+                  $.stack_params.cbam.resources["ui_aspect_group"][$.active_list.vdu_ui[y].instance].server.imageId = $.additional_params.current_ui_image
+                }
+                else if(Object.keys($.active_list)[i] == "vdu_processingON"){
+                  $.stack_params.cbam.resources["processingON_aspect_group"][$.active_list.vdu_processingON[y].instance].server.imageId = $.additional_params.current_processingon_image
+                }
+                else if(Object.keys($.active_list)[i] == "vdu_db"){
+                  $.stack_params.cbam.resources["db_aspect_group"][String(y)][$.active_list["vdu_db"][y].instance].server.imageId = $.additional_params.current_db_image
+                }
+                else if(Object.keys($.active_list)[i] == "vdu_oam"){
+                  $.stack_params.cbam.resources["oam_aspect_group"][String(y)][$.active_list["vdu_oam"][y].instance].server.imageId = $.additional_params.current_oam_image
+                }
+                else if(Object.keys($.active_list)[i] == "vdu_cgf"){
+                  $.stack_params.cbam.resources["cgf_aspect_group"][String(y)].cgf_node[$.active_list.vdu_cgf[y].instance].server.imageId = $.additional_params.current_cgf_image
+                }
+              }
+            }
+            return $.stack_params
+        publish:
+          stackParams: <% task(update_image_id_for_active_instances).result %>
+        publish-on-error:
+          error_message: <% task(update_image_id_for_active_instances).result %>
+        on-success:
+          - update_image_id_for_online
+
+      update_image_id_for_online:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.current_processingon_image
+            }
+            return $.stack_params
+        publish:
+          stackParams: <% task(update_image_id_for_online).result %>
+        publish-on-error:
+          error_message: <% task(update_image_id_for_online).result %>
+        on-success:
+          - call_stack_update
+
+      call_stack_update:
+        workflow: stack_update
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(call_stack_update).result.error_message %>
+        on-success:
+          - prepare_ansible_inventory2
+        on-error:
+          - finalize_on_error
+
+      prepare_ansible_inventory2:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory2: <% task(prepare_ansible_inventory2).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory2).result %>
+        on-success:
+          - reconfigure_upgraded_vms1
+        on-error:
+          - finalize_on_error
+ 
+      reconfigure_upgraded_vms1:
+        workflow: reconfigure
+        wait-before: 60
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory2 %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          stackParams: <% $.stackParams %>
+          vmsToBeConfigured: <% $.standbyList %>
+          activeList: <% $.activeList %>
+          playname: upgrade
+          rollback: false
+          forceUiFailover: true
+        publish-on-error:
+          error_message: <% task(reconfigure_upgraded_vms1).result.error_message %>
+        on-success:
+          - backup_timesten_for_processingoff
+        on-error:
+          - finalize_on_error
+
+      backup_timesten_for_processingoff:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.activeList.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingOFF-<% $.i %>
+            host: <% $.activeList.vdu_processing[$.i].instance %>
+            playname: timesten_upgrade.yml
+            hook_function: backup
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(backup_timesten_for_processingoff).result %>
+        on-success:
+          - backup_timesten_for_cgf: <% $.stackParams.cbam.extensions.cgf_enable_timesten = true %>
+          - force_failover_offline: <% $.stackParams.cbam.extensions.cgf_enable_timesten != true %>
+
+      backup_timesten_for_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.activeList.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-cgf-<% $.i %>
+            host: <% $.activeList.vdu_cgf[$.i].instance %>
+            playname: timesten_upgrade.yml
+            hook_function: backup
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(backup_timesten_for_cgf).result %>
+        on-success:
+          - force_failover_offline
+
+      force_failover_offline:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.activeList.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory2 %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.activeList.vdu_processing[$.i].instance_id %>
+            host2: <% $.activeList.vdu_processing[$.i].instance %>
+            inventory_group: vdu-processingOFF-<% $.i %>
+            service_to_stop: <% list("el-node-manager", "el-timesten11","docker") %>
+        publish-on-error:
+          error_message: <% task(force_failover_offline).result %>
+        on-success:
+          - force_failover_cgf
+        on-error:
+          - finalize_on_error
+
+      force_failover_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.activeList.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory2 %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.activeList.vdu_cgf[$.i].instance_id %>
+            host2: <% $.activeList.vdu_cgf[$.i].instance %>
+            inventory_group: vdu-cgf-<% $.i %>
+            service_to_stop: <% list("el-node-manager") %>
+        publish-on-error:
+          error_message: <% task(force_failover_cgf).result %>
+        on-success:
+          - force_failover_db
+        on-error:
+          - finalize_on_error
+
+      force_failover_db:
+        action: cbam.run_playbook_extension
+        wait-after: 30
+        with-items: vdu_group in <% $.activeList.vdu_db %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory2 %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            inventory_group: "vdu-db"
+            service_to_stop: <% list("postgresql") %>
+        publish-on-error:
+          error_message: <% task(force_failover_db).result %>
+        on-success:
+          - force_failover_oam
+        on-error:
+          - finalize_on_error
+
+      force_failover_oam:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.activeList.vdu_oam %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory2 %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            inventory_group: "vdu-oam"
+            service_to_stop: <% list("httpd") %>
+        publish-on-error:
+          error_message: <% task(force_failover_oam).result %>
+        on-success:
+          - update_cinder_references
+        on-error:
+          - finalize_on_error
+
+      update_cinder_references:
+        action: std.javascript
+        input:
+          context:
+            nfvModel: <% $.vnfInventory.nfvModel %>
+            stackParams: <% $.stackParams %>
+            processingNewActives: <% $.standbyList.vdu_processing %>
+            oamNewActives: <% $.standbyList.vdu_oam %>
+            dbNewActives: <% $.standbyList.vdu_db %>
+            cgfNewActives: <% $.standbyList.vdu_cgf %>
+          script: |
+            for(var i=0; i < $.processingNewActives.length; i++){
+              $.stackParams.cbam.resources["processing_active_list"][i] = {"active_instance": $.processingNewActives[i].instance}
+            }
+            for(var i=0; i < $.dbNewActives.length; i++){
+              $.stackParams.cbam.resources["db_active_list"][i] = {"active_instance": $.dbNewActives[i].instance}
+            }
+            for(var i=0; i < $.oamNewActives.length; i++){
+              $.stackParams.cbam.resources["oam_active_list"][i] = {"active_instance": $.oamNewActives[i].instance}
+            }
+            if(typeof $.nfvModel.aspects["cgfAspect"] != 'undefined'){
+               if($.nfvModel.aspects["cgfAspect"].count > 0){
+                 for(var i=0; i < $.cgfNewActives.length; i++){
+                   $.stackParams.cbam.resources["cgf_active_list"][i] = {"active_instance": $.cgfNewActives[i].instance}
+                 }
+               }
+            }
+            return $.stackParams
+        publish-on-error:
+          error_message: <% task(update_cinder_references).result %>
+        publish:
+          stackParams: <% task(update_cinder_references).result %>
+        on-success:
+          - call_stack_update2
+        on-error:
+          - finalize_on_error
+
+      call_stack_update2:
+        workflow: stack_update
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(call_stack_update2).result.error_message %>
+        on-success:
+         - restore_timesten_datastore_for_processingoff
+        on-error:
+          - finalize_on_error
+
+      restore_timesten_datastore_for_processingoff:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingOFF-<% $.i %>
+            host: <% $.standbyList.vdu_processing[$.i].instance %>
+            playname: timesten_upgrade.yml
+            hook_function: restore
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(restore_timesten_datastore_for_processingoff).result %>
+        on-success:
+          - restore_timesten_datastore_for_cgf: <% $.stackParams.cbam.extensions.cgf_enable_timesten = true %>
+          - update_active_instance: <% $.stackParams.cbam.extensions.cgf_enable_timesten != true %>
+      
+      restore_timesten_datastore_for_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-cgf-<% $.i %>
+            host: <% $.standbyList.vdu_cgf[$.i].instance %>
+            playname: timesten_upgrade.yml
+            hook_function: restore
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(restore_timesten_datastore_for_cgf).result %>
+        on-success:
+          - update_active_instance
+
+      update_active_instance:
+        action: std.javascript
+        input:
+          context:
+            nfvModel: <% $.vnfInventory.nfvModel %>
+            stackParams: <% $.stackParams %>
+          script: |
+            var vdus = {
+              "vdu_processingOFF": $.stackParams.cbam.resources.processing_active_list, 
+              "vdu_oam": $.stackParams.cbam.resources.oam_active_list, 
+              "vdu_db": $.stackParams.cbam.resources.db_active_list
+            }                     
+            if(typeof $.nfvModel.aspects["cgfAspect"] != 'undefined'){
+               if($.nfvModel.aspects["cgfAspect"].count > 0){
+                  var vdus = {
+                    "vdu_processingOFF": $.stackParams.cbam.resources.processing_active_list, 
+                    "vdu_oam": $.stackParams.cbam.resources.oam_active_list, 
+                    "vdu_db": $.stackParams.cbam.resources.db_active_list,
+                    "vdu_cgf": $.stackParams.cbam.resources.cgf_active_list
+                  }
+                }
+            }
+            
+            for (var vdu in vdus){
+              for(var i=0; i < vdus[vdu].length; i++){
+                if (vdu == "vdu_processingOFF"){
+                  //Convert from E.g "0" > "server1" for processingOFF aspect group
+                  $.nfvModel.extensions[vdu][i].active_instance = 'server' + String(Number(vdus[vdu][i].active_instance)+1)
+                }
+                else if (vdu == "vdu_cgf"){
+                  //Convert from E.g "0" > "server1" for cgf aspect group
+                  $.nfvModel.extensions[vdu][i].active_instance = 'server' + String(Number(vdus[vdu][i].active_instance)+1)
+                }
+                else {
+                  $.nfvModel.extensions[vdu][i].active_instance = vdus[vdu][i].active_instance
+                }
+              }
+            }
+            return $.nfvModel
+        publish:
+          modified_nfv_model: <% task(update_active_instance).result %>
+        publish-on-error:
+          error_message: <% task(update_active_instance).result %>
+        on-success:
+          - update_nfv_model
+        on-error:
+          - finalize_on_error
+
+      update_nfv_model:
+        action: cbam.update_vnf_inventory
+        input:
+          nfv_model: <% $.modified_nfv_model %>
+        publish-on-error:
+          error_message: <% task(update_nvf_model).result %>
+        on-success:
+         - calculate_stack_params3
+        on-error:
+          - finalize_on_error
+
+      calculate_stack_params3:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params3).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params3).result %>
+        on-success:
+          - update_image_id_for_online2
+        on-error:
+          - finalize_on_error
+
+      update_image_id_for_online2:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.current_processingon_image
+            }
+            return $.stack_params
+        publish:
+          stackParams: <% task(update_image_id_for_online2).result %>
+        publish-on-error:
+          error_message: <% task(update_image_id_for_online2).result %>
+        on-success:
+          - set_extra_var3
+        on-error:
+          - finalize_on_error
+
+      set_extra_var3:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.modified_nfv_model %>
+        publish:
+          stackParams: <% task(set_extra_var3).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var3).result %>
+        on-success:
+          - call_stack_update3
+        on-error:
+          - finalize_on_error
+
+      call_stack_update3:
+        workflow: stack_update
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(call_stack_update3).result.error_message %>
+        on-success:
+          - generate_ha_status_lists2
+        on-error:
+          - finalize_on_error
+
+      generate_ha_status_lists2:
+        action: std.javascript
+        input:
+          context:
+            inventory: <% $.ansibleInventory %>
+            additional_params: <% $.operationParams.additionalParams %>
+            stack_params: <% $.stackParams %>
+          script: |
+            var standby_list={};
+            var active_list={};
+            standby_list.vdu_processingON=[]
+            standby_list.vdu_ui=[]
+            active_list.vdu_processingON=[]
+            active_list.vdu_ui=[]
+
+            // Fill in standbys for those VDUs that we have a ha state information kept
+            var vdu_types = ["processing", "db", "oam", "cgf"]
+            for(var i=0; i < vdu_types.length; i++){
+              standby_list["vdu_"+vdu_types[i]] = []
+              active_list["vdu_"+vdu_types[i]] = []
+              if (typeof $.stack_params.cbam.resources[vdu_types[i]+'_active_list'] !== 'undefined') {
+                for (var y=0; y < $.stack_params.cbam.resources[vdu_types[i]+'_active_list'].length; y++) {
+                  if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "server1"){
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server2", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server2.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server1", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server1.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "server2"){
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server1", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server1.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "server2", 
+                      "instance_id": $.inventory[vdu_types[i]+'_aspect_group.0.server2.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "0"){
+                   if(vdu_types[i] == "processing"){
+                     var holder = "processingOFF"
+                   } else if(vdu_types[i] == "cgf"){
+                     var holder = "cgf"
+                   }
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "1", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.'+ holder + '_node.1.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "0", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.' + holder +'_node.0.server'][0]
+                    }
+                  }
+                  else if($.stack_params.cbam.resources[vdu_types[i]+'_active_list'][y].active_instance == "1"){
+                   if(vdu_types[i] == "processing"){
+                     var holder = "processingOFF"
+                   } else if(vdu_types[i] == "cgf"){
+                     var holder = "cgf"
+                   }
+                    standby_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "0", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.'+ holder + '_node.0.server'][0]
+                    }
+                    active_list["vdu_"+vdu_types[i]][y] = {
+                      "instance": "1", 
+                      "instance_id": $.inventory[holder + '_aspect_group.' + y + '.' + holder + '_node.1.server'][0]
+                    }
+                  }
+                }
+              }
+            } 
+            // Fill in standby for UI VDU statically
+            standby_list.vdu_ui[0] = {
+              "instance": "1",
+              "instance_id": $.inventory['ui_aspect_group.1.server'][0]
+            }
+            active_list.vdu_ui[0] = {
+              "instance": "0", 
+              "instance_id": $.inventory['ui_aspect_group.0.server'][0]
+            }
+
+            return [standby_list, active_list]
+        publish:
+          standbyList: <% task(generate_ha_status_lists2).result[0] %>
+          activeList: <% task(generate_ha_status_lists2).result[1] %>
+        publish-on-error:
+          error_message: <% task(generate_ha_status_lists2).result %>
+        on-success:
+          - reconfigure_upgraded_vms2
+        on-error:
+          - finalize_on_error
+
+      reconfigure_upgraded_vms2:
+        workflow: reconfigure
+        wait-before: 60
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory2 %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          stackParams: <% $.stackParams %>
+          vmsToBeConfigured: <% $.standbyList %>
+          activeList: <% $.activeList %>
+          playname: upgrade
+          rollback: false
+          forceUiFailover: false
+        publish-on-error:
+          error_message: <% task(reconfigure_upgraded_vms2).result.error_message %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - call_online_upgrade
+
+      call_online_upgrade:
+        workflow: online_upgrade
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingONAspect.count )) %>
+        concurrency: 1
+        wait-before: 60
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          nfvModel: <% $.modified_nfv_model %>
+          expectedModel: <% $.expectedModel %>
+          ansibleInventory: <% $.ansibleInventory2 %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          instanceToBeUpgraded: <% $.i %>
+        publish-on-error:
+          error_message: <% task(call_online_upgrade).result.error_message %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - call_cmdb_upgrade
+
+      call_cmdb_upgrade:
+        workflow: cmdb_upgrade
+        wait-before: 60
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          nfvModel: <% $.modified_nfv_model %>
+          expectedModel: <% $.expectedModel %>
+          ansibleInventory: <% $.ansibleInventory2 %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+        publish-on-error:
+          error_message: <% task(call_cmdb_upgrade).result.error_message %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - call_alarm_upgrade
+
+      call_alarm_upgrade:
+        workflow: alarm_upgrade
+        wait-before: 60
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          nfvModel: <% $.modified_nfv_model %>
+          expectedModel: <% $.expectedModel %>
+          ansibleInventory: <% $.ansibleInventory2 %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+        publish-on-error:
+          error_message: <% task(call_alarm_upgrade).result.error_message %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - call_ssh_key_sync
+
+      call_ssh_key_sync:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_runSshKeySync.workbook.ssh_key_sync_processing' %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: "There was a problem running LCM SSH Key Sync action from the upgrade workflow." 
+        on-error:
+          - finalize_on_error
+
+      finalize_on_error:
+        action: std.javascript
+        input:
+          context:
+            error: <% $.error_message %>
+          script: |
+            if (typeof $.error === 'string') {
+              return $.error;
+            }
+            return JSON.stringify($.error);
+        publish-on-error:
+          error_message: <% task(finalize_on_error).result %>
+        publish:
+          error_message: <% task(finalize_on_error).result %>
+        on-complete:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+
+########################################
+######### verify_ha_running ############
+########################################
+  verify_ha_running:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - ansibleInventory
+      - stackParams
+      - vdu
+      - standbyList
+    output-on-error:
+      error_message: <% $.error_message %>
+
+    tasks:
+      conditional:
+        action: std.javascript
+        input:
+          script: |
+            return 'true'
+        publish-on-error:
+          error_message: <% task(conditional).result %>
+        on-success:
+          - verify_ha_processing: <% $.vdu.type = 'processingOFF' %>
+          - verify_ha_cgf: <% $.vdu.type = 'cgf' %>
+          - verify_ha: <% $.vdu.type = 'oam' %>
+          - verify_ha: <% $.vdu.type = 'db' %>
+          - verify_ha: <% $.vdu.type = 'ui' %>
+
+      verify_ha:
+        action: cbam.run_playbook_extension
+        wait-after: 30
+        with-items: vdu_group in <% $.standbyList['vdu_' + $.vdu.type] %>
+        input:
+          action:
+            ansible: ansible/start_keepalived_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            inventory_group: <% 'vdu-' + $.vdu.type %>
+        publish-on-error:
+          error_message: <% 'Verifying "keepalived" service on standby ' + $.vdu.type + ' failed. Please start "keepalived" manually on this VM.' %>
+
+      verify_ha_processing:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/start_keepalived_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.standbyList.vdu_processing[$.i].instance_id %>
+            host2: <% $.standbyList.vdu_processing[$.i].instance %>
+            inventory_group: vdu-processingOFF-<% $.i %>
+        publish-on-error:
+          error_message: <% 'Verifying that "keepalived" service is up & running on some standby ' + $.vdu.type + ' failed. Please start "keepalived" manually on these VMs.' %>
+
+      verify_ha_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/start_keepalived_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.standbyList.vdu_cgf[$.i].instance_id %>
+            host2: <% $.standbyList.vdu_cgf[$.i].instance %>
+            inventory_group: vdu-cgf-<% $.i %>
+        publish-on-error:
+          error_message: <% 'Verifying that "keepalived" service is up & running on some standby ' + $.vdu.type + ' failed. Please start "keepalived" manually on these VMs.' %>
+########################################
+############ shutdown_ha ###############
+########################################
+  shutdown_ha:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - ansibleInventory
+      - stackParams
+      - vdu
+      - standbyList
+    output-on-error:
+      error_message: <% $.error_message %>
+
+    tasks:
+      conditional:
+        action: std.javascript
+        input:
+          script: |
+            return 'true'
+        publish-on-error:
+          error_message: <% task(conditional).result %>
+        on-success:
+          - call_ha_check_processing: <% $.vdu.type = 'processingOFF' %>
+          - call_ha_check_cgf: <% $.vdu.type = 'cgf' %>
+          - call_ha_check: <% $.vdu.type = 'oam' %>
+          - call_ha_check: <% $.vdu.type = 'db' %>
+          - call_ha_check: <% $.vdu.type = 'ui' %>
+        on-error:
+          - fail_on_error
+
+      call_ha_check_processing:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_ha.workbook.ha_flow' %>
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingOFFAspect.count)) %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          stackParams: <% $.stackParams %>
+          group: vdu-processingOFF-<% $.i %>
+          aspect: vdu_processingOFF
+          ha_vip: <% $.stackParams.cbam.externalConnectionPoints[$.vdu.vip].addresses[$.i].ip %>
+          index: <% $.i %>
+        publish:
+          real_actives: <% task(call_ha_check_processing).result.active_instance %>
+        publish-on-error:
+          error_message: "Querying high-availability status on vdu-processingOFF pair failed. Try launching upgrade again or fix the issue with HA manually."
+        on-success:
+          - ha_status_consistent
+        on-error:
+          - fail_on_error
+
+      call_ha_check_cgf:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_ha.workbook.ha_flow' %>
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.cgfAspect.count)) %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          stackParams: <% $.stackParams %>
+          group: vdu-cgf-<% $.i %>
+          aspect: vdu_cgf
+          ha_vip: <% $.stackParams.cbam.externalConnectionPoints[$.vdu.vip].addresses[$.i].ip %>
+          index: <% $.i %>
+        publish:
+          real_actives: <% task(call_ha_check_cgf).result.active_instance %>
+        publish-on-error:
+          error_message: "Querying high-availability status on vdu-cgf pair failed. Try launching upgrade again or fix the issue with HA manually."
+        on-success:
+          - ha_status_consistent
+        on-error:
+          - fail_on_error
+
+      call_ha_check:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_ha.workbook.ha_flow' %>
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects[$.vdu.type + 'Aspect'].count)) %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          stackParams: <% $.stackParams %>
+          group: <% 'vdu-' + $.vdu.type %>
+          aspect: <% 'vdu_' + $.vdu.type %>
+          ha_vip: <% $.stackParams.cbam.externalConnectionPoints[$.vdu.vip].addresses[$.i].ip %>
+          index: <% $.i %>
+        publish:
+          real_actives: <% task(call_ha_check).result.active_instance %>
+        publish-on-error:
+          error_message: <% 'Querying high-availability status on  ' + $.vdu.type + ' pair failed. Try launching upgrade again or fix the issue with HA manually.' %>
+        on-success:
+          - ha_status_consistent
+        on-error:
+          - fail_on_error
+
+      ha_status_consistent:
+        action: std.javascript
+        input:
+          context:
+            real_actives: <% $.real_actives %>
+            type: <% $.vdu.type %>
+          script: |
+            for (var i=0; i < $.real_actives.length; i++) {
+              if ($.real_actives[i] != 'none') {
+                return ('High availability status is not consistent among ' + $.type + ' pair. Try launching upgrade again.')
+              }
+            }
+            return 'true'
+        publish:
+          error_message: <% task(ha_status_consistent).result %>
+        publish-on-error:
+          error_message: <% task(ha_status_consistent).result %>
+        on-success:
+          - shutdown_ha: <% task(ha_status_consistent).result = 'true' and $.vdu.type = 'db' %>
+          - shutdown_ha: <% task(ha_status_consistent).result = 'true' and $.vdu.type = 'oam' %>
+          - shutdown_ha_on_standby_processing: <% task(ha_status_consistent).result = 'true' and $.vdu.type = 'processingOFF' %>
+          - shutdown_ha_on_standby_cgf: <% task(ha_status_consistent).result = 'true' and $.vdu.type = 'cgf' %>
+          - fail_on_error: <% task(ha_status_consistent).result != 'true' %>
+        on-error:
+          - fail_on_error
+
+      shutdown_ha:
+        action: cbam.run_playbook_extension
+        wait-after: 30
+        with-items: vdu_group in <% $.standbyList['vdu_' + $.vdu.type] %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            inventory_group: <% 'vdu-' + $.vdu.type %>
+            service_to_stop: <% list("gmond") %>
+        publish-on-error:
+          error_message: <% 'Shutting down keepalived service on standby ' + $.vdu.type + ' failed.' %>
+        on-error:
+          - fail_on_error
+
+      shutdown_ha_on_standby_processing:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.standbyList.vdu_processing[$.i].instance_id %>
+            host2: <% $.standbyList.vdu_processing[$.i].instance %>
+            inventory_group: vdu-processingOFF-<% $.i %>
+            service_to_stop: <% list("gmond") %>
+        publish-on-error:
+          error_message: <% 'Shutting down keepalived service on standby ' + $.vdu.type + ' failed.' %>
+        on-error:
+          - fail_on_error
+
+      shutdown_ha_on_standby_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.standbyList.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            host: <% $.standbyList.vdu_cgf[$.i].instance_id %>
+            host2: <% $.standbyList.vdu_cgf[$.i].instance %>
+            inventory_group: vdu-cgf-<% $.i %>
+            service_to_stop: <% list("el-node-manager") %>
+        publish-on-error:
+          error_message: <% 'Shutting down keepalived service on standby ' + $.vdu.cgf + ' failed.' %>
+        on-error:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+
+
+########################################
+############ online_upgrade ############
+########################################
+  online_upgrade:
+    input:
+      - vnfInventory
+      - nfvModel
+      - expectedModel
+      - ansibleInventory
+      - operationType
+      - operationParams
+      - instanceToBeUpgraded
+    output-on-error:
+      error_message: "Failure happened online_upgrade sub-flow."
+
+    tasks:
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - update_current_image_ids_for_instances_not_to_be_upgraded
+
+      update_current_image_ids_for_instances_not_to_be_upgraded:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+            instance_id: <% $.instanceToBeUpgraded %>
+          script: |
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              if (i > parseInt($.instance_id)) {
+                $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.current_processingon_image
+              }
+            }
+            return $.stack_params
+        publish:
+          stackParams: <% task(update_current_image_ids_for_instances_not_to_be_upgraded).result %>
+        publish-on-error:
+          error_message: <% task(update_current_image_ids_for_instances_not_to_be_upgraded).result %>
+        on-success:
+          - backup_timesten_for_processingon
+
+      backup_timesten_for_processingon:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingON
+            host: <% str($.instanceToBeUpgraded) %>
+            playname: timesten_upgrade.yml
+            hook_function: backup
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(backup_timesten_for_processingon).result %>
+        on-success:
+          - call_stack_update
+
+      call_stack_update:
+        workflow: stack_update
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          stackParams: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(call_stack_update).result.error_message %>
+        on-success:
+          - reconfigure_online
+
+      reconfigure_online:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-processingON"
+            host: <% $.ansibleInventory['processingON_aspect_group.' + str($.instanceToBeUpgraded) + '.server'][0] %>
+            host2: <% str($.instanceToBeUpgraded) %>
+            playname: processingon_upgrade_reconfig.yml
+            rollback: false
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_online).result %>
+        on-success:
+          - restore_timesten_datastore_for_processingon
+
+      restore_timesten_datastore_for_processingon:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/timesten_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingON
+            host: <% str($.instanceToBeUpgraded) %>
+            playname: timesten_upgrade.yml
+            hook_function: restore
+            upgrade: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(restore_timesten_datastore_for_processingon).result %>
+
+
+########################################
+############ cmdb_upgrade ############
+########################################
+  cmdb_upgrade:
+    input:
+      - vnfInventory
+      - nfvModel
+      - expectedModel
+      - ansibleInventory
+      - operationType
+      - operationParams
+    output-on-error:
+      error_message: "Failure happened cmdb_upgrade sub-flow."
+
+    tasks:
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - reconfigure_cmdb
+
+      reconfigure_cmdb:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-db"
+            playname: cmdb_upgrade_reconfig.yml
+            host: "vdu-db"
+            rollback: false
+            reconfigure_rerun: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_cmdb).result %>
+
+########################################
+############ alarm_upgrade ############
+########################################
+  alarm_upgrade:
+    input:
+      - vnfInventory
+      - nfvModel
+      - expectedModel
+      - ansibleInventory
+      - operationType
+      - operationParams
+    output-on-error:
+      error_message: "Failure happened alarm_upgrade sub-flow."
+
+    tasks:
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - reconfigure_alarm
+
+      reconfigure_alarm:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-ui"
+            playname: alarm_upgrade_reconfig.yml
+            host: "vdu-ui"
+            rollback: false
+            reconfigure_rerun: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_alarm).result %>
+
+
+########################################
+###### verify_ansible_execution ########
+########################################
+  verify_ansible_execution:
+    input:
+      - vnfInventory
+      - ansibleInventory
+      - operationType
+      - operationParams
+      - stackParams
+      - vmsToBeConfigured
+      - activeList
+    output-on-error:
+      error_message: "Verification for custom Ansible reconfigure playbooks at tasks/upgrade failed."
+
+    tasks:
+      verify_ui_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_ui %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-ui"
+            host2: <% $.vdu_group.instance %>
+            oam_active_host: <% str(int($.activeList.vdu_oam[0].instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: ui_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_ui_reconfigure_play).result %>
+        on-success:
+          - verify_oam_reconfigure_play
+
+      verify_oam_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_oam %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-oam"
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: oam_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_oam_reconfigure_play).result %>
+        on-success:
+          - verify_offline_reconfigure_play
+
+      verify_offline_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.vmsToBeConfigured.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingOFF-<% $.i %>
+            host2: <% $.vmsToBeConfigured.vdu_processing[$.i].instance %>
+            processing_active_host: <% $.activeList.vdu_processing[$.i].instance %>
+            expected_ha_role: "STANDBY"
+            playname: processingoff_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_offline_reconfigure_play).result %>
+        on-success:
+          - verify_cgf_reconfigure_play
+
+      verify_cgf_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.vmsToBeConfigured.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-cgf-<% $.i %>
+            host2: <% $.vmsToBeConfigured.vdu_cgf[$.i].instance %>
+            expected_ha_role: "STANDBY"
+            playname: cgf_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_cgf_reconfigure_play).result %>
+        on-success:
+          - verify_db_reconfigure_play
+
+      verify_db_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_db %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-db"
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: db_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_db_reconfigure_play).result %>
+        on-success:
+          - verify_online_reconfigure_play
+
+      verify_online_reconfigure_play:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingONAspect.count )) %>
+        input:
+          action:
+            ansible: ansible/verify_reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-processingON"
+            host2: <% str($.i) %>
+            playname: processingon_upgrade_reconfig.yml
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(verify_online_reconfigure_play).result %>
+
+########################################
+############# reconfigure ##############
+########################################
+  reconfigure:
+    input:
+      - vnfInventory
+      - ansibleInventory
+      - operationType
+      - operationParams
+      - stackParams
+      - vmsToBeConfigured
+      - activeList
+      - forceUiFailover
+      - playname
+      - rollback
+    output-on-error:
+      error_message: "Failure happened during reconfigure sub-flow."
+
+    tasks:
+      reconfigure_ui:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_ui %>
+        wait-after: 90
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-ui"
+            host: <% $.vdu_group.instance_id %>
+            host2: <% $.vdu_group.instance %>
+            oam_active_host: <% str(int($.activeList.vdu_oam[0].instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: ui_<% $.playname %>_reconfig.yml
+            rollback: <% $.rollback %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_ui).result %>
+        on-success:
+          - force_failover_ui: <% $.forceUiFailover = true %>
+          - reconfigure_oam: <% $.forceUiFailover != true %>
+
+      force_failover_ui:
+        action: cbam.run_playbook_extension
+        wait-before: 30
+        wait-after: 60
+        with-items: vdu_group in <% $.activeList.vdu_ui %>
+        input:
+          action:
+            ansible: ansible/force_failover_boilerplate.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+          ansible_extra_vars:
+            inventory_group: "vdu-ui"
+            host: <% $.vdu_group.instance_id %>
+            host2: <% $.vdu_group.instance %>
+            service_to_stop: <% list("httpd") %>
+        publish-on-error:
+          error_message: <% task(force_failover_ui).result %>
+        on-success:
+          - reconfigure_oam
+
+      reconfigure_oam:
+        action: cbam.run_playbook_extension
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_oam %>
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-oam"
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: oam_<% $.playname %>_reconfig.yml
+            rollback: <% $.rollback %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_oam).result %>
+        on-success:
+          - reconfigure_offline
+
+      reconfigure_offline:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.vmsToBeConfigured.vdu_processing.len())) %>
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-processingOFF-<% $.i %>
+            host: <% $.vmsToBeConfigured.vdu_processing[$.i].instance_id %>
+            host2: <% $.vmsToBeConfigured.vdu_processing[$.i].instance %>
+            processing_active_host: <% $.activeList.vdu_processing[$.i].instance %>
+            expected_ha_role: "STANDBY"
+            playname: processingoff_<% $.playname %>_reconfig.yml
+            rollback: <% $.rollback %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_offline).result %>
+        on-success:
+          - reconfigure_cgf
+
+      reconfigure_cgf:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.vmsToBeConfigured.vdu_cgf.len())) %>
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600 
+            inventory_group: vdu-cgf-<% $.i %>
+            host: <% $.vmsToBeConfigured.vdu_cgf[$.i].instance_id %>
+            host2: <% $.vmsToBeConfigured.vdu_cgf[$.i].instance %>
+            cgf_active_host: <% $.activeList.vdu_cgf[$.i].instance %>
+            expected_ha_role: "STANDBY"
+            playname: cgf_<% $.playname %>_reconfig.yml
+            rollback: <% $.rollback %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_cgf).result %>
+        on-success:
+          - reconfigure_db
+
+      reconfigure_db:
+        action: cbam.run_playbook_extension
+        wait-after: 90
+        with-items: vdu_group in <% $.vmsToBeConfigured.vdu_db %>
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: "vdu-db"
+            host: <% $.vdu_group.instance_id %>
+            host2: <% str(int($.vdu_group.instance.split('server')[1])-1) %>
+            expected_ha_role: "STANDBY"
+            playname: db_<% $.playname %>_reconfig.yml
+            rollback: <% $.rollback %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_db).result %>
+
+########################################
+############# stack_update #############
+########################################
+  stack_update:
+    input:
+      - vnfInventory
+      - operationType
+      - stackParams
+    output-on-error:
+      error_message: "Failure happened during stack_update sub-flow."
+
+    tasks:
+      manipulate_stack:
+        action: cbam.manipulate_stack
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          stack_params: <% $.stackParams %>
+          operation_type: <% $.operationType %>
+        publish:
+          stackId: <% task(manipulate_stack).result %>
+        publish-on-error:
+          error_message: <% task(manipulate_stack).result %>
+        on-success:
+          - wait_stack
+  
+      wait_stack:
+        action: cbam.wait_for_stack
+        input:
+          stack_id: <% $.stackId %>
+          operation_type: <% $.operationType %>
+        publish-on-error:
+          error_message: <% task(wait_stack).result %>

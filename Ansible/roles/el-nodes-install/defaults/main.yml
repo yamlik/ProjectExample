@@ -1,0 +1,19 @@
+---
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+node_package_dir: /opt/TEST/TEST/node-packages
+TEST_home: /opt/TEST/TEST/base
+
+system_tools_hostname: "{{ hostvars[groups['ui'][0]].inventory_hostname }}"
+...
+
+nodes_import_mode: -i
+import_stream: true
+stream_host: "processing-host.TEST.com"
+
+el_ui_http_port: "55080"
+um_crud_wait_timeout: 30
+
+...

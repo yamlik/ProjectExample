@@ -1,0 +1,76 @@
+{
+  "TC-58813": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation101",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Company Name": "Test"
+    },
+    "Introducer/Agent": {
+      "Company Name": "Test"
+    },
+    "User": {
+      "Company Name": "Test"
+    },
+    "Credit Bureau": {
+      "Company Name": "Test"
+    }
+  },
+  "TSNT-4997": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_5262",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "SMITHS"
+    },
+    "verifyRow1": {
+      "Employee Id": "1",
+      "Surname": "Tailors",
+      "First Name": "SMITHS",
+      "DOB": "13/01/1991 12:00:00 PM"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation_5262MTGE"
+    }
+  },
+  "TSNT-5546": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_5546",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "First Name": "SMITHS"
+    },
+    "valueMatchesTab": {
+      "leftColumn1": "Applicant.First Name",
+      "rightColumn1": "SMITHS = Employee List.First_Name SMITHS",
+      "ruleDetails1": "AB00008 - Applicant and Reference Tale- Firstname"
+    },
+    "verifyAppValuesFullApplication": {
+      "Application Number": "Automation_5546",
+      "Application Type": "MTGE"
+    },
+
+    "verifyAppValuesFullApplicant": {
+      "First Name": "SMITHS"
+    },
+    "verifyRowColorApplicant": {
+      "First Name": "blue"
+    }
+  }
+}
+
+
+
+
+
+

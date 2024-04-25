@@ -1,0 +1,7 @@
+{
+  "userid": "productUnderTestuser1",
+  "userName": "productUnderTestuser1",
+  "password": "productUnderTest@1",
+  "database": "Default",
+  "newPassword": "productUnderTest@2"
+}

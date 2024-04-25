@@ -1,0 +1,46 @@
+---
+
+- name: Add rsync_filter file
+  template:
+    src: .rsync_filter.j2
+    dest: "{{ sync_directory }}/meas/.rsync_filter"
+    owner: "root"
+    group: "root"
+    mode: 0600
+    force: yes
+  become: true
+  become_method: sudo
+
+- name: Add system_monitoring_rsync.sh script to target host
+  template:
+    src: system_monitoring_rsync.sh.j2
+    dest: "{{ TEST_bin_dir }}/system_monitoring_rsync.sh"
+    owner: "root"
+    group: "root"
+    mode: 0755
+    force: yes
+  become: true
+  become_method: sudo
+
+- name: "Start crond service"
+  register: crond_started
+  service:
+    name: "crond"
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo
+
+- name: " Create cron job for system_monitoring_rsync"
+  when: crond_started|success
+  cron:
+    name: "Cron job for system_monitoring_rsync checking"
+    user: "root"
+    hour: "*"
+    minute: "*/1"
+    job: "{{ TEST_bin_dir }}/system_monitoring_rsync.sh"
+    state: present
+  become: yes
+  become_method: sudo
+
+...

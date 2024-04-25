@@ -1,0 +1,1301 @@
+*** Settings ***
+
+Library        SeleniumLibrary
+Library        SSHLibrary
+Library        Collections
+Library        String 
+Library        OperatingSystem
+
+Resource    manage_releases.txt
+
+*** Variables ***
+
+#CCACP 7.0.0
+${CCACP_7.0.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.0.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp700
+${CCACP_7.0.0_INSTALL_PACKAGE}   ${CCACP_7.0.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.0.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp700
+
+#CCACP 7.1.0
+${CCACP_7.1.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.1.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp710
+${CCACP_7.1.0_INSTALL_PACKAGE}   ${CCACP_7.1.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.1.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp710
+
+#CCACP 7.1.0 EB1
+${CCACP_7.1.0_EB1_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.1.0_EB1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp710_eb1
+${CCACP_7.1.0_EB1_INSTALL_PACKAGE}   ${CCACP_7.1.0_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.1.0_EB1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp710_eb1
+
+#CCACP 7.1.0 EB2
+${CCACP_7.1.0_EB2_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.1.0_EB2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp710_eb2
+${CCACP_7.1.0_EB2_INSTALL_PACKAGE}   ${CCACP_7.1.0_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.1.0_EB2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp710_eb2
+
+#CCACP 7.2.0
+${CCACP_7.2.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.2.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp720
+${CCACP_7.2.0_INSTALL_PACKAGE}   ${CCACP_7.2.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.2.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp720
+
+#CCACP 7.3.0
+${CCACP_7.3.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.3.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp730
+${CCACP_7.3.0_INSTALL_PACKAGE}   ${CCACP_7.3.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.3.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp730
+
+#CCACP 7.4.0
+${CCACP_7.4.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.4.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp740
+${CCACP_7.4.0_INSTALL_PACKAGE}   ${CCACP_7.4.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.4.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp740
+
+#CCACP 7.4.0 EB1
+${CCACP_7.4.0_EB1_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.4.0_EB1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp740_eb1
+${CCACP_7.4.0_EB1_INSTALL_PACKAGE}   ${CCACP_7.4.0_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.4.0_EB1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp740_eb1
+
+#CCACP 7.4.0 EB2
+${CCACP_7.4.0_EB2_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.4.0_EB2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp740_eb2
+${CCACP_7.4.0_EB2_INSTALL_PACKAGE}   ${CCACP_7.4.0_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.4.0_EB2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp740_eb2
+
+#CCACP 7.4.0 EB3
+${CCACP_7.4.0_EB3_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.4.0_EB3_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp740_eb3
+${CCACP_7.4.0_EB3_INSTALL_PACKAGE}   ${CCACP_7.4.0_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.4.0_EB3_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp740_eb3
+
+#CCACP 7.5.0
+${CCACP_7.5.0_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750
+${CCACP_7.5.0_INSTALL_PACKAGE}   ${CCACP_7.5.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750
+
+#CCACP 7.5.0 EB1
+${CCACP_7.5.0_EB1_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_EB1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750_eb1
+${CCACP_7.5.0_EB1_INSTALL_PACKAGE}   ${CCACP_7.5.0_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_EB1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750_eb1
+
+#CCACP 7.5.0 EB2
+${CCACP_7.5.0_EB2_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_EB2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750_eb2
+${CCACP_7.5.0_EB2_INSTALL_PACKAGE}   ${CCACP_7.5.0_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_EB2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750_eb2
+
+#CCACP 7.5.0 EB3
+${CCACP_7.5.0_EB3_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_EB3_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750_eb3
+${CCACP_7.5.0_EB3_INSTALL_PACKAGE}   ${CCACP_7.5.0_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_EB3_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750_eb3
+
+#CCACP 7.5.0 EB4
+${CCACP_7.5.0_EB4_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_EB4_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750_eb4
+${CCACP_7.5.0_EB4_INSTALL_PACKAGE}   ${CCACP_7.5.0_EB4_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_EB4_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750_eb4
+
+#CCACP 7.5.0 EB5
+${CCACP_7.5.0_EB5_INSTALL_DIR}       ${BASE_DIR}
+${CCACP_7.5.0_EB5_PACKAGE_DIR}       ${BASE_DIR}/tar_package_ccacp750_eb5
+${CCACP_7.5.0_EB5_INSTALL_PACKAGE}   ${CCACP_7.5.0_EB5_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CCACP_7.5.0_EB5_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_ccacp750_eb5
+
+
+${CHOICE_FOR_QUIT}   q
+
+${INSTALL_CREP}      ${false}
+
+# Values 1 or 2 in the variable name mean HOST_PRIORITY
+${INSTALLATION_OPTION_TO_UPGRAGE_1_FROM_7.1.0}        2
+${INSTALLATION_OPTION_TO_UPGRAGE_2_FROM_7.1.0}        4
+${INSTALLATION_OPTION_TO_UPGRAGE_1_FROM_7.1.0_EB1}    2
+${INSTALLATION_OPTION_TO_UPGRAGE_2_FROM_7.1.0_EB1}    4
+
+# This is global variable set by the manage_releases
+${ccacp_inst_pkg}  ${empty}
+
+## Following variables for instance installed with DB2
+${4K_TABLESPACE}        CTL_4K
+${8K_TABLESPACE}        CTL_8K
+${16K_TABLESPACE}       CTL_16k
+${4K_INDEX}     		CTLIDX_4K
+${8K_INDEX}     		CTLIDX_8K
+${16K_INDEX}    		CTLIDX_16K
+
+## For Question on Directory
+${INTERNAL_BUFFERING_DIR_PATH}   				${AUTO_EL_INST_DIR}/TEST/base/storage
+${NODE_CONTROL_DIR_PATH}						${empty}
+${NODE_INTERNAL_STORAGE_DIR_PATH}				${empty}
+${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}		${empty}
+
+*** Keywords ***
+
+##################
+#
+# PUBLIC KEYWORDS
+#
+
+Upgrade CCACP Release  [Arguments]  ${upgrade_from}  ${release_version}
+	# Set the installation option
+	ccacp.Change Installation Option To Upgrade From  ${HOST_PRIORITY}  ${upgrade_from}
+	
+	# Stop the secondary host if any
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Change AUTO_EL_INST_DIR To Secondary
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Stop EL  2
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Change AUTO_EL_INST_DIR To Primary
+	
+	# Stop the primary host (or secondary host if the env file given as robot argument indicates that)
+	ccacp.Stop EL  ${HOST_PRIORITY}
+
+	# Do the upgrade
+	ccacp.Install CCACP Release  ${release_version}
+
+Upgrade CCACP Release_74  [Arguments]  ${upgrade_from}  ${release_version}
+	# Set the installation option
+	ccacp.Change Installation Option To Upgrade From  ${HOST_PRIORITY}  ${upgrade_from}
+	
+	# Stop the secondary host if any
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Change AUTO_EL_INST_DIR To Secondary
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Stop EL  2
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Change AUTO_EL_INST_DIR To Primary
+	
+	# Stop the primary host (or secondary host if the env file given as robot argument indicates that)
+	ccacp.Stop EL  ${HOST_PRIORITY}
+
+	# Do the upgrade
+	ccacp.Install CCACP Release_74  ${release_version}	
+	
+Uninstall CCACP Release  [Arguments]  ${release_version}
+	ccacp.Do Uninstall  ${release_version}
+
+Uninstall CCACP Release_74  [Arguments]  ${release_version}
+	ccacp.Do Uninstall_74  ${release_version}
+
+Install CCACP Release  [Arguments]  ${release_version}
+	manage_releases.Find Latest Installation Pkg  ${release_version}
+	Log  ${ccacp_inst_pkg}  WARN
+	ccacp.Do Install  ${release_version}  ${ccacp_inst_pkg}
+
+Install CCACP Release_74  [Arguments]  ${release_version}
+	manage_releases.Find Latest Installation Pkg  ${release_version}
+	Log  ${ccacp_inst_pkg}  WARN
+	ccacp.Do Install_74  ${release_version}  ${ccacp_inst_pkg}
+
+Install CCACP EB  [Arguments]  ${release_version}
+    	manage_releases.Find Latest Installation Pkg  ${release_version}
+	Log  ${ccacp_inst_pkg}  WARN
+	ccacp.Do EB Install  ${release_version}  ${ccacp_inst_pkg}
+	
+	
+########################
+#
+# PRIVATE KEYWORDS
+# For installing release
+# 
+
+Do Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Do Primary Install    ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  ccacp.Do Secondary Install  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Do Install_74  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Do Primary Install_74    ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  ccacp.Do Secondary Install_74  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Do Primary Install Preparations  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	manage_releases.Login To Test Host1
+    	Write  rm -fr ${CCACP_${release_version}_PACKAGE_DIR}
+	Read Until Prompt
+	Close Connection
+
+	Log  Copying pkg in to the test host ...  WARN
+    	manage_releases.Copy Release Package To Test Host  ${CCACP_${release_version}_PRODUCTS_PKG_DIR}  ${CCACP_${release_version}_PACKAGE_DIR}  ${ccacp_inst_pkg}
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=360
+	Log  cd ${CCACP_${release_version}_PACKAGE_DIR}  WARN
+    	Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+	Read Until Prompt
+	Log  tar xvf ./${ccacp_inst_pkg}  WARN
+	Write  tar xvf ./${ccacp_inst_pkg}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+	Write  mkdir -p ${BASE_DIR}
+	Read Until Prompt
+	
+	## Remove tar package
+	Write  rm ${ccacp_inst_pkg}
+	Read Until Prompt
+		
+	## And create a directory with the package name so knowing which package version is using for installation
+	Write  mkdir ${ccacp_inst_pkg}
+	Read Until Prompt
+	
+	Close Connection
+
+	
+Do Primary Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+    	ccacp.Do Primary Install Preparations  ${release_version}  ${ccacp_inst_pkg}
+
+	manage_releases.Login To Test Host1
+	Log  Do Primary ...  WARN
+	Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+	Read Until Prompt
+	
+	ccacp.Run CCACP Installation Script  ${release_version}  ${ccacp_inst_pkg}
+	Close Connection
+
+	manage_releases.Check Installation Errors
+	
+	manage_releases.Give Admin Access	
+	manage_releases.Give Admin Access To Blt
+	manage_releases.Configure ODBCINI Environment Variable
+	
+	ccacp.Start EL	
+
+Do Primary Install_74  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+    	ccacp.Do Primary Install Preparations  ${release_version}  ${ccacp_inst_pkg}
+
+	manage_releases.Login To Test Host1
+	Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+	Read Until Prompt
+	ccacp.Run CCACP Installation Script_74  ${release_version}  ${ccacp_inst_pkg}
+	Close Connection
+
+	manage_releases.Check Installation Errors
+	
+	#manage_releases.Give Admin Access_74
+	#manage_releases.Give Admin Access To Blt_74
+	manage_releases.Configure ODBCINI Environment Variable
+	
+	Log  Workaround to start up UI  WARN
+	manage_releases.Login To Test Host1
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile	
+	Read Until Prompt
+	Write  cd $PHPRC
+	Read Until Prompt
+	Write  chmod u+w php.ini
+	Read Until Prompt
+	Write  cat php.ini | sed -e 's/^extension=pdo_pgsql.so/;extension=pdo_pgsql.so/' -e 's/^extension=pgsql.so/;extension=pgsql.so/' > php.ini.tmp
+	Read Until Prompt
+	Write  cp php.ini php.ini.ori
+	Read Until Prompt
+	Write  cp php.ini.tmp php.ini
+	Read Until Prompt
+	Write  chmod u-w php.ini
+	Read Until Prompt
+	Close Connection
+
+	Log  Start EL Instance  WARN
+	ccacp.Start EL	
+
+Do Secondary Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	# Stop primary EL
+    	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Stop EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary
+
+	manage_releases.Login To Test Host1
+ 	Write  mkdir -p ${BASE_DIR}
+	Read Until Prompt
+	#Log  cd ${CCACP_${release_version}_PACKAGE_DIR}  WARN
+        Log  cd ${CCACP_${release_version}_PACKAGE_DIR_2nd}  WARN
+        #Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+        Write  cd ${CCACP_${release_version}_PACKAGE_DIR_2nd}
+	Read Until Prompt
+   	ccacp.Run CCACP Installation Script  ${release_version}  ${ccacp_inst_pkg}
+	Close Connection
+
+	manage_releases.Check Installation Errors
+	
+	manage_releases.Configure ODBCINI Environment Variable
+	
+	# Start Primary EL
+    	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Start EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary	
+
+	# Start Secondary EL
+	ccacp.Start EL	${HOST_PRIORITY}
+
+Do Secondary Install_74  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	# Stop primary EL
+    	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Stop EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary
+
+	manage_releases.Login To Test Host1
+ 	Write  mkdir -p ${BASE_DIR}
+	Read Until Prompt
+	#Log  cd ${CCACP_${release_version}_PACKAGE_DIR}  WARN
+        Log  cd ${CCACP_${release_version}_PACKAGE_DIR_2nd}  WARN
+        #Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+        Write  cd ${CCACP_${release_version}_PACKAGE_DIR_2nd}
+	Read Until Prompt
+   	ccacp.Run CCACP Installation Script_74  ${release_version}  ${ccacp_inst_pkg}
+	Close Connection
+
+	manage_releases.Check Installation Errors
+	
+	manage_releases.Configure ODBCINI Environment Variable
+	
+	# Start Primary EL
+    	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Start EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary	
+
+	# Start Secondary EL
+	ccacp.Start EL	${HOST_PRIORITY}
+
+
+
+Do EB Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Do Primary EB Install    ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  ccacp.Do Secondary EB Install  ${release_version}  ${ccacp_inst_pkg}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+
+Do Primary EB Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	ccacp.Stop EL
+	
+	ccacp.Do Primary Install Preparations  ${release_version}  ${ccacp_inst_pkg}
+	
+    	manage_releases.Login To Test Host1
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile	
+	Read Until Prompt	
+	Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+	Read Until Prompt
+    	ccacp.Run CCACP EB Installation Script  ${release_version}  ${ccacp_inst_pkg}
+	
+	Close Connection
+	
+	manage_releases.Check Installation Errors
+	
+	ccacp.Start EL
+	
+Do Secondary EB Install  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+
+	# Stop Secondary EL
+	ccacp.Stop EL  ${HOST_PRIORITY}
+	
+	# Stop Primary EL
+	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Stop EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary
+	
+	manage_releases.Login To Test Host1
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile	
+	Read Until Prompt	
+	#Write  cd ${CCACP_${release_version}_PACKAGE_DIR}
+        Write   cd ${CCACP_${release_version}_PACKAGE_DIR_2nd}
+	Read Until Prompt
+    	ccacp.Run CCACP EB Installation Script  ${release_version}  ${ccacp_inst_pkg}
+	
+	Close Connection
+	
+	manage_releases.Check Installation Errors
+
+	# Start Secondary EL
+	ccacp.Start EL  ${HOST_PRIORITY}
+	
+	# Start Primary EL
+	ccacp.Change AUTO_EL_INST_DIR To Primary
+	ccacp.Start EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary
+	
+	
+	
+####################
+#
+# PRIVATE KEYWORDS
+# Uninstall release
+#	
+
+Do Uninstall  [Arguments]  ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Do Primary Uninstall    ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  ccacp.Do Secondary Uninstall  ${release_version}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Do Uninstall_74  [Arguments]  ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  ccacp.Do Primary Uninstall_74    ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  ccacp.Do Secondary Uninstall  ${release_version}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Do Primary Uninstall_74  [Arguments]  ${release_version}
+	Run Keyword And Ignore Error  ccacp.Stop EL
+	
+	manage_releases.Uninstall TimesTen
+	Set Client Configuration  timeout=180
+
+	Run Keyword If  '${DB_VENDOR}'=='1'  manage_releases.Drop All Db User Objects
+	Run Keyword If  '${DB_VENDOR}'=='2'  manage_releases.Drop All Db User Objects DB2
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=300
+	Log  Removing ${AUTO_EL_INST_DIR}...  WARN
+	Write  rm -fr ${AUTO_EL_INST_DIR}
+	Read Until Prompt	
+
+	Log  Removing ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA} ...  WARN
+	Write  rm -fr ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA}
+	Read Until Prompt		
+	
+	Log  Removing ${CCACP_${release_version}_INSTALL_DIR}...  WARN
+	Write  rm -fr ${CCACP_${release_version}_INSTALL_DIR}
+	Read Until Prompt
+	
+	Log  Removing .openssocfg...  WARN
+ 	Start Command  echo ${BASE_DIR} | sed -e "s|/|_|g"
+	${openAM_file}=  Read Command Output
+	Write  rm -fr ~/.openssocfg/*${openAM_file}_${AUTO_EL_INST_NAME}*
+	Read Until Prompt
+
+	Close Connection
+
+Do Secondary Uninstall  [Arguments]  ${release_version}
+	# Stop secondary EL
+	Run Keyword And Ignore Error  ccacp.Stop EL  ${HOST_PRIORITY}
+	
+	# Stop primary EL
+    	ccacp.Change AUTO_EL_INST_DIR To Primary
+	Run Keyword And Ignore Error  ccacp.Stop EL
+	ccacp.Change AUTO_EL_INST_DIR To Secondary
+
+	manage_releases.Uninstall TimesTen
+    	manage_releases.Delete Secondary Host
+	
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=120	
+	Log  Removing ${AUTO_EL_INST_DIR} ...  WARN
+	Write  rm -fr ${AUTO_EL_INST_DIR}
+	Read Until Prompt	
+	
+	Log  Removing ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA} ...  WARN
+	Write  rm -fr ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA}
+	Read Until Prompt
+
+        Log  Removing ${BASE_DIR} ...  WARN
+	Write  rm -fr ${BASE_DIR}
+	Read Until Prompt	
+	
+	Close Connection
+	
+Do Primary Uninstall  [Arguments]  ${release_version}
+	Run Keyword And Ignore Error  ccacp.Stop EL
+	
+	manage_releases.Uninstall TimesTen
+	
+	manage_releases.Drop All Db User Objects
+
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=300
+	Log  Removing ${AUTO_EL_INST_DIR}...  WARN
+	Write  rm -fr ${AUTO_EL_INST_DIR}
+	Read Until Prompt	
+
+	Log  Removing ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA} ...  WARN
+	Write  rm -fr ${CCACP_${release_version}_INSTALL_DIR}/${RELEASE_AREA}
+	Read Until Prompt		
+	
+	Log  Removing ${CCACP_${release_version}_INSTALL_DIR}...  WARN
+	Write  rm -fr ${CCACP_${release_version}_INSTALL_DIR}
+	Read Until Prompt
+
+	Close Connection
+		
+
+########################
+# 
+# PRIVATE KEYWORDS
+# For manipulating
+# global variables
+#	
+
+Change AUTO_EL_INST_DIR To Primary
+	${AUTO_EL_INST_DIR}  Set Variable  ${BASE_DIR}/${EL_TEST_HOST_SHORT}_a
+    	Set Global Variable  ${AUTO_EL_INST_DIR}
+
+Change AUTO_EL_INST_DIR To Secondary
+	${AUTO_EL_INST_DIR}   Set Variable  ${BASE_DIR}/${EL_TEST_HOST_SHORT}_b
+    	Set Global Variable  ${AUTO_EL_INST_DIR}
+
+Change Installation Option To Upgrade From  [Arguments]  ${host_priority}  ${upgrade_from}
+	${CHOICE_FOR_INSTALLATION}=  Set Variable  ${INSTALLATION_OPTION_TO_UPGRAGE_${host_priority}_FROM_${upgrade_from}}
+	Set Global Variable  ${CHOICE_FOR_INSTALLATION}
+	
+
+########################
+# 
+# PRIVATE KEYWORDS
+# For Command Resolution
+#	
+
+Run CCACP EB Installation Script  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	#Log  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+	#Write  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR} -r ${BASE_DIR}/${RELEASE_AREA}
+       
+       	Log  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+	Write  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+
+	# This will wait until the script has initiated itself
+	# i.e. wait until the script is ready to start taking input
+       	Read Until Regexp  Installed
+	Wait Until Keyword Succeeds  2700   5   CCACP Install Script Interaction
+	Write  ${CHOICE_FOR_QUIT}
+	Read Until Prompt
+	manage_releases.Check If Command Exit Is Zero
+
+Run CCACP Installation Script  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+
+	#Log  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+	#Write  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR} -r ${BASE_DIR}/${RELEASE_AREA}
+       	
+       	Log  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+	Write  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+  
+	# This will wait until the script has initiated itself
+	# i.e. wait until the script is ready to start taking input
+    	Read Until Regexp  Installer Info|Installed
+	${result}=  Wait Until Keyword Succeeds  2400   0.3   CCACP Install Script Interaction
+    	Log  ${result}
+
+
+Run CCACP Installation Script_74  [Arguments]  ${release_version}  ${ccacp_inst_pkg}
+	## Due to SunOS has got slow
+	Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Update Report Installation Timeout On SunOS
+	
+    Log  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export DB2_HOME=${DB2_HOME}
+	Run Keyword If   '${DB_VENDOR}'=='2'  Write  export PATH=$PATH:${DB2_HOME}/bin 
+	Write  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CCACP_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+  
+	# This will wait until the script has initiated itself
+	# i.e. wait until the script is ready to start taking input
+    	Read Until Regexp  Installer Info|Installed
+	${result}=  Wait Until Keyword Succeeds  3600   0.3   CCACP Install Script Interaction_74
+    	Log  ${result}
+
+
+Update Report Installation Timeout On SunOS
+	Log  Update Report Installation Timeout On SunOS  WARN
+	Put File  ${ROBOT_PATH}/keywords/workaround_cm65_sunos.sh   ${CCACP_${release_version}_PACKAGE_DIR_2nd}/
+	Write  chmod 755 workaround_cm65_sunos.sh
+	Read Until Prompt
+	Write  ./workaround_cm65_sunos.sh
+	Read Until Prompt
+
+
+
+CCACP Send  [Arguments]  ${input}
+	Run Keyword If      '${input}'=='${empty}'  Log  <Enter>   WARN
+	Run Keyword Unless  '${input}'=='${empty}'  Log  ${input}  WARN
+	Write  ${input}
+    
+Reports Install Interaction  
+    ###############################################################################
+	# Reports questions
+	###############################################################################
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database name for Reports*	
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}      
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the * service name for Reports*	
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database user ID for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_USER}	
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database password for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_PASSWD}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database host for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_HOST}		
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database port for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_PORT}		
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server http port for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_HTTP_PORT}		
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server https port for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_HTTPS_PORT}	
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server key store path for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_KEY_STORE_PATH}	
+    
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle service name for TEST TEST report datasource*
+    Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}    
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server key store password for Reports*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_KEY_STORE_PASSWD}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server AJP port for Reports*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_AJP_PORT}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server shutdown port for Reports*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_SHUTDOWN_PORT}	
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server diagnostic JMX port for Reports*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_JMX_PORT}	    
+    
+    CCACP Catch And Throw Interaction Errors         
+       
+	###############################################################################
+	# End Reports questions
+	###############################################################################
+
+CCACP Install Script Interaction
+	# Reads whatever received so far
+	${result}=  Read
+	Log  ${result}  WARN
+	
+	# install script output       
+		
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Primary host install*Secondary host install*What would you like to install*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${HOST_PRIORITY}
+	# install.ksh output
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Full install*Full upgrade from*Secondary host install*Secondary host upgrade*Quit*What would you like to install*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CHOICE_FOR_INSTALLATION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *You are about to install*on top of*Do you want to continue*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Would you like to create it*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *create a new release area*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *the same database settings for all the subsystems*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to activate the password encryption*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_PASSWORD_ENCRYPTION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Please provide ORACLE_HOME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_HOME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *ORACLE_SID*TWO_TASK*SERVICE_NAME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_CONNECT_TYPE_INSTALLATION_OPTION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is TWO_TASK*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is ORACLE_SID*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is SERVICE_NAME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle user ID for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB_USER}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle password for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB_PASSWORD}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What tablespace are you using*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What index tablespace are you using*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database host*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_HOST}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database port*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_PORT}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the short name*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${AUTO_EL_INST_NAME}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Port number for DMS*transport nodes*Online request server*remote management server*Engine JMX server*Do you want to use these values*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  n
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for distribution server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DISTRIBUTION_SERVER_PORT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give lower limit for transport node port range*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TRANSPORT_NODE_PORT_LOWER_LIMIT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give upper limit for transport node port range*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TRANSPORT_NODE_PORT_UPPER_LIMIT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for ORI server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORI_SERVER_PORT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for remote management server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${REMOTE_MANAGER_SERVER_PORT}
+	
+	CCACP Install Script Dialog For Transaction Engine JMX Port
+
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *description for TEST User Interface Framework*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_ELUI_FRAMEWORK_DESCRIPTION}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *expiration time for TEST User Interface Framework*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *port number for TEST User Interface Framework*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_ELUI_FRAMEWORK_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *TimesTen instance are you using*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_INSTANCE}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give the TimesTen Daemon port*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_DAEMON_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give the TimesTen Server port*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_SERVER_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Server Listening port number*Do you want to use these variables*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  Y
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database settings*Do you want to change these settings*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *System time zone*Diagnostic messages per file*Diagnostic files*Node zero threshold*The number of days to keep data in the execution trace log*The warning threshold for Temporary Record Storage*TEST Alarm Dispatcher host*Do you want to change these settings*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Choose a continent/area*
+	# 11 == Europe
+	#Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  11
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_CONTINENT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Choose a location within the continent*
+	# 16 == Helsinki
+	#Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  16
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_NM_CITY}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Maximum number of node diagnostic messages*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Number of node diagnostic files*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Node zero threshold in megabytes*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *data in the execution trace log*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *warning threshold for Temporary Record Storage*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to use TEST Alarm Dispatcher*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to use TEST Event Management*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *The address for the other hosts to use when reaching this host*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database ID used when connecting*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Host on which the database is running*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Port number listened by the database*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database user ID to be used*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database user password*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Enter the TEST TEST*internal buffering directory paths*Record data buffering directory path*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${AUTO_EL_INST_DIR}/TEST/base/storage
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *alarm threshold for this directory in megabytes*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *buffer directory for the node control interface*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Node internal storage directory*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Rejected records offline storage path*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want this script to create it*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	         
+				
+                
+    Reports Install Interaction  
+    
+                
+	CCACP Catch And Throw Interaction Errors
+    
+    Should Match  ${result}  *After reading this information, press enter to continue*	
+    #CCACP Ok Interaction Values To Exit
+
+CCACP Install Script Interaction_74
+	# Reads whatever received so far
+	${result}=  Read
+	Log  ${result}  WARN
+	
+	# install script output
+    
+#    Reports Install Interaction
+		
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Primary host install*Secondary host install*What would you like to install*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${HOST_PRIORITY}
+	# install.ksh output
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Full install*Full upgrade from*Secondary host install*Secondary host upgrade*Quit*What would you like to install*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CHOICE_FOR_INSTALLATION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *You are about to install*on top of*Do you want to continue*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Would you like to create it*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *create a new release area*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *the same database settings for all the subsystems*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  y
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to activate the password encryption*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_PASSWORD_ENCRYPTION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What DB do you want to use*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB_VENDOR}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the DB2 home directory for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_HOME} 
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the home directory of the DB2 instance owner for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_HOME} 
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database alias for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_ALIAS} 
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database name for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_ALIAS} 
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Please provide ORACLE_HOME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_HOME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *ORACLE_SID*TWO_TASK*SERVICE_NAME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_CONNECT_TYPE_INSTALLATION_OPTION}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is TWO_TASK*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is ORACLE_SID*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is SERVICE_NAME*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORACLE_NAME}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the DB2 user ID for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_USER}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the DB2 password for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB2_PASSWORD} 
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle user ID for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB_USER}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle password for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DB_PASSWORD}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What tablespace are you using*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What index tablespace are you using*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database host for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  Run Keyword If  '${DB_VENDOR}'=='1'  CCACP Send  ${ORACLE_HOST}
+	Run Keyword If  '${match[0]}'=='PASS'  Run Keyword If  '${DB_VENDOR}'=='2'  CCACP Send  ${DB2_HOST}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database port for host*
+	Run Keyword If  '${match[0]}'=='PASS'  Run Keyword If  '${DB_VENDOR}'=='1'  CCACP Send  ${DB_PORT}
+	Run Keyword If  '${match[0]}'=='PASS'  Run Keyword If  '${DB_VENDOR}'=='2'  CCACP Send  ${DB2_PORT} 
+
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the short name*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${AUTO_EL_INST_NAME}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Port number for DMS*transport nodes*Online request server*remote management server*Engine JMX server*Do you want to use these values*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  n
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for distribution server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${DISTRIBUTION_SERVER_PORT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give lower limit for transport node port range*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TRANSPORT_NODE_PORT_LOWER_LIMIT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give upper limit for transport node port range*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TRANSPORT_NODE_PORT_UPPER_LIMIT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for ORI server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${ORI_SERVER_PORT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for remote management server*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${REMOTE_MANAGER_SERVER_PORT}
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for * Engine JMX server*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${JMXPORT}
+
+	#CCACP Install Script Dialog For Transaction Engine JMX Port
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *description for TEST User Interface Framework*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_ELUI_FRAMEWORK_DESCRIPTION}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *expiration time for TEST User Interface Framework*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *port number for TEST User Interface Framework*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_ELUI_FRAMEWORK_PORT}
+	
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the http port number for TEST User Interface Module*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_MODULE_HTTP_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 4K tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${4K_TABLESPACE}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 8K tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${8K_TABLESPACE}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 16K tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${16K_TABLESPACE}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 4K index tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${4K_INDEX}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 8K index tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${8K_INDEX}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What 16K index tablespace are you using for TEST TEST*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${16K_INDEX}
+	
+
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the https port number for TEST User Interface Module*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_MODULE_HTTPS_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the TCP port for User Management's database*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TCP_PORT_USER_MANAGEMENT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  * What is the web port for User Management's database*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TCP_WEB_PORT_USER_MANAGEMENT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the postgre port for User Management's database*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TCP_POSTGRE_PORT_USER_MANAGEMENT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the internal datastore port for OpenAM*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${OpenAM_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the internal datastore administrator port for OpenAM*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${OpenAM_ADMINISTRATOR_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the JMX port for OpenAM*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${OpenAM_JMX_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give the host fully qualified domain name for TEST User Interface Module*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${SEC_SOL_QUALIFIED_DOMAIN} 
+	
+	###############################################################################
+        # Reports questions
+        ###############################################################################
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database name for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the * service name for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database user ID for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_USER}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database password for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_PASSWD}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database host for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_HOST}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the database port for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_PORT}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server http port for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_HTTP_PORT}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server https port for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_HTTPS_PORT}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server key store path for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_KEY_STORE_PATH}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the Oracle service name for TEST TEST report datasource*
+    Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_DB_NAME}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server key store password for Reports*
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_KEY_STORE_PASSWD}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server AJP port for Reports*
+        # Accepting default by pressing Enter
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_AJP_PORT}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server shutdown port for Reports*
+        # Accepting default by pressing Enter
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_SERVER_SHUTDOWN_PORT}
+
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *What is the server diagnostic JMX port for Reports*
+        # Accepting default by pressing Enter
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${CREP_JMX_PORT}
+
+#    CCACP Catch And Throw Interaction Errors
+
+        ###############################################################################
+        # End Reports questions
+        ###############################################################################
+	
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *TimesTen instance are you using*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_INSTANCE}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give the TimesTen Daemon port*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_DAEMON_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give the TimesTen Server port*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${TIMESTEN_SERVER_PORT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Server Listening port number*Do you want to use these variables*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  Y
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database settings*Do you want to change these settings*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *System time zone*Diagnostic messages per file*Diagnostic files*Node zero threshold*The number of days to keep data in the execution trace log*The warning threshold for Temporary Record Storage*TEST Alarm Dispatcher host*Do you want to change these settings*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Choose a continent/area*
+	# 11 == Europe
+	#Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  11
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_CONTINENT}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Choose a location within the continent*
+	# 16 == Helsinki
+	#Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  16
+        Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${EL_INST_NM_CITY}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Maximum number of node diagnostic messages*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Number of node diagnostic files*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Node zero threshold in megabytes*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *data in the execution trace log*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *warning threshold for Temporary Record Storage*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to use TEST Alarm Dispatcher*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to use TEST Event Management*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *The address for the other hosts to use when reaching this host*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database ID used when connecting*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Host on which the database is running*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Port number listened by the database*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database user ID to be used*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Database user password*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Enter the TEST TEST*internal buffering directory paths*Record data buffering directory path*
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${INTERNAL_BUFFERING_DIR_PATH}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *alarm threshold for this directory in megabytes*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *buffer directory for the node control interface*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${NODE_CONTROL_DIR_PATH}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Node internal storage directory*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Rejected records offline storage path*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want this script to create it*
+	# Accepting default by pressing Enter
+	Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${empty}	
+	
+	CCACP Catch And Throw Interaction Errors
+	
+    #CCACP Ok Interaction Values To Exit
+	Should Match  ${result}  *After reading this information, press enter to continue*
+
+	
+CCACP Install Script Dialog For Transaction Engine JMX Port
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give port number for * Engine JMX server*
+    Run Keyword If  '${match[0]}'=='PASS'  CCACP Send  ${JMXPORT}
+
+	
+CCACP Ok Interaction Values To Exit
+	# When this kw returns PASS, then the calling function will exit
+	Should Match  ${result}  *After reading this information, press enter to continue*
+	
+CCACP Catch And Throw Interaction Errors
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Failed to check privileges*
+	Run Keyword If  '${match[0]}'=='PASS'  	Fatal Error  ${result}
+	
+	${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Installer Critical*
+	Run Keyword If  '${match[0]}'=='PASS'  	Fatal Error  ${result}
+	
+	## Temporary comment it off as CM65EB3 has got Installer Warning when perform mass modified
+	#${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Installer Warning*
+	#Run Keyword If  '${match[0]}'=='PASS'  	Fatal Error  ${result}
+
+###################	
+#
+# PRIVATE KEYWORDS
+#
+# Taken from team
+# facepalm's mcp-testing/keywords/el_host.txt
+
+Stop EL   [Arguments]  ${host_priority}=1
+	${result}=  ccacp.Is Ctl_control Found
+	Run Keyword If      '${result}'=='PASS'  ccacp.Do Stop EL  ${host_priority}
+	Run Keyword Unless  '${result}'=='PASS'  Log  ctl_control not found. EL not stopped.
+
+Do Stop EL   [Arguments]  ${host_priority}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+
+	Write  . ./.profile
+	Read Until Prompt
+
+	Write  ctl_control -fv stop
+	Read Until Regexp  TimesTen
+	Read Until Prompt
+
+    	Write  ctl_control -f status
+	${result}=  Read Until Prompt
+	# Note at this point Lookup Server might not yet be installed/configured
+	Should Contain  ${result}  [TimesTen] Component status STOPPED
+	Should Contain  ${result}  [TEST] Component status STOPPED
+	Run Keyword If  '${host_priority}'=='1'  Should Contain  ${result}  [TEST_ui] Component status STOPPED
+
+    	Close Connection
+
+Start EL   [Arguments]  ${host_priority}=1
+	${result}=  ccacp.Is Ctl_control Found
+	Run Keyword If      '${result}'=='PASS'  ccacp.Do Start EL  ${host_priority}
+	Run Keyword Unless  '${result}'=='PASS'  Log  ctl_control not found. EL not started.
+	
+Do Start EL  [Arguments]  ${host_priority}
+	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=360
+
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+
+	Write  . ./.profile
+	Read Until Prompt
+
+	Write  ctl_control -fv start
+	Run Keyword If      '${host_priority}'=='1'  Read Until Regexp  (TEST_UI|TEST_ui)
+	Run Keyword Unless  '${host_priority}'=='1'  Read Until Regexp  TEST
+	Read Until Prompt
+
+    	Write  ctl_control -f status
+	${result}=  Read Until Prompt
+	# Note at this point Lookup Server not not yet be installed/configured
+	Should Contain  ${result}  [TimesTen] Component status RUNNING
+	Should Contain  ${result}  [TEST] Component status RUNNING
+	Run Keyword If  '${host_priority}'=='1'  Should Contain  ${result}  [TEST_ui] Component status RUNNING
+
+	Close Connection
+
+	
+Is Ctl_control Found
+    	manage_releases.Login To Test Host1
+	Set Client Configuration  timeout=60
+	Write  cd ${AUTO_EL_INST_DIR}
+	Read Until Prompt
+	Write  . ./.profile
+	Read Until Prompt
+	Write  which ctl_control
+	${result}=  Read Until Prompt
+	Close Connection
+	${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  no ctl_control
+	Log  ${result[0]}
+	# Return PASS or FAIL
+	[return]  ${result[0]}	

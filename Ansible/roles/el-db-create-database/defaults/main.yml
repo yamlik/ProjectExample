@@ -1,0 +1,41 @@
+---
+# defaults file for el-postgresql-create
+__postgresql_version: "9.2"
+__postgresql_data_dir: "/var/lib/pgsql/data"
+__postgresql_bin_path: "/usr/bin"
+__postgresql_config_path: "/var/lib/pgsql/data"
+__postgresql_daemon: postgresql
+
+# Default credentials to postgresql server provided by Devops
+db_login_user: pgadmin
+db_login_password: pgadmin_pass
+
+# Default for PostgreSQL database installation
+postgresql_user: postgres
+postgresql_group: postgres
+
+# Default host based authentication (hba) netmask
+hba_netmask: 24
+
+# Default for host based authentication (hba) entries to be added to the pg_hba.conf.
+postgresql_hba_entries:
+  - { type: local, database: all, user: postgres, auth_method: peer }
+  - { type: local, database: all, user: all, auth_method: trust }
+  - { type: host, database: all, user: all, address: '127.0.0.1/32', auth_method: trust }
+  - { type: host, database: all, user: all, address: '::1/128', auth_method: trust }
+  - { type: host, database: all, user: all, address: '{{ hba_network_address }}/{{ hba_netmask }}', auth_method: trust }
+
+# Default variables for PostgreSQL database init
+db_login_host: "db.service.consul"
+db_login_name: "postgres"
+db_login_port: "{{ postgresql_server_port }}"
+db_el_encoding: "DEFAULT"
+db_el_lc_collate: "DEFAULT"
+db_el_lc_ctype: "DEFAULT"
+db_el_name: "TEST"
+
+# Default variables for PostgreSQL user init
+db_el_user: "dbuser"
+db_el_password: "dbpswd"
+db_el_user_role_attrs: CREATEDB,LOGIN
+...

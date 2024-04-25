@@ -1,0 +1,1734 @@
+---
+version: '2.0'
+name: heal
+workflows:
+
+########################################
+################# MAIN #################
+########################################
+  heal_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the heal_starting flow.") %>
+    tasks:
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+
+  heal_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the heal_processing flow.") %>
+    tasks:
+
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - finalize_online_healing: <% $.operationParams.additionalParams.heal_processingON != true %>
+          - heal_online_processing: <% $.operationParams.additionalParams.heal_processingON = true %>
+          - finalize_offline_healing: <% $.operationParams.additionalParams.heal_processingOFF != true %>
+          - heal_offline_processing: <% $.operationParams.additionalParams.heal_processingOFF = true %>
+          - finalize_cgf_healing: <% $.operationParams.additionalParams.heal_cgf != true %>
+          - heal_cgf_processing: <% $.operationParams.additionalParams.heal_cgf = true %>
+          - finalize_ui_healing: <% $.operationParams.additionalParams.heal_ui != true %>
+          - heal_ui: <% $.operationParams.additionalParams.heal_ui = true %>
+          - finalize_db_healing: <% $.operationParams.additionalParams.heal_db != true %>
+          - heal_db: <% $.operationParams.additionalParams.heal_db = true %>
+          - finalize_oam_healing: <% $.operationParams.additionalParams.heal_oam != true %>
+          - heal_oam: <% $.operationParams.additionalParams.heal_oam = true %>
+          - finalize_crdb_healing: <% $.operationParams.additionalParams.heal_crdb != true %>
+          - heal_crdb: <% $.operationParams.additionalParams.heal_crdb = true %>
+          - finalize_all
+
+      heal_online_processing:
+        with-items: node in <% $.ansibleInventory['vdu-processingON'] %>
+        workflow: online_heal_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-processingON
+          playname: processingon_reconfig.yml
+          node: <% $.node %>
+          running_services: <% $.operationParams.additionalParams.processingON_heal_checks_following_services %>
+        publish-on-error:
+          error_message: <% task(heal_online_processing).result.error_message %>
+        on-success:
+          - finalize_online_healing
+        on-error:
+          - finalize_on_error
+
+      heal_offline_processing:
+        workflow: heal_flow
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingOFFAspect.count )) %>
+        concurrency: 1
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-processingOFF-<% $.i %>
+          playname: processingoff_reconfig.yml
+          running_services: <% $.operationParams.additionalParams.processingOFF_heal_checks_following_services %>
+          running_services_on_standby: <% list() %>
+          stopped_services: <% $.operationParams.additionalParams.processingOFF_heal_checks_following_services %>
+        publish-on-error:
+          error_message: <% task(heal_offline_processing).result.error_message %>
+        on-success:
+          - finalize_offline_healing
+        on-error:
+          - finalize_on_error
+
+      heal_cgf_processing:
+        workflow: heal_flow
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.cgfAspect.count )) %>
+        concurrency: 1
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-cgf-<% $.i %>
+          playname: cgf_reconfig.yml
+          running_services: <% $.operationParams.additionalParams.cgf_heal_checks_following_services %>
+          running_services_on_standby: <% $.operationParams.additionalParams.cgf_heal_checks_following_services %>
+          stopped_services: <% list() %>
+        publish-on-error:
+          error_message: <% task(heal_cgf_processing).result.error_message %>
+        on-success:
+          - finalize_cgf_healing
+        on-error:
+          - finalize_on_error
+
+      heal_ui:
+        workflow: ui_heal_flow
+        with-items: node in <% $.ansibleInventory['vdu-ui'] %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-ui
+          playname: ui_reconfig.yml
+          node: <% $.node %>
+          running_services: <% $.operationParams.additionalParams.ui_heal_checks_following_services %>
+        publish-on-error:
+          error_message: <% task(heal_ui).result.error_message %>
+        on-success:
+          - finalize_ui_healing
+        on-error:
+          - finalize_on_error
+
+      heal_db:
+        workflow: heal_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-db
+          playname: db_reconfig.yml
+          running_services: <% $.operationParams.additionalParams.db_heal_checks_following_services %>
+          running_services_on_standby: <% $.operationParams.additionalParams.db_heal_standby_following_services %>
+          stopped_services: <% list() %>
+        publish-on-error:
+          error_message: <% task(heal_db).result.error_message %>
+        on-success:
+          - finalize_db_healing
+        on-error:
+          - finalize_on_error
+
+      heal_oam:
+        workflow: heal_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-oam
+          playname: oam_reconfig.yml
+          running_services: <% $.operationParams.additionalParams.oam_heal_checks_following_services %>
+          running_services_on_standby: <% list() %>
+          stopped_services: <% $.operationParams.additionalParams.oam_heal_checks_following_services %>
+        publish-on-error:
+          error_message: <% task(heal_oam).result.error_message %>
+        on-success:
+          - finalize_oam_healing
+        on-error:
+          - finalize_on_error
+
+      heal_crdb:
+        with-items: node in <% $.ansibleInventory['vdu-crdb'] %>
+        workflow: crdb_heal_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          group: vdu-crdb
+          playname: crdb_reconfig.yml
+          node: <% $.node %>
+          running_services: <% $.operationParams.additionalParams.crdb_heal_checks_following_services %>
+        publish-on-error:
+          error_message: <% task(heal_crdb).result.error_message %>
+        on-success:
+          - finalize_crdb_healing
+        on-error:
+          - finalize_on_error
+
+
+      finalize_online_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_offline_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_cgf_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_ui_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_db_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_oam_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_crdb_healing:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result %>
+        on-success:
+          - finalize
+
+      finalize:
+        action: std.javascript
+        join: all
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize).result %>
+
+      finalize_on_error:
+        action: std.javascript
+        join: all
+        input:
+          context:
+            error: <% $.error_message %>
+          script: |
+            if (typeof $.error === 'string') {
+              return $.error;
+            }
+            return JSON.stringify($.error);
+        publish-on-error:
+          error_message: <% task(finalize_on_error).result %>
+        publish:
+          error_message: <% task(finalize_on_error).result %>
+        on-complete:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+
+#########################################
+############ ONLINE_HEAL_FLOW ###########
+#########################################
+
+  online_heal_flow:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - group
+      - playname
+      - node
+      - running_services
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the online heal flow.") %>
+
+    tasks:
+      discover_faulty_online_node:
+        workflow: discover_faulty_online
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 30
+        publish:
+          onlineToHeal: <% task(discover_faulty_online_node).result.onlineToHeal %>
+        publish-on-error:
+          error_message: <% task(discover_faulty_online_node).result.error_message %>
+        on-success:
+          - reboot_online: <% task(discover_faulty_online_node).result.onlineToHeal != null %>
+
+      reboot_online:
+        workflow: reboot
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToReboot: <% $.onlineToHeal %>
+        publish-on-error:
+          error_message: <% task(reboot_online).result %>
+        on-success:
+          - check_if_online_up
+        on-error:
+          - rebuild_online
+
+      check_if_online_up:
+        workflow: discover_faulty_online
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 180
+        publish:
+          onlineToHeal: <% task(check_if_online_up).result.onlineToHeal %>
+        publish-on-error:
+          error_message: <% task(check_if_online_up).result.error_message %>
+        on-success:
+          - rebuild_online: <% task(check_if_online_up).result.onlineToHeal != null %>
+
+      rebuild_online:
+        workflow: rebuild
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.onlineToHeal %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(rebuild_online).result %>
+        on-success:
+          - check_if_online_up_2
+
+      check_if_online_up_2:
+        workflow: discover_faulty_online
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 60
+        publish-on-error:
+          error_message: <% task(check_if_online_up_2).result.error_message %>
+        publish:
+          failed_vnfc: <% task(check_if_online_up_2).result.onlineToHeal %>
+        on-success:
+          - online_healing_failed: <% task(check_if_online_up_2).result.onlineToHeal != null %>
+
+      online_healing_failed:
+        action: std.javascript
+        input:
+          context:
+            vnfc: <% $.failed_vnfc %>
+          script: |
+            return "Failed to heal online processing instance: "+$.vnfc
+        publish:
+          error_message: <% task(online_healing_failed).result %>
+        publish-on-error:
+          error_message: <% task(online_healing_failed).result %>
+
+#########################################
+############ CRDB_HEAL_FLOW #############
+#########################################
+
+  crdb_heal_flow:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - group
+      - playname
+      - node
+      - running_services
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the crdb heal flow.") %>
+
+    tasks:
+      discover_faulty_crdb_node:
+        workflow: discover_faulty_crdb
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 30
+        publish:
+          crdbToHeal: <% task(discover_faulty_crdb_node).result.crdbToHeal %>
+        publish-on-error:
+          error_message: <% task(discover_faulty_crdb_node).result.error_message %>
+        on-success:
+          - reboot_crdb: <% task(discover_faulty_crdb_node).result.crdbToHeal != null %>
+
+      reboot_crdb:
+        workflow: reboot
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToReboot: <% $.crdbToHeal %>
+        publish-on-error:
+          error_message: <% task(reboot_crdb).result %>
+        on-success:
+          - check_if_crdb_up
+        on-error:
+          - rebuild_crdb
+
+      check_if_crdb_up:
+        workflow: discover_faulty_crdb
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 180
+        publish:
+          crdbToHeal: <% task(check_if_crdb_up).result.crdbToHeal %>
+        publish-on-error:
+          error_message: <% task(check_if_crdb_up).result.error_message %>
+        on-success:
+          - rebuild_crdb: <% task(check_if_crdb_up).result.crdbToHeal != null %>
+
+      rebuild_crdb:
+        workflow: rebuild
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.crdbToHeal %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(rebuild_crdb).result %>
+        on-success:
+          - check_if_crdb_up_2
+
+      check_if_crdb_up_2:
+        workflow: discover_faulty_crdb
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 60
+        publish-on-error:
+          error_message: <% task(check_if_crdb_up_2).result.error_message %>
+        publish:
+          failed_vnfc: <% task(check_if_crdb_up_2).result.crdbToHeal %>
+        on-success:
+          - crdb_healing_failed: <% task(check_if_crdb_up_2).result.crdbToHeal != null %>
+
+      crdb_healing_failed:
+        action: std.javascript
+        input:
+          context:
+            vnfc: <% $.failed_vnfc %>
+          script: |
+            return "Failed to heal crdb processing instance: "+$.vnfc
+        publish:
+          error_message: <% task(crdb_healing_failed).result %>
+        publish-on-error:
+          error_message: <% task(crdb_healing_failed).result %>
+
+#########################################
+############## UI_HEAL_FLOW #############
+#########################################
+
+  ui_heal_flow:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - group
+      - playname
+      - node
+      - running_services
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the UI heal flow.") %>
+
+    tasks:
+      discover_faulty_ui_node:
+        workflow: discover_faulty_ui
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 30
+        publish:
+          uiToHeal: <% task(discover_faulty_ui_node).result.uiToHeal %>
+        publish-on-error:
+          error_message: <% task(discover_faulty_ui_node).result.error_message %>
+        on-success:
+          - reboot_ui: <% task(discover_faulty_ui_node).result.uiToHeal != null %>
+
+      reboot_ui:
+        workflow: reboot
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToReboot: <% $.uiToHeal %>
+        publish-on-error:
+          error_message: <% task(reboot_ui).result %>
+        on-success:
+          - check_if_ui_up
+        on-error:
+          - rebuild_ui
+
+      check_if_ui_up:
+        workflow: discover_faulty_ui
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 180
+        publish:
+          uiToHeal: <% task(check_if_ui_up).result.uiToHeal %>
+        publish-on-error:
+          error_message: <% task(check_if_ui_up).result.error_message %>
+        on-success:
+          - rebuild_ui: <% task(check_if_ui_up).result.uiToHeal != null %>
+
+      rebuild_ui:
+        workflow: rebuild
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.uiToHeal %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(rebuild_ui).result %>
+        on-success:
+          - check_if_ui_up_2
+
+      check_if_ui_up_2:
+        workflow: discover_faulty_ui
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.node %>
+          running_services: <% $.running_services %>
+          timeout: 60
+        publish-on-error:
+          error_message: <% task(check_if_ui_up_2).result.error_message %>
+        publish:
+          failed_vnfc: <% task(check_if_ui_up_2).result.uiToHeal %>
+        on-success:
+          - ui_healing_failed: <% task(check_if_ui_up_2).result.uiToHeal != null %>
+
+      ui_healing_failed:
+        action: std.javascript
+        input:
+          context:
+            vnfc: <% $.failed_vnfc %>
+          script: |
+            return "Failed to heal UI instance: "+$.vnfc
+        publish:
+          error_message: <% task(ui_healing_failed).result %>
+        publish-on-error:
+          error_message: <% task(ui_healing_failed).result %>
+
+########################################
+############## HEAL_FLOW ###############
+########################################
+
+  heal_flow:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+      - group
+      - playname
+      - running_services
+      - running_services_on_standby
+      - stopped_services
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the main heal flow.") %>
+
+    tasks:
+      verify_ha_functionality:
+        workflow: ha_heal_flow
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.group %>
+          timeout: 30
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(verify_ha_functionality).result.error_message %>
+        on-success:
+          - verify_service_functionality
+
+      verify_service_functionality:
+        workflow: verify_services_flow
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.group %>
+          stopped_services: <% $.stopped_services %>
+          running_services: <% $.running_services %>
+          running_services_on_standby: <% $.running_services_on_standby %>
+          timeout: 30
+        publish:
+          nodesToReboot: <% task(verify_service_functionality).result.failedNodes %>
+          rebootedToRebuild: <% task(verify_service_functionality).result.alreadyRebootedNodes %>
+        publish-on-error:
+          error_message: <% task(verify_service_functionality).result.error_message %>
+        on-success:
+          - rebuild_already_rebooted: <% task(verify_service_functionality).result.alreadyRebootedNodes[0] != null %>
+          - reboot_failed_nodes: <% task(verify_service_functionality).result.alreadyRebootedNodes[0] = null and $.nodesToReboot[0] != null %>
+
+      rebuild_already_rebooted:
+        workflow: rebuild
+        with-items: node in <% $.rebootedToRebuild %>
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.node %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(rebuild_already_rebooted).result %>
+        on-success:
+          - reboot_failed_nodes: <% $.nodesToReboot[0] != null %>
+          - call_ha_after_rebuild: <% $.nodesToReboot[0] = null and $.playname != "cgf_reconfig.yml" and $.playname != "ui_reconfig.yml" %>
+
+      call_ha_after_rebuild:
+        wait-before: 90
+        workflow: call_ha_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha_after_rebuild).result.error_message %>
+        on-success:
+          - verify_service_functionality_after_rebuild
+
+      reboot_failed_nodes:
+        workflow: reboot
+        with-items: node in <% $.nodesToReboot %>
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToReboot: <% $.node %>
+        publish-on-error:
+          nodeToRebuild: <% $.node %>
+        on-success:
+          - verify_service_functionality_after_reboot: <% $.playname = "cgf_reconfig.yml" or $.playname = "ui_reconfig.yml" %>
+          - call_ha_after_reboot: <% $.playname != "cgf_reconfig.yml" and $.playname != "ui_reconfig.yml" %>
+        on-error:
+          - rebuild_failed_nodes
+
+      call_ha_after_reboot:
+        wait-before: 60
+        workflow: call_ha_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha_after_reboot).result.error_message %>
+        on-success:
+          - verify_service_functionality_after_reboot
+
+      verify_service_functionality_after_reboot:
+        workflow: verify_services_flow
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.group %>
+          stopped_services: <% $.stopped_services %>
+          running_services: <% $.running_services %>
+          running_services_on_standby: <% $.running_services_on_standby %>
+          timeout: 180
+        publish:
+          nodesToRebuild: <% task(verify_service_functionality_after_reboot).result.failedNodes %>
+        publish-on-error:
+          error_message: <% task(verify_service_functionality_after_reboot).result.error_message %>
+        on-success:
+          - rebuild_failed_nodes: <% task(verify_service_functionality_after_reboot).result.failedNodes[0] != null %>
+
+      rebuild_failed_nodes:
+        workflow: rebuild
+        with-items: node in <% $.nodesToRebuild %>
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.node %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(rebuild_failed_nodes).result %>
+        on-error:
+          - healing_failed
+        on-success:
+          - verify_service_functionality_after_rebuild: <% $.playname = "cgf_reconfig.yml" or $.playname = "ui_reconfig.yml" %>
+          - call_ha_after_rebuild2: <% $.playname != "cgf_reconfig.yml" and $.playname != "ui_reconfig.yml" %>
+
+      call_ha_after_rebuild2:
+        wait-before: 90
+        workflow: call_ha_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha_after_rebuild2).result.error_message %>
+        on-success:
+          - verify_service_functionality_after_rebuild
+
+      verify_service_functionality_after_rebuild:
+        workflow: verify_services_flow
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          group: <% $.group %>
+          stopped_services: <% $.stopped_services %>
+          running_services: <% $.running_services %>
+          running_services_on_standby: <% $.running_services_on_standby %>
+          timeout: 180
+        publish:
+          failed_vnfc: <% task(verify_service_functionality_after_rebuild).result.failedNodes %>
+        publish-on-error:
+          error_message: <% task(verify_service_functionality_after_rebuild).result.error_message %>
+        on-success:
+          - healing_failed: <% task(verify_service_functionality_after_rebuild).result.failedNodes[0] != null %>
+
+      healing_failed:
+        action: std.javascript
+        input:
+          context:
+            vnfc: <% $.failed_vnfc %>
+          script: |
+            return "Failed to heal instance: "+$.vnfc
+        publish:
+          error_message: <% task(healing_failed).result %>
+        publish-on-error:
+          error_message: <% task(healing_failed).result %>
+
+#########################################
+################# REBUILD ###############
+#########################################
+
+  rebuild:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - vnfcToRebuild
+      - group
+      - playname
+      - timeout
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during server rebuild.") %>
+
+    tasks:
+      flatten_resource_model:
+        action: cbam.hierarchical_to_flat_resource_model
+        input:
+          hierarchical_resource_model: <% $.vnfInventory.resourceModel %>
+        publish:
+          flatResourceModel: <% task(flatten_resource_model).result %>
+        publish-on-error:
+          error_message: <% task(flatten_resource_model).result %>
+        on-success:
+          - get_physical_resource_id
+
+      get_physical_resource_id:
+        action: std.javascript
+        input:
+          context:
+            flatResourceModel: <% $.flatResourceModel %>
+            vnfcToRebuild: <% $.vnfcToRebuild %>
+          script: |
+            return $.flatResourceModel[$.vnfcToRebuild].physical_resource_id
+        publish:
+          serverToRebuild: <% task(get_physical_resource_id).result %>
+        publish-on-error:
+          error_message: <% task(get_physical_resource_id).result %>
+        on-success:
+          - get_physical_image_id
+
+      get_physical_image_id:
+        action: std.javascript
+        input:
+          context:
+            flatResourceModel: <% $.flatResourceModel %>
+            vnfcToRebuild: <% $.vnfcToRebuild %>
+          script: |
+            return $.flatResourceModel[$.vnfcToRebuild].attributes.image.id
+        publish:
+          serverImage: <% task(get_physical_image_id).result %>
+        publish-on-error:
+          error_message: <% task(get_physical_image_id).result %>
+        on-success:
+          - rebuild_server
+
+      rebuild_server:
+        action: nova.servers_rebuild
+        input:
+          server: <% $.serverToRebuild %>
+          image: <% $.serverImage %>
+        publish-on-error:
+          error_message: <% task(rebuild_server).result %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - reconfigure_server
+
+      reconfigure_server:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "host": <% $.vnfcToRebuild %>, "playname": <% $.playname %> }
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_server).result %>
+
+#########################################
+################# REBOOT ################
+#########################################
+
+  reboot:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - vnfcToReboot
+
+    output-on-error:
+      error_message: <% $.get(error_message, "Early failure happened during reboot.") %>
+
+    tasks:
+      flatten_resource_model:
+        action: cbam.hierarchical_to_flat_resource_model
+        input:
+          hierarchical_resource_model: <% $.vnfInventory.resourceModel %>
+        publish:
+          flatResourceModel: <% task(flatten_resource_model).result %>
+        publish-on-error:
+          error_message: <% task(flatten_resource_model).result %>
+        on-success:
+          - get_physical_resource_id
+
+      get_physical_resource_id:
+        action: std.javascript
+        input:
+          context:
+            flatResourceModel: <% $.flatResourceModel %>
+            vnfcToReboot: <% $.vnfcToReboot %>
+          script: |
+            return $.flatResourceModel[$.vnfcToReboot].physical_resource_id
+        publish:
+          serverToReboot: <% task(get_physical_resource_id).result %>
+        publish-on-error:
+          error_message: <% task(get_physical_resource_id).result %>
+        on-success:
+          - reboot_server
+
+      reboot_server:
+        action: nova.servers_reboot
+        input:
+          server: <% $.serverToReboot %>
+          reboot_type: HARD
+        publish-on-error:
+          error_message: <% task(reboot_server).result %>
+
+########################################
+############# HA_HEAL_FLOW #############
+########################################
+  ha_heal_flow:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - group
+      - playname
+      - timeout
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened when discovering a faulty VNFc.") %>
+
+    tasks:
+      call_ha_lcm_flow:
+        workflow: call_ha_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha_lcm_flow).result.error_message %>
+        on-success:
+          - call_ha_check_flow
+        on-error:
+          - call_ha_check_flow: <% $.operationParams.additionalParams.ignore_ha_lcm_error = true %>
+          - finalize_on_error: <% $.operationParams.additionalParams.ignore_ha_lcm_error != true %>
+
+      call_ha_check_flow:
+        workflow: ha_check_flow
+        input:
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          timeout: <% $.timeout %>
+          group: <% $.group %>
+        publish:
+          nodesToReboot: <% task(call_ha_check_flow).result.failedNodes %>
+        publish-on-error:
+          error_message: <% task(call_ha_check_flow).result %>
+        on-success:
+          - call_ha_lcm_flow2: <% task(call_ha_check_flow).result.failedNodes[0] = null %>
+          - call_reboot: <% task(call_ha_check_flow).result.failedNodes[0] != null %>
+
+      call_reboot:
+        workflow: reboot
+        with-items: node in <% $.nodesToReboot %>
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToReboot: <% $.node %>
+        publish-on-error:
+          nodesToRebuild: <% $.nodesToReboot %>
+          error_message: <% task(call_reboot).result %>
+        on-success:
+          - call_ha_check_flow2
+        on-error:
+          - call_rebuild
+
+      call_ha_check_flow2:
+        workflow: ha_check_flow
+        input:
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          timeout: <% $.timeout %>
+          group: <% $.group %>
+        publish:
+          nodesToRebuild: <% task(call_ha_check_flow2).result.failedNodes %>
+        publish-on-error:
+          error_message: <% task(call_ha_check_flow2).result %>
+        on-success:
+          - call_ha_lcm_flow2: <% task(call_ha_check_flow2).result.failedNodes[0] = null %>
+          - call_rebuild: <% task(call_ha_check_flow2).result.failedNodes[0] != null %>
+
+      call_rebuild:
+        workflow: rebuild
+        with-items: node in <% $.nodesToRebuild %>
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfcToRebuild: <% $.node %>
+          timeout: 600
+          group: <% $.group %>
+          playname: <% $.playname %>
+        publish-on-error:
+          error_message: <% task(call_rebuild).result %>
+        on-error:
+          - call_failure
+        on-success:
+          - call_ha_check_flow3
+
+      call_ha_check_flow3:
+        workflow: ha_check_flow
+        input:
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          timeout: <% $.timeout %>
+          group: <% $.group %>
+        publish:
+          failedNodes: <% task(call_ha_check_flow3).result.failedNodes %>
+        publish-on-error:
+          error_message: <% task(call_ha_check_flow3).result %>
+        on-success:
+          - call_ha_lcm_flow2: <% task(call_ha_check_flow3).result.failedNodes[0] = null %>
+          - call_failure:  <% task(call_ha_check_flow3).result.failedNodes[0] != null %>
+
+      call_ha_lcm_flow2:
+        wait-before: 60
+        workflow: call_ha_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha_lcm_flow2).result.error_message %>
+
+      call_failure:
+        action: std.javascript
+        input:
+          context:
+            failed_nodes: <% $.failedNodes %>
+          script: |
+            throw "Failed to Heal HA functionality on following instance(s): " + $.failed_nodes.toString()
+        publish:
+          error_message: <% task(call_failure).result %>
+        publish-on-error:
+          error_message: <% task(call_failure).result %>
+        on-complete:
+          - finalize_on_error
+
+      finalize_on_error:
+        action: std.fail
+
+########################################
+############# CALL HA FLOW #############
+########################################
+  call_ha_flow:
+    input:
+      - operationType
+      - operationParams
+      - vnfInventory
+    tasks:
+      generate_active_instances_for_scaled:
+        action: std.javascript
+        input:
+          context:
+            nfvModel: <% $.vnfInventory.nfvModel %>
+          script: |
+            var changed = false
+            if (typeof $.nfvModel.extensions == 'undefined'){
+                $.nfvModel.extensions = {}
+                changed = true
+            }
+            if(typeof $.nfvModel.extensions["vdu_processingOFF"] == 'undefined'){
+              $.nfvModel.extensions["vdu_processingOFF"] = []
+              fillInDefaults(0)
+            }
+            else if (typeof $.nfvModel.extensions["vdu_processingOFF"] !== 'undefined' && $.nfvModel.extensions["vdu_processingOFF"].length < $.nfvModel.aspects["processingOFFAspect"].count) {
+              fillInDefaults($.nfvModel.extensions["vdu_processingOFF"].length)
+            }
+            function fillInDefaults(i) {
+              for (var y=i; y < $.nfvModel.aspects["processingOFFAspect"].count; y++) {
+                $.nfvModel.extensions["vdu_processingOFF"][y]={"active_instance": "server1"}
+                changed = true
+              }
+            }
+            return [changed, $.nfvModel]
+        publish:
+          modified_nfv_model: <% task(generate_active_instances_for_scaled).result[1] %>
+        publish-on-error:
+          error_message: <% task(generate_active_instances_for_scaled).result %>
+        on-success:
+          - update_nfv_model: <% task(generate_active_instances_for_scaled).result[0] = true %>
+          - generate_model_from_config: <% task(generate_active_instances_for_scaled).result[0] != true %>
+
+      update_nfv_model:
+        action: cbam.update_vnf_inventory
+        input:
+          nfv_model: <% $.modified_nfv_model %>
+        publish-on-error:
+          error_message: <% task(update_nfv_model).result %>
+        on-success:
+          - get_vnf_inventory
+
+      get_vnf_inventory:
+        action: cbam.query_vnf_inventory
+        publish:
+          vnfInventory: <% task(get_vnf_inventory).result %>
+        publish-on-error:
+          error_message: <% task(get_vnf_inventory).result %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - call_ha
+
+      call_ha:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_ha.workbook.ha_processing' %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          stackParams: <% $.stackParams %>
+          vnfInventory: <% $.vnfInventory %>
+        publish-on-error:
+          error_message: <% task(call_ha).result.error_message %>
+        on-error:
+          - call_ha_failure
+
+      call_ha_failure:
+        action: std.javascript
+        input:
+          context:
+            error_message: <% $.error_message %>
+          script: |
+            return "Failed to run HA successfully within Heal flow."
+        publish:
+          error_message: <% task(call_ha_failure).result %>
+        publish-on-error:
+          error_message: <% task(call_ha_failure).result %>
+        on-complete:
+          - finalize_on_error
+
+      finalize_on_error:
+        action: std.fail
+
+########################################
+############ HA CHECK FLOW #############
+########################################
+  ha_check_flow:
+    input:
+      - operationParams
+      - vnfInventory
+      - timeout
+      - group
+    output:
+      failedNodes: <% $.failedNodes %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during 'HA CHECK FLOW' subflow.") %>
+
+    tasks:
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - check_connectivity_and_ha
+
+      check_connectivity_and_ha:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/heal.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "playname": "check_connectivity_and_ha.yaml" }
+          stack_params: <% $.stackParams %>
+        publish:
+          hosts_state: <% task(check_connectivity_and_ha).result %>
+        publish-on-error:
+          hosts_state: <% task(check_connectivity_and_ha).result %>
+        on-success:
+          - get_failed_nodes
+        on-error:
+          - get_failed_nodes
+
+      get_failed_nodes:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+          script: |
+            var keys = [];
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "failed") {
+                keys.push(key)
+              }
+            }
+            if (keys.length > 0){
+              return keys
+            } else {
+              return [null]
+            }
+        publish:
+          failedNodes: <% task(get_failed_nodes).result %>
+        publish-on-error:
+          error_message: <% task(get_failed_nodes).result %>
+
+########################################
+######## VERIFY SERVICES FLOW ##########
+########################################
+  verify_services_flow:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - stopped_services
+      - running_services
+      - running_services_on_standby
+      - group
+      - timeout
+    output:
+      failedNodes: <% $.failedNodes %>
+      alreadyRebootedNodes: <% $.alreadyRebootedNodes %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during 'VERIFY SERVICES FLOW' subflow.") %>
+
+    tasks:
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - check_services
+
+      check_services:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/heal.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "running_services": <% $.running_services %>, "stopped_services": <% $.stopped_services %>, "running_services_on_standby": <% $.running_services_on_standby %>, "playname": "check_services.yaml" }
+          stack_params: <% $.stackParams %>
+        publish:
+          hosts_state: <% task(check_services).result %>
+        publish-on-error:
+          hosts_state: <% task(check_services).result %>
+        on-success:
+          - get_rebooted_nodes
+        on-error:
+          - get_rebooted_nodes
+
+      get_rebooted_nodes:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+          script: |
+            var keys = [];
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "true") {
+                keys.push(key.split("_rebooted_already")[0])
+              }
+            }
+            if (keys.length > 0){
+              return keys
+            } else {
+              return [null]
+            }
+        publish:
+          alreadyRebootedNodes: <% task(get_rebooted_nodes).result %>
+        publish-on-error:
+          error_message: <% task(get_rebooted_nodes).result %>
+        on-success:
+          - get_failed_nodes
+
+      get_failed_nodes:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+            rebooted: <% $.alreadyRebootedNodes %>
+          script: |
+            var keys = [];
+            for (var key in $.hosts_state){
+              if ($.hosts_state[key] == "failed"){
+                if(!$.rebooted.includes(key)){
+                  keys.push(key)
+                }
+              }
+            }
+            if (keys.length > 0){
+              return keys
+            } else {
+              return [null]
+            }
+        publish:
+          failedNodes: <% task(get_failed_nodes).result %>
+        publish-on-error:
+          error_message: <% task(get_failed_nodes).result %>
+
+##########################################
+######### DISCOVER FAULTY ONLINE #########
+##########################################
+  discover_faulty_online:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - running_services
+      - group
+      - timeout
+    output:
+      onlineToHeal: <% $.onlineToHeal %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during 'DISCOVER FAULTY ONLINE' sub-flow.") %>
+
+    tasks:
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - check_faulty_online_node
+
+      check_faulty_online_node:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/heal_online.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "running_services": <% $.running_services %>  }
+        publish:
+          hosts_state: <% task(check_faulty_online_node).result %>
+        publish-on-error:
+          hosts_state: <% task(check_faulty_online_node).result %>
+        on-success:
+          - get_faulty_online_id
+        on-error:
+          - get_faulty_online_id
+
+      get_faulty_online_id:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+          script: |
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "running") {
+                return null
+              }
+            }
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "failed") {
+                return key
+              }
+            }
+            return null
+        publish:
+          onlineToHeal: <% task(get_faulty_online_id).result %>
+        publish-on-error:
+          error_message: <% task(get_faulty_online_id).result %>
+
+########################################
+######### DISCOVER FAULTY CRDB #########
+########################################
+  discover_faulty_crdb:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - running_services
+      - group
+      - timeout
+    output:
+      crdbToHeal: <% $.crdbToHeal %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during 'DISCOVER FAULTY CRDB' sub-flow.") %>
+
+    tasks:
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - check_faulty_crdb_node
+
+      check_faulty_crdb_node:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/heal_crdb.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "running_services": <% $.running_services %>  }
+        publish:
+          hosts_state: <% task(check_faulty_crdb_node).result %>
+        publish-on-error:
+          hosts_state: <% task(check_faulty_crdb_node).result %>
+        on-success:
+          - get_faulty_crdb_id
+        on-error:
+          - get_faulty_crdb_id
+
+      get_faulty_crdb_id:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+          script: |
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "running") {
+                return null
+              }
+            }
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "failed") {
+                return key
+              }
+            }
+            return null
+        publish:
+          crdbToHeal: <% task(get_faulty_crdb_id).result %>
+        publish-on-error:
+          error_message: <% task(get_faulty_crdb_id).result %>
+
+##########################################
+########### DISCOVER FAULTY UI ###########
+##########################################
+  discover_faulty_ui:
+    input:
+      - vnfInventory
+      - operationType
+      - operationParams
+      - running_services
+      - group
+      - timeout
+    output:
+      uiToHeal: <% $.uiToHeal %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during 'DISCOVER FAULTY UI' sub-flow.") %>
+
+    tasks:
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - check_faulty_ui
+
+      check_faulty_ui:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/heal_ui.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: { "timeout": <% $.timeout %>, "inventory_group": <% $.group %>, "running_services": <% $.running_services %>, "playname": "check_faulty_ui.yaml" }
+        publish:
+          hosts_state: <% task(check_faulty_ui).result %>
+        publish-on-error:
+          hosts_state: <% task(check_faulty_ui).result %>
+        on-success:
+          - get_faulty_ui_id
+        on-error:
+          - get_faulty_ui_id
+
+      get_faulty_ui_id:
+        action: std.javascript
+        input:
+          context:
+            hosts_state: <% $.hosts_state %>
+          script: |
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "running") {
+                return null
+              }
+            }
+            for (var key in $.hosts_state) {
+              if ($.hosts_state[key] == "failed") {
+                return key
+              }
+            }
+            return null
+        publish:
+          uiToHeal: <% task(get_faulty_ui_id).result %>
+        publish-on-error:
+          error_message: <% task(get_faulty_ui_id).result %>
+          

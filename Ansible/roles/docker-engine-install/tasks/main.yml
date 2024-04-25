@@ -1,0 +1,88 @@
+---
+- assert:
+    that:
+      - "docker_registry_port is defined"
+
+- name: Add user to group
+  register: update_user
+  user:
+    name: "{{ user }}"
+    groups: "{{ docker_group }}"
+    append: yes
+  become: true
+  become_method: sudo 
+
+- name: "Restart Tomcat UI Service"
+  when: 
+    - inventory_hostname in groups['vdu-ui']
+  service:
+    name: 'tomcat@el-ui'
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo
+
+- name: "Start and enable docker"
+  register: docker_started
+  systemd:
+    name: 'docker'
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  become_method: sudo
+
+- name: "Add Insecure Registry"
+  when: docker_started
+  register: add_insecure_registry
+  template:
+    src: "templates/daemon.json.j2"
+    dest: "/etc/docker/daemon.json"
+  become: true
+  become_method: sudo
+- name: "Add/Update docker-registry section of RC file with provided details."
+  when: ( inventory_hostname in groups['vdu-processingON'] ) or ( inventory_hostname in groups['vdu-processingOFF'] )
+  blockinfile:
+    block: |
+      docker_registry_hostname: "{{ ui_intnet_0 }}, {{ ui_intnet_1 }}"
+      docker_registry_port: {{ docker_registry_port }}
+    dest: "{{ rcfile }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR docker-registry"
+  become: true
+  become_method: sudo
+
+- name: "Add/Update docker-registry section of RC file with provided details."
+  when: ( inventory_hostname in groups['vdu-processingON'] ) or ( inventory_hostname in groups['vdu-processingOFF'] ) or ( inventory_hostname in groups['vdu-cgf'] )
+  blockinfile:
+    block: |
+      docker_registry_hostname: "{{ ui_intnet_0 }}, {{ ui_intnet_1 }}"
+      docker_registry_port: {{ docker_registry_port }}
+    dest: "{{ rcfile }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR docker-registry"
+  become: true
+  become_method: sudo
+
+- name: "Restart docker"
+  register: docker_restarted
+  when: add_insecure_registry.changed
+  systemd:
+    name: 'docker'
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: true
+  become_method: sudo
+
+- name: stop and disable el-node-manager service on STANDBY offline processing node
+  systemd:
+    name: el-node-manager
+    daemon_reload: yes
+    enabled: no
+    state: stopped
+  become: true
+  become_method: sudo
+  when: 
+     - ((reconfigure is defined) and (reconfigure == True))
+     - ((ha_mode is defined) or (ha_mode == "active-passive"))
+     - host_type == "el"
+...

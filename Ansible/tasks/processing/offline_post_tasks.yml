@@ -1,0 +1,23 @@
+---
+- name: Make sure NM will be stopped if keepalived fails
+  cron:
+    name: "Check ha role & stop NM if needed"
+    minute: "*/1"
+    job: "ha role | grep 'ACTIVE' || sleep 10 && ha role | grep 'ACTIVE' || systemctl stop el-node-manager && /opt/TEST/TEST/base/bin/TEST.pl stop"
+
+- name: Open ports to allow GUI render streams smoothly
+  firewalld:
+    port: 62500-62600/tcp
+    permanent: true
+    state: enabled
+    immediate: yes
+  become: yes
+
+- name: Open port to allow "Rejected Data" page to render smoothly
+  firewalld:
+    port: 62404/tcp
+    permanent: true
+    state: enabled
+    immediate: yes
+  become: yes
+...

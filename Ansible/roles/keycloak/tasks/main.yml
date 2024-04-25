@@ -1,0 +1,263 @@
+---
+- name: Check if keycloak kc file exists in persistent volume
+  stat:
+    path: "{{ persistent_mount }}/{{ kc_certificate_name }}.pem"
+  register: stat_result
+
+- name: Copy files from persistent mount if exists
+  copy:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode|default('0600') }}"
+    remote_src: true
+  become: true
+  become_method: sudo
+  with_items:
+   - destination: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+     source: "{{ persistent_mount }}/{{ kc_certificate_name }}.pem"
+     owner: root
+     group: root
+   - destination: "{{ kc_keystore_file }}"
+     source: "{{ persistent_mount }}/{{ kc_keystore_name }}"
+     owner: keycloak
+     group: keycloak
+  when:
+   - stat_result.stat.exists != False
+
+- name: "Create Keycloak configuration directory"
+  register: conf_dir_created
+  file:
+    path: "{{ kc_conf_dir }}"
+    owner: "{{ kc_conf_dir_owner | default('TEST') }}"
+    group: "{{ kc_conf_dir_group | default('TEST') }}"
+    mode: "{{ kc_conf_dir_mode | default(0755) }}"
+    state: directory
+  become: true
+  become_method: sudo
+
+- name: "Install expect"
+  when: conf_dir_created|success
+  register: expect_installed
+  yum:
+    name: expect
+    state: present
+  become: true
+  become_method: sudo
+
+- name: "Delete existing certificate store" 
+  file:
+    path: "{{ kc_keystore_file }}"
+    state: absent
+  become: true
+  become_method: sudo
+  when:
+    - stat_result.stat.exists == False 
+
+- name: "Generate SSL Certificate"
+  register: certificate_generated
+  expect:
+    command: "keytool -genkey -keystore {{ kc_keystore_file }} -storepass {{ kc_keystore_password }} -alias {{ kc_certificate_name }} -keypass {{ kc_certificate_password }} -keyalg RSA -validity {{ validity_days }} -keysize 2048 -ext san=ip:{{ ui_oam_vip }},dns:{{ kc_fqdn }}"
+    chdir: "{{ kc_install_dir }}"
+    creates: "{{ kc_keystore_file }}"
+    responses:
+      (?i)first and last name: "{{ kc_fqdn }}"
+      (?i)organizational unit: ""
+      (?i)organization: "{{ responses_organization }}"
+      (?i)city or locality: ""
+      (?i)state or province: ""
+      (?i)country code: ""
+      (?i)correct: "{{ responses_correct }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_user: "{{ kc_user }}"
+  become_method: sudo  
+  when:
+   - expect_installed|success
+   - inventory_hostname == ha_master
+   - stat_result.stat.exists == False 
+
+- name: "Remove existing DER certificate"
+  file:
+    path: "{{ kc_install_dir }}/{{ kc_certificate_name }}.der"
+    state: absent
+  become: true
+  become_method: sudo
+  when:
+    - stat_result.stat.exists == False 
+  
+- name: "Export SSL Certificate"
+  register: certificate_exported
+  command: "keytool -exportcert -keystore {{ kc_keystore_file }} -storepass {{ kc_keystore_password }} -alias {{ kc_certificate_name }} -keypass {{ kc_certificate_password }} -file {{ kc_certificate_name }}.der"
+  args:
+    chdir: "{{ kc_install_dir }}"
+    creates: "{{ kc_certificate_name }}.der"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  when:
+   - certificate_generated|success
+   - inventory_hostname == ha_master
+   - stat_result.stat.exists == False 
+  
+- name: "Convert SSL Certificate from DER to PEM format"
+  register: certificate_converted
+  command: "openssl x509 -in {{ kc_certificate_name }}.der -inform DER -outform PEM -out {{ kc_certificate_name }}.pem"
+  args:
+    chdir: "{{ kc_install_dir }}"
+    creates: "{{ kc_certificate_name }}.pem"
+  become: true
+  become_method: sudo
+  when:
+   - certificate_exported|success
+   - inventory_hostname == ha_master
+   - stat_result.stat.exists == False 
+
+- name: "Fetch SSL Certificate and keystore to master"
+  register: certificate_fetched
+  fetch:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    flat: yes
+  become: true
+  become_method: sudo
+  with_items:
+   - source: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+     destination: "{{ kc_ssl_certificate_file }}"
+   - source: "{{ kc_keystore_file }}"
+     destination: "{{ kc_local_keystore_file }}"
+  when:
+   - certificate_converted|success
+   - inventory_hostname == ha_master
+   - stat_result.stat.exists == False 
+  
+- name: "Fetch SSL Certificate and keystore to master"
+  register: certificate_fetched
+  fetch:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    flat: yes
+  become: true
+  become_method: sudo
+  with_items:
+    - source: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+      destination: "{{ kc_ssl_certificate_file }}"
+    - source: "{{ kc_keystore_file }}"
+      destination: "{{ kc_local_keystore_file }}"
+  when:
+   - reconfigure is defined
+   - reconfigure == True
+
+- name: "Copy existing SSL Certificate and JKS"
+  copy:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode|default('0600') }}"
+  become: true
+  become_method: sudo
+  with_items:
+   - destination: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+     source: "{{ kc_ssl_certificate_file }}"
+     owner: root
+     group: root
+   - destination: "{{ kc_keystore_file }}"
+     source: "{{ kc_local_keystore_file }}"
+     owner: keycloak
+     group: keycloak
+  when:
+   - inventory_hostname != ha_master
+   - stat_result.stat.exists == False 
+  
+- name: "Vault keystore and certificate passwords"
+  when: certificate_fetched|success
+  register: passwords_vaulted
+  command: "csf/ckeyadm vault addv {{ kc_vault_name }} {{ kc_vault_password }} {{ kc_vault_alias }} {{ kc_vault_salt }} {{ kc_vault_iterations }} {{ item.password }} keystore {{ item.attribute }}"
+  args:
+    chdir: "{{ kc_install_dir }}"
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  with_items:
+    - password: "{{ kc_keystore_password }}"
+      attribute: "{{ kc_keystore_password_attribute }}"
+    - password: "{{ kc_certificate_password }}"
+      attribute: "{{ kc_certificate_password_attribute }}"
+
+- name: "Reconfigure Keycloak CSF configuration"
+  when: passwords_vaulted|success
+  register: keycloak_reconfigured
+  lineinfile:
+    path: "{{ kc_csf_conf }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  no_log: "{{ hide_sensitive_debug_info }}"
+  become: true
+  become_method: sudo
+  with_items:
+    - regexp: "^HTTPS:.*$"
+      line: "HTTPS:{{ kc_keystore_name }}:{{ kc_keystore_password_attribute }}:{{ kc_certificate_name }}:{{ kc_certificate_password_attribute }}"
+    - regexp: "^jboss.bind.address:.*$"
+      line: "jboss.bind.address:{{ kc_jboss_bind_address }}"
+    - regexp: "^jboss.bind.address.private:.*$"
+      line: "jboss.bind.address.private:{{ kc_jboss_bind_address_private }}"
+    - regexp: '^#?JVM_ARGUMENT:(.*)?-Djava.net.preferIPv[46]Stack=true(.*)$'
+      line: "JVM_ARGUMENT:\\1-Djava.net.preferIPv{{ kc_preferred_ip_version }}Stack=true\\2"
+
+- name: Update the java arguments always
+  replace:
+    path: "/opt/etc/keycloak/keycloak-sysconfig"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+  become: true
+  become_method: sudo
+  with_items:
+    - regexp: '-Djava.net.preferIPv[46]Stack=true'
+      line: "-Djava.net.preferIPv{{ kc_preferred_ip_version }}Stack=true"
+
+- name: "Enable embed server in custom config CLI"
+  lineinfile:
+    path: "{{ kc_custom_cli_file }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backrefs: yes
+  with_items:
+    - regexp: "^#embed-server.*$"
+      line: "embed-server --server-config=standalone.xml"
+    - regexp: "^#stop-embedded-server.*$"
+      line: "stop-embedded-server"
+  become: true
+  become_method: sudo
+
+- name: "Add Keycloak interface IP address in custom config CLI"
+  blockinfile:
+    path: "{{ kc_custom_cli_file }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - configure interface IP address"
+    insertafter: "^embed-server.*$"
+    block: |
+      /interface=public:write-attribute(name=inet-address, value="${jboss.bind.address:{{ kc_jboss_bind_address }}}")
+      /interface=private:write-attribute(name=inet-address, value="${jboss.bind.address.private:{{ kc_jboss_bind_address_private }}}")
+  become: true
+  become_method: sudo
+
+- name: "Add PostgeSQL driver in custom config CLI"
+  blockinfile:
+    path: "{{ kc_custom_cli_file }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - configure PostgreSQL driver"
+    insertafter: "^embed-server.*$"
+    block: |
+      if (outcome != success) of /subsystem=datasources/jdbc-driver=postgresql:read-resource
+        /subsystem=datasources/jdbc-driver=postgresql:add(driver-module-name=org.postgresql, driver-name=postgresql,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)
+      end-if
+  become: true
+  become_method: sudo
+
+- name: "Reload systemd manager configuration"
+  systemd:
+    name: keycloak
+    daemon_reload: yes
+  become: yes
+  become_method: sudo

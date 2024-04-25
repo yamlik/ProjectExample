@@ -1,0 +1,3 @@
+- name: try scalein ha-sync if scalein this node
+  include: ha-sync/scalein.yml
+  when: scale_group is defined and inventory_hostname in groups[scale_group]

@@ -1,0 +1,70 @@
+- name: Restore TimesTen ODBC ini
+  shell: "cp {{ tt_backup_dir }}/.odbc.ini {{ odbc_ini_location }}/.odbc.ini"
+
+- name: Read ODBC ini
+  slurp:
+    src: "{{ odbc_ini_location }}/.odbc.ini"
+  register: odbc_output
+
+- debug:
+    msg: "{{odbc_output['content'] | b64decode | regex_findall('\\[(.+)\\]') }}"
+
+- set_fact:
+    datastores: "{{odbc_output['content'] | b64decode | regex_findall('\\[(.+)\\]') }}"
+
+- name: Upgrade Timesten ODBC ini - Driver
+  lineinfile:
+    backrefs: yes
+    path: "{{ odbc_ini_location }}/.odbc.ini"
+    line: "Driver=/opt/TEST/TimesTen/TEST_timesten/install/lib/libtten.so"
+    regexp: "Driver=*"
+    state: present
+  when: upgrade is defined and upgrade == true
+
+- name: Upgrade Timesten ODBC ini - ConnectionCharacterSet
+  lineinfile:
+    backrefs: yes
+    path: "{{ odbc_ini_location }}/.odbc.ini"
+    line: "ConnectionCharacterSet=WE8ISO8859P1"
+    regexp: "ConnectionCharacterSet=*"
+    state: present
+  when: upgrade is defined and upgrade == true
+
+- name: Upgrade  Timesten ODBC ini - DatabaseCharacterSet
+  lineinfile:
+    backrefs: yes
+    path: "{{ odbc_ini_location }}/.odbc.ini"
+    line: "DatabaseCharacterSet=WE8ISO8859P1"
+    regexp: "DatabaseCharacterSet=*"
+    state: present
+  when: upgrade is defined and upgrade == true
+
+- name: Upgrade Timesten ODBC ini
+  lineinfile:
+    backrefs: yes
+    path: "{{ odbc_ini_location }}/.odbc.ini"
+    line: "ConnectionCharacterSet=WE8ISO8859P1"
+    regexp: "ConnectionCharacterSet=*"
+    state: present
+  when: upgrade is defined and upgrade == true
+
+- name: Destroy Timesten old datastore
+  shell: ttDestroy -force {{ item }}
+  args:
+    chdir: "{{ tt_backup_dir }}"
+  with_items:
+    - "{{ datastores }}"
+
+- name: Restore Timesten datastore
+  shell: ttMigrate -r {{ item }} database_{{item}}_export.dat
+  args:
+    chdir: "{{ tt_backup_dir }}"
+  with_items:
+    - "{{ datastores }}"
+
+- name: Start el-node-manager after TimesTen datastore restore
+  systemd:
+    name: el-node-manager
+    state: started
+  become: true
+  become_method: sudo

@@ -1,0 +1,16 @@
+---
+
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+TEST_home: /opt/TEST/TEST/base
+
+gtp_prime_collector_instance: "{{ vnf_context_data.stack_params.cbam.extensions.gtp_prime_instance }}"
+gtp_prime_service_name: gtp
+
+wait_timeout: 900
+state_file: /var/tmp/processing.state
+
+force_mode: "{{ vnf_context_data.stack_params.cbam.extensions.enable_force_scale_in }}"
+...

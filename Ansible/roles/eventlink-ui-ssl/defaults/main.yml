@@ -1,0 +1,144 @@
+---
+# defaults file for TEST-ui
+
+install_directory: '/opt/TEST/TEST'
+tomcat_dir: '/opt/TEST/tomcat'
+el_ui_user: "TEST"
+el_ui_group: "TEST"
+ansible_dir: '/tmp/ansible_tmp'
+
+# Default variables for .mds.rc file
+el_ui_oriserver_response_timeout: "1800"
+el_ui_cloud_cluster_response_timeout: 5
+el_ui_flink_max_number_of_task_managers: 24
+el_ui_flink_max_memory_per_task_manager: 65536
+el_ui_flink_max_slots_per_task_manager: 32
+
+# Default configuration variables for server.xml file
+el_ui_http_port: "55080"
+el_ui_redirect_port: "55081"
+el_ui_ajp_port: "55009"
+el_ui_shutdown_port: "55005"
+
+# Default configuration variables for solution config
+el_ui_fqdn: "{{ inventory_hostname }}"
+
+#Defaults variables for admintools
+at_audit_files_location: "{{ install_directory }}/audit/TEST-audit.log"
+at_audit_files_size: '5000000'
+vi_crud_wait_timeout: '120'
+audittrail_datasource_name: 'jdbc/audittrail'
+audittrail_config_file: '/etc/audit.conf'
+
+at_db_port: "{{ postgresql_server_port }}"
+at_db_url: "{{ at_db_prefix | default('postgresql://') }}{{ at_db_host }}:{{ at_db_port }}/{{ at_db_name }}"
+
+#Default configuration for Solution config
+solution_config_dir: '/opt/TEST/solution-config'
+httpd_listening_port: '55000'
+el_set_banner: false
+el_banner_name: "{{ el_ui_fqdn }}"
+el_banner_desc: 'TEST TEST/PROD environment'
+el_banner_mode: 'thin'
+el_banner_theme: 'grey-theme'
+
+#Default configuration for database
+db_el_name: "TEST"
+db_el_port: "{{ postgresql_server_port }}"
+
+#Default configuration for sticky notes
+el_sticky_notes_module: 'TEST'
+el_sticky_notes_backend: '/TEST/api/stickyNotes'
+
+
+# Defaults for Keycloak configure
+product_install_dir_TEST_ui: "{{ install_directory }}/TEST-ui"
+product_service_name_TEST_ui: "tomcat@el-ui"
+certificate_alias_TEST_ui: "TEST"
+product_kc_http_origin_TEST_ui: "{{ protocol | default('http') }}://{{ el_ui_fqdn }}:{{ el_ui_http_port }}"
+product_kc_apache_origin_TEST_ui: "{{ protocol | default('http') }}://{{ el_ui_fqdn }}:{{ httpd_listening_port }}"
+keystore_file_name_TEST_ui: "el-keystore.jks"
+keystore_password_TEST_ui: "TEST_pass"
+truststore_password_TEST_ui: "TEST_pass"
+client_local_conf_TEST_ui: "{{ ansible_dir }}/TEST-ui-keycloak.json"
+client_roles_TEST_ui: "{{ permission_dictionary }}"
+remove_client_roles_TEST_ui: "{{ remove_permission_dictionary }}"
+truststore_file_name_TEST_ui: "trusted-certs.jks"
+kc_client_id_TEST_ui: "TEST_ui"
+kc_client_name_TEST_ui: "TEST Mediation"
+kc_client_description_TEST_ui: "TEST Mediation UI web application"
+kc_client_conf_file_TEST_ui: "{{ tomcat_dir }}/TEST/conf/keycloak.json"
+kc_client_scope_mappings_TEST_ui:
+  - { client_id: "admintools", role_name: "module.settings" }
+  - { client_id: "realm-management", role_name: "view-clients", assign_to_service_account: True }
+  - { client_id: "realm-management", role_name: "manage-clients", assign_to_service_account: True }
+    
+# Package properties
+TEST_ui_package_name: TEST-ui
+
+# RC file properties
+rc_TEST_ui_program: "TEST_ui"
+el_ui_ext_workspace_url: "/TEST"
+
+# Files and directories location
+rc_file_location: '{{ install_directory }}/.mds.rc'
+server_xml_file_location: '{{ tomcat_dir }}/TEST/conf/server.xml'
+TEST_home: '{{ install_directory }}/base'
+TEST_bin: '{{ TEST_home }}/bin'
+lookup_server_bin: '{{ install_directory }}/lookup_server/bin'
+context_xml_file_location: '{{ tomcat_dir }}/TEST/conf/context.xml'
+el_ui_tomcat_service_path: '/etc/sysconfig/tomcat@el-ui'
+TEST_webapp_location: "{{ tomcat_dir }}/TEST/webapps"
+el_ui_release_path: "{{ TEST_home }}/internal/el-ui-release"
+el_crypto_path: '/usr/share/java/el-crypto/el-crypto.jar'
+el_crypto_link_path: "{{ tomcat_dir }}/TEST/lib/el-crypto.jar"
+
+#Platform vars
+at_module_id_for_TEST_ui: 'TEST'
+at_module_name_for_TEST_ui: 'TEST Mediation'
+
+
+#Product name, version, copyright and etc
+el_copyright_text_sign: "\u00A9 "
+el_copyright_text_company: " TEST"
+el_copyright_text_all_rights_reserved: ". All rights reserved."
+
+# List of TEST permissions for admintools
+moduleid: TEST
+
+permission_dictionary:
+  - {name: "TEST.administration", description: "TEST administration access."}
+  - {name: "TEST.browse", description: "Mandatory TEST permission required by all sub-modules."}
+  - {name: "TEST.browse_history", description: "View changes in a stream."}
+  - {name: "TEST.delete_stream", description: "Delete a specific stream."}
+  - {name: "TEST.delete_stream_version", description: "Delete a specific stream version."}
+  - {name: "TEST.host_config", description: "Manage host settings."}
+  - {name: "TEST.kill", description: "Allow node killing."}
+  - {name: "TEST.manage_notification", description: "Acknowledge errors and warnings."}
+  - {name: "TEST.modify_stream_details", description: "Edit stream information."}
+  - {name: "TEST.node_cfg_files", description: "View node configuration files."}
+  - {name: "TEST.node_param", description: "View and edit node parameters."}
+  - {name: "TEST.operate_execution", description: "Modify stream execution settings."}
+  - {name: "TEST.operate_node", description: "Enable and disable a node in a stream."}
+  - {name: "TEST.operate_stream", description: "Start and stop a stream."}
+  - {name: "TEST.reprocessing_modify", description: "Modify reprocessing schedules of rejected records."}
+  - {name: "TEST.reprocessing_offline", description: "Take rejected storage offline."}
+  - {name: "TEST.reprocessing_start", description: "Enable reprocessing of rejected records."}
+  - {name: "TEST.workspace", description: "Create and manage process streams."}
+  - {name: "TEST.manage_taskmanagers", description: "Manage Flink task managers."}
+  - {name: "lookup_admin.administrator", description: "Lookup administrator access"}
+  - {name: "lookup_admin.operator", description: "Standard Lookup operations."}
+  - {name: "lookup_admin.browser", description: "Mandatory Lookup permission required by all sub-modules"}
+
+remove_permission_dictionary:
+  - {name: "TEST.manage_taskmanagers"}
+
+solution_config_menu_items_dictionary:
+  - {label: "Dashboard", tooltip: "Dashboard", url: "/TEST/#dashboard", permissions: "TEST.browse"}
+  - {label: "Alerts", tooltip: "Alerts", url: "/TEST/#alarms", permissions: "TEST.browse"}
+  - {label: "System", tooltip: "System", url: "/TEST/#system", permissions: "TEST.browse"}
+  - {label: "Network model", tooltip: "Network model", url: "/TEST/#networkModel", permissions: "TEST.browse"}
+  - {label: "Streams", tooltip: "Streams", url: "/TEST/#streams", permissions: "TEST.browse"}
+  - {label: "Data", tooltip: "Data", url: "/TEST/#data", permissions: "TEST.browse"}
+
+...    

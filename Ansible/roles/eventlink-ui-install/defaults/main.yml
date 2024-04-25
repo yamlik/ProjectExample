@@ -1,0 +1,7 @@
+---
+# vars file for el-TEST-ui installation
+
+# Package properties
+TEST_ui_package_name: "TEST-ui"
+
+...

@@ -1,0 +1,28 @@
+{
+  "TSNT-3438": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_491",
+      "Application Date": "10/02/2022",
+      "Application Type": "CARD"
+    },
+
+  "Applicant": {
+    "Id Number 1": "DFGH345",
+    "First Name": "Smith"
+
+  },
+       "actionDetails": {
+         "Decision Reason": "COLLUSION",
+       "Nature of Fraud": "FRAUD ID/PASSPORT"
+       },
+    "verifyRow1": {
+      "Action Taken": "KNOWN FRAUD",
+      "Nature of Fraud": "07 - FRAUD ID/PASSPORT",
+      "Fraud Alert": "Clean"
+
+
+
+    }
+  }
+}

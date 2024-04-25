@@ -1,0 +1,319 @@
+heat_template_version: 2016-10-14
+
+parameters:
+  cbam:
+    type: json
+  prefix:
+    type: string
+  resources:
+    type: json
+  node_index:
+    type: string
+  port_index:
+    type: string
+    default: "0"
+  key_name:
+    type: string
+  el_common_security_group_id:
+    type: string
+  el_offline_security_group_id:
+    type: string
+  internal_network_security_group_id:
+    type: string
+  internal_network:
+    type: string
+    description: Internal network for storage replication
+    default: invalid
+  internal_subnet:
+    type: string
+    description: Internal subnet for storage replication
+    default: invalid
+  offline_server_group_id:
+    type: string
+  data_mount_id:
+    type: string
+  storage_mount_id:
+    type: string
+  offline_mount_id:
+    type: string
+  timesten_mount_id:
+    type: string
+  control_mount_id:
+    type: string
+  processingOFF_virtual_ip_on_oam_network:
+    type: string
+  processingOFF_charg_virtual_ip:
+    type: string
+  processingOFF_bill_virtual_ip:
+    type: string
+
+  mappings:
+    type: json
+    description: This mess is needed because heat_template_version 2015-10-15 doesn't support arithmetic operations
+    default: {
+        "0": {"0": { "node": 0, "node_str": "0", "internal_net_suffix": ".100", "az": 0}, "1": { "node": 1, "node_str": "1", "internal_net_suffix": ".101", "az": 1} },
+        "1": {"0": { "node": 2, "node_str": "2", "internal_net_suffix": ".102", "az": 0}, "1": { "node": 3, "node_str": "3", "internal_net_suffix": ".103", "az": 1} },
+        "2": {"0": { "node": 4, "node_str": "4", "internal_net_suffix": ".104", "az": 0}, "1": { "node": 5, "node_str": "5", "internal_net_suffix": ".105", "az": 1} },
+        "3": {"0": { "node": 6, "node_str": "6", "internal_net_suffix": ".106", "az": 0}, "1": { "node": 7, "node_str": "7", "internal_net_suffix": ".107", "az": 1} },
+        "4": {"0": { "node": 8, "node_str": "8", "internal_net_suffix": ".108", "az": 0}, "1": { "node": 9, "node_str": "9", "internal_net_suffix": ".109", "az": 1} },
+        "5": {"0": { "node": 10, "node_str": "10", "internal_net_suffix": ".110", "az": 0}, "1": { "node": 11, "node_str": "11", "internal_net_suffix": ".111", "az": 1} },
+        "6": {"0": { "node": 12, "node_str": "12", "internal_net_suffix": ".112", "az": 0}, "1": { "node": 13, "node_str": "13", "internal_net_suffix": ".113", "az": 1} },
+        "7": {"0": { "node": 14, "node_str": "14", "internal_net_suffix": ".114", "az": 0}, "1": { "node": 15, "node_str": "15", "internal_net_suffix": ".115", "az": 1} },
+        "8": {"0": { "node": 16, "node_str": "16", "internal_net_suffix": ".116", "az": 0}, "1": { "node": 17, "node_str": "17", "internal_net_suffix": ".117", "az": 1} },
+        "9": {"0": { "node": 18, "node_str": "18", "internal_net_suffix": ".118", "az": 0}, "1": { "node": 19, "node_str": "19", "internal_net_suffix": ".119", "az": 1} },
+        "10": {"0": { "node": 20, "node_str": "20", "internal_net_suffix": ".120", "az": 0}, "1": { "node": 21, "node_str": "21", "internal_net_suffix": ".121", "az": 1} },
+        "11": {"0": { "node": 22, "node_str": "22", "internal_net_suffix": ".122", "az": 0}, "1": { "node": 23, "node_str": "23", "internal_net_suffix": ".123", "az": 1} },
+        "12": {"0": { "node": 24, "node_str": "24", "internal_net_suffix": ".124", "az": 0}, "1": { "node": 25, "node_str": "25", "internal_net_suffix": ".125", "az": 1} },
+        "13": {"0": { "node": 26, "node_str": "26", "internal_net_suffix": ".126", "az": 0}, "1": { "node": 27, "node_str": "27", "internal_net_suffix": ".127", "az": 1} },
+        "14": {"0": { "node": 28, "node_str": "28", "internal_net_suffix": ".128", "az": 0}, "1": { "node": 29, "node_str": "29", "internal_net_suffix": ".129", "az": 1} },
+        "15": {"0": { "node": 30, "node_str": "30", "internal_net_suffix": ".130", "az": 0}, "1": { "node": 31, "node_str": "31", "internal_net_suffix": ".131", "az": 1} },
+        "16": {"0": { "node": 32, "node_str": "32", "internal_net_suffix": ".132", "az": 0}, "1": { "node": 33, "node_str": "33", "internal_net_suffix": ".133", "az": 1} },
+        "17": {"0": { "node": 34, "node_str": "34", "internal_net_suffix": ".134", "az": 0}, "1": { "node": 35, "node_str": "35", "internal_net_suffix": ".135", "az": 1} },
+        "18": {"0": { "node": 36, "node_str": "36", "internal_net_suffix": ".136", "az": 0}, "1": { "node": 37, "node_str": "37", "internal_net_suffix": ".137", "az": 1} },
+        "19": {"0": { "node": 38, "node_str": "38", "internal_net_suffix": ".138", "az": 0}, "1": { "node": 39, "node_str": "39", "internal_net_suffix": ".139", "az": 1} }
+        }
+
+conditions:
+  cbam_id: { equals: [ { get_param: [ cbam, extensions, use_cbam_id ] }, true ] }
+  custom_vm_name: { equals: [ { get_param: [ cbam, extensions, use_custom_vm_name ] }, false ] }
+
+resources:
+  oam_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_oam_ecp, networkId ] }
+      name: { list_join: [ "-", [ {get_param: prefix}, processingOFF, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, oam ] ] }
+      fixed_ips: [{
+          "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_oam_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, subnetId ] },
+          "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_oam_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, ip ] },
+          }]
+      allowed_address_pairs: [ { "ip_address": { list_join: ["/", [ { get_param: processingOFF_virtual_ip_on_oam_network }, "32"]]} } ]
+      binding:vnic_type: { get_param: [ cbam, extensions, vnic_type ] } 
+      security_groups: [ { get_param: el_offline_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  charg_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_charging_ecp, networkId ] }
+      name: { list_join: [ "-", [ {get_param: prefix}, processingOFF, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, charg ] ] }
+      fixed_ips: [{
+          "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_charging_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, subnetId ] },
+          "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_charging_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, ip ] },
+          }]
+      allowed_address_pairs: [ { "ip_address": { list_join: ["/", [ { get_param: processingOFF_charg_virtual_ip }, "32"]]} } ]
+      binding:vnic_type: { get_param: [ cbam, extensions, vnic_type ] } 
+      security_groups: [ { get_param: el_offline_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  bill_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: [ cbam, externalConnectionPoints, processingOFF_billing_ecp, networkId ] }
+      name: { list_join: [ "-", [ {get_param: prefix}, processingOFF, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, bill ] ] }
+      fixed_ips: [{
+         "subnet": { get_param: [ cbam, externalConnectionPoints, processingOFF_billing_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, subnetId ] },
+          "ip_address": { get_param: [ cbam, externalConnectionPoints, processingOFF_billing_ecp, addresses, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node ] }, ip ] },
+          }]
+      allowed_address_pairs: [ { "ip_address": { list_join: ["/", [ { get_param: processingOFF_bill_virtual_ip }, "32"]]} } ]
+      binding:vnic_type: { get_param: [ cbam, extensions, vnic_type ] } 
+      security_groups: [ { get_param: el_offline_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  internal_port:
+    type: OS::Neutron::Port
+    properties:
+      admin_state_up: true
+      name: { list_join: [ "-", [ { get_param: prefix }, processingOFF, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, internal ] ] }
+      network: { get_param: internal_network }
+      fixed_ips: [{
+          "subnet": { get_param: internal_subnet },
+          "ip_address": { list_join: [ "", [ { get_param: [ cbam, extensions, internal_net_prefix ] }, { get_param: [ mappings,  { get_param: port_index }, { get_param: node_index }, internal_net_suffix ] } ] ] }
+          }]
+      security_groups: [ { get_param: internal_network_security_group_id }, { get_param: el_common_security_group_id } ]
+
+  el_base_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      config:
+        str_replace:
+          template: |
+            #cloud-config
+            hostname: $hostname
+            fqdn: $hostname
+            manage_etc_hosts: false
+            timezone: $timezone
+            disable_root: false
+            write_files:
+            - path: /var/tmp/ifcfg-oam
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth0addr
+                PREFIX=$eth0prefix
+                DEFROUTE=yes
+                ZONE=public
+                GATEWAY=$defaultgateway0
+                MTU=$MTU
+                IPV6INIT=yes
+            - path: /var/tmp/ifcfg-charg
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth1addr
+                PREFIX=$eth1prefix
+                GATEWAY=$defaultgateway1
+                DEFROUTE=no
+                ZONE=public
+                MTU=$MTU
+                IPV6INIT=yes
+            - path: /var/tmp/ifcfg-bill
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth2addr
+                PREFIX=$eth2prefix
+                GATEWAY=$defaultgateway2
+                DEFROUTE=no
+                ZONE=public
+                MTU=$MTU
+                IPV6INIT=yes
+            - path: /var/tmp/ifcfg-internal
+              content: |
+                TYPE=Ethernet
+                NM_CONTROLLED=no
+                ONBOOT=yes
+                BOOTPROTO=static
+                IPADDR=$eth3addr
+                PREFIX=$eth3prefix
+                GATEWAY=$defaultgateway3
+                DEFROUTE=no
+                ZONE=trusted
+                MTU=$MTU
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth0
+            - path: /etc/sysconfig/network-scripts/rule-eth0
+            - path: /etc/sysconfig/network-scripts/route-eth0
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth1
+            - path: /etc/sysconfig/network-scripts/rule-eth1
+            - path: /etc/sysconfig/network-scripts/route-eth1
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth2
+            - path: /etc/sysconfig/network-scripts/rule-eth2
+            - path: /etc/sysconfig/network-scripts/route-eth2
+            - path: /etc/sysconfig/network-scripts/ifcfg-eth3
+            - path: /etc/sysconfig/network-scripts/rule-eth3
+            - path: /etc/sysconfig/network-scripts/route-eth3
+            - path: /etc/ansible/facts.d/interfaces.fact
+              content: |
+                [devices]
+            - path: /etc/ansible/facts.d/disks.fact
+              content: |
+                [processingoff]
+            runcmd:
+              - echo "my hostname is `hostname`" > /tmp/hostname
+              - interface0=$(ip a | grep -B1 $eth0hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface0 >> /var/tmp/ifcfg-oam
+              - interface1=$(ip a | grep -B1 $eth1hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface1 >> /var/tmp/ifcfg-charg
+              - interface2=$(ip a | grep -B1 $eth2hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface2 >> /var/tmp/ifcfg-bill
+              - interface3=$(ip a | grep -B1 $eth3hwaddr | sed -n 1p |awk -F':' '{print $2}'|awk '{print $1}') && echo DEVICE=$interface3 >> /var/tmp/ifcfg-internal
+              - cat /var/tmp/ifcfg-oam > /etc/sysconfig/network-scripts/ifcfg-$interface0
+              - cat /var/tmp/ifcfg-charg > /etc/sysconfig/network-scripts/ifcfg-$interface1
+              - cat /var/tmp/ifcfg-bill > /etc/sysconfig/network-scripts/ifcfg-$interface2
+              - cat /var/tmp/ifcfg-internal > /etc/sysconfig/network-scripts/ifcfg-$interface3
+              - echo iif $interface0 table 100 >> /etc/sysconfig/network-scripts/rule-$interface0 && echo from $eth0addr table 100 >> /etc/sysconfig/network-scripts/rule-$interface0 && echo from $el_oam_vip table 100 >> /etc/sysconfig/network-scripts/rule-$interface0
+              - echo iif $interface1 table 101 >> /etc/sysconfig/network-scripts/rule-$interface1 && echo from $eth1addr table 101 >> /etc/sysconfig/network-scripts/rule-$interface1 && echo from $el_charg_vip table 101 >> /etc/sysconfig/network-scripts/rule-$interface1
+              - echo iif $interface2 table 102 >> /etc/sysconfig/network-scripts/rule-$interface2 && echo from $eth2addr table 102 >> /etc/sysconfig/network-scripts/rule-$interface2 && echo from $el_bill_vip table 102 >> /etc/sysconfig/network-scripts/rule-$interface2
+              - echo iif $interface3 table 103 >> /etc/sysconfig/network-scripts/rule-$interface3 && echo from $eth3addr table 103 >> /etc/sysconfig/network-scripts/rule-$interface3
+              - echo $eth0cidr dev $interface0 table 100 >> /etc/sysconfig/network-scripts/route-$interface0 && echo default via $eth0gw dev $interface0 table 100 >> /etc/sysconfig/network-scripts/route-$interface0
+              - echo $eth1cidr dev $interface1 table 101 >> /etc/sysconfig/network-scripts/route-$interface1
+              - echo $eth2cidr dev $interface2 table 102 >> /etc/sysconfig/network-scripts/route-$interface2
+              - echo $eth3cidr dev $interface3 table 103 >> /etc/sysconfig/network-scripts/route-$interface3
+              - echo oam_interface=$interface0 >> /etc/ansible/facts.d/interfaces.fact
+              - echo charg_interface=$interface1 >> /etc/ansible/facts.d/interfaces.fact
+              - echo bill_interface=$interface2 >> /etc/ansible/facts.d/interfaces.fact
+              - echo internal_interface=$interface3 >> /etc/ansible/facts.d/interfaces.fact
+              - echo data_mount_id=$data_mount_id >> /etc/ansible/facts.d/disks.fact
+              - echo offline_mount_id=$offline_mount_id >> /etc/ansible/facts.d/disks.fact
+              - echo storage_mount_id=$storage_mount_id >> /etc/ansible/facts.d/disks.fact
+              - echo timesten_mount_id=$timesten_mount_id >> /etc/ansible/facts.d/disks.fact
+              - echo control_mount_id=$control_mount_id >> /etc/ansible/facts.d/disks.fact
+              - if [ $ipv6enabled == 'ipv6' ]; then echo IPV6_DEFAULTGW=$defaultgateway0%$interface0 >> /etc/sysconfig/network-scripts/ifcfg-$interface0; fi
+              - systemctl restart network
+            final_message: "The system is finally up, after $UPTIME seconds"
+          params:
+            $MTU: { get_param: [ cbam, extensions, MTU_size ] }
+            $timezone: { get_param: [ cbam, extensions, time_zone ]}
+            $ipv6enabled: { get_param: [ cbam, extensions, ip_protocol_version ] }
+            $hostname: { if: [ custom_vm_name, { list_join: [ "", [ { get_param: [ cbam, extensions, hostname_prefix ] }, { if: [ cbam_id,{ get_param: prefix }, "" ] }, { if: [ cbam_id,"-", "" ] }, processingoff-, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, { get_param: [ cbam, extensions, hostname_postfix ] } ] ] } , { list_join: [ "", [ { get_param: [ cbam, extensions, custom_vm_name_processingoff ] }, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] } ] ] } ] }
+            
+            $eth0addr: { get_attr: [ oam_port, fixed_ips, 0, ip_address ] }
+            $eth1addr: { get_attr: [ charg_port, fixed_ips, 0, ip_address ] }
+            $eth2addr: { get_attr: [ bill_port, fixed_ips, 0, ip_address ] }
+            $eth3addr: { get_attr: [ internal_port, fixed_ips, 0, ip_address ] }
+
+            $eth0hwaddr: { get_attr: [ oam_port, mac_address ] }
+            $eth1hwaddr: { get_attr: [ charg_port, mac_address ] }
+            $eth2hwaddr: { get_attr: [ bill_port, mac_address ] }
+            $eth3hwaddr: { get_attr: [ internal_port, mac_address ] }
+
+            $eth0prefix: { get_param: [ cbam, extensions, oam_network_netmask ] }
+            $eth1prefix: { get_param: [ cbam, extensions, charging_network_netmask ] }
+            $eth2prefix: { get_param: [ cbam, extensions, billing_network_netmask ] }
+            $eth3prefix: { list_join: ['', [{ get_attr: [ internal_port, subnets, 0, cidr, -2 ] }, { get_attr: [ internal_port, subnets, 0, cidr, -1 ] }]] }
+
+            $defaultgateway0: { get_attr: [ oam_port, subnets, 0, gateway_ip ] }
+            $defaultgateway1: { get_attr: [ charg_port, subnets, 0, gateway_ip ] }
+            $defaultgateway2: { get_attr: [ bill_port, subnets, 0, gateway_ip ] }
+            $defaultgateway3: { get_attr: [ internal_port, subnets, 0, gateway_ip ] }
+
+            $eth0gw: { get_attr: [ oam_port, subnets, 0, gateway_ip ] }
+            $eth1gw: { get_attr: [ charg_port, subnets, 0, gateway_ip ] }
+            $eth2gw: { get_attr: [ bill_port, subnets, 0, gateway_ip ] }
+            $eth3gw: { get_attr: [ internal_port, subnets, 0, gateway_ip ] }
+
+            $eth0cidr: { get_attr: [ oam_port, subnets, 0, cidr ] }
+            $eth1cidr: { get_attr: [ charg_port, subnets, 0, cidr ] }
+            $eth2cidr: { get_attr: [ bill_port, subnets, 0, cidr ] }
+            $eth3cidr: { get_attr: [ internal_port, subnets, 0, cidr ] }
+
+            $data_mount_id: { get_param: data_mount_id }
+            $offline_mount_id: { get_param: offline_mount_id }
+            $storage_mount_id: { get_param: storage_mount_id }
+            $timesten_mount_id: { get_param: timesten_mount_id }
+            $control_mount_id: { get_param: control_mount_id }
+
+            $el_oam_vip: { get_param: processingOFF_virtual_ip_on_oam_network }
+            $el_charg_vip: { get_param: processingOFF_charg_virtual_ip }
+            $el_bill_vip: { get_param: processingOFF_bill_virtual_ip }
+
+  server:
+    type: OS::Nova::Server
+    depends_on: [
+      oam_port,
+      charg_port,
+      bill_port,
+      internal_port
+    ]
+    properties:
+      name: { if: [ custom_vm_name, { list_join: [ "", [ { get_param: [ cbam, extensions, hostname_prefix ] }, { if: [ cbam_id,{ get_param: prefix }, "" ] }, { if: [ cbam_id,"-", "" ] }, processingOFF-, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] }, { get_param: [ cbam, extensions, hostname_postfix ] } ] ] } , { list_join: [ "", [ { get_param: [ cbam, extensions, custom_vm_name_processingoff ] }, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, node_str ] } ] ] } ] }
+      config_drive: true
+      key_name: { get_param: key_name }
+      image: { get_param: [ resources, { get_param: port_index }, processingOFF_node, { get_param: node_index }, server, imageId ] }
+      flavor: { get_param: [ resources, { get_param: port_index }, processingOFF_node, { get_param: node_index }, server, flavorId ] }
+      availability_zone: { get_param: [ cbam, extensions, availability_zones, { get_param: [ mappings, { get_param: port_index }, { get_param: node_index }, az ] } ] }
+      scheduler_hints:
+        group: { get_param: offline_server_group_id }
+      networks: [
+        { "port": { get_resource: oam_port } },
+        { "port": { get_resource: charg_port } },
+        { "port": { get_resource: bill_port } },
+        { "port": { get_resource: internal_port } }
+            ]
+      user_data_format: RAW
+      user_data:
+        get_resource: el_base_config
+
+outputs:
+  processing_server_id:
+    value: { get_resource: server }

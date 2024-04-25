@@ -1,0 +1,44 @@
+{
+  "name": "groups",
+  "providerId": "group-ldap-mapper",
+  "providerType": "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+  "parentId": "{{ ldap_configured.component.id }}",
+  "config": {
+    "groups.dn": [
+      "{{ ldap_groups_dn | default(ldap_users_dn) }}"
+    ],
+    "group.object.classes": [
+      "{{ ldap_group_object_classes }}"
+    ],
+    "mode": [
+      "{{ ldap_edit_mode | default('READ_ONLY') }}"
+    ],
+    "membership.attribute.type": [
+      "{{ ldap_group_membership_attribute_type | default('DN') }}"
+    ],
+    "group.name.ldap.attribute": [
+      "{{ ldap_group_name_ldap_attribute | default('cn') }}"
+    ],
+    "membership.user.ldap.attribute": [
+      "{{ ldap_membership_user_ldap_attribute | default('cn') }}"
+    ],
+    "user.roles.retrieve.strategy": [
+      "{{ ldap_user_roles_retrieve_strategy | default('LOAD_GROUPS_BY_MEMBER_ATTRIBUTE') }}"
+    ],
+    "membership.ldap.attribute": [
+      "{{ ldap_membership_ldap_attribute | default('member') }}"
+    ],
+    "memberof.ldap.attribute": [
+      "{{ ldap_memberof_ldap_attribute | default('memberOf') }}"
+    ],
+    "preserve.group.inheritance": [
+      "{{ ldap_preserve_group_inheritance | default('false') }}"
+    ],
+    "ignore.missing.groups": [
+      "{{ ldap_ignore_missing_groups | default('false') }}"
+    ],
+    "drop.non.existing.groups.during.sync": [
+      "{{ ldap_drop_non_existing_groups_during_sync | default('false') }}"
+    ]
+  }
+}

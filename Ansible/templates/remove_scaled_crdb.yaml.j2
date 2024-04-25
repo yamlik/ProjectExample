@@ -1,0 +1,13 @@
+---
+{% raw %}
+- name: Remove scaled node hostname when scaling down crdb
+  hosts: vdu-crdb
+  gather_facts: no
+  max_fail_percentage: 50
+  tasks:
+
+    - name: call el-remove-host role for crdb nodes
+      pause:
+        seconds: 15
+{% endraw %}
+

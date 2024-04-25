@@ -1,0 +1,26 @@
+{
+  "TC-48722": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation1_48722",
+      "Application Date": "09/11/2022",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Date of Birth": "03/11/2022",
+      "Company Name": "NESCAFE",
+      "Income": 550000
+    },
+    "Criteria": {
+      "Category": "Application",
+      "Field": "Application Type",
+      "Value": "IS NOT NULL"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation1_48722CARD"
+    }
+  }
+}
+
+
+

@@ -1,0 +1,92 @@
+#!/bin/bash -e
+
+# the following parameters should be set in the gtp.service decription files to point to the correct location,
+#GTPCONFIG
+#LOG4JCONFIG
+#GSNSEQCONFIG
+
+#the following parameters can be set to apply additional options on startup
+#DEBUG=0
+#JAVA_OPTS=""
+
+
+#Start function
+start_gtpc(){
+  local std_out="/dev/null"
+  local std_err="/dev/null"
+  logger daemon.info "{{ gtp_prime_collector.service_name }}: Starting service"
+  if (( DEBUG != 0 )); then
+    logger daemon.debug "{{ gtp_prime_collector.service_name }}: Using JVM $(which java) with JAVA_OPTS ${JAVA_OPTS}"
+    logger daemon.debug "{{ gtp_prime_collector.service_name }}: Using configuration file ${GTPCONFIG}"
+    logger daemon.debug "{{ gtp_prime_collector.service_name }}: Using logger configuration file ${LOG4JCONFIG}"
+    logger daemon.debug "{{ gtp_prime_collector.service_name }}: Using GSN sequence file ${GSNSEQCONFIG}"
+    std_out="{{ gtp_prime_collector.base_directory }}/logs/java_stdout"
+    std_err="{{ gtp_prime_collector.base_directory }}/logs/java_stderr"
+  fi
+  /usr/bin/nohup java ${JAVA_OPTS} -jar {{ gtp_prime_install_directory }}/bin/app_AdapterNode.jar ${GTPCONFIG} ${LOG4JCONFIG} ${GSNSEQCONFIG} > "${std_out}" 2> "${std_err}" &
+}
+
+#Stop function
+stop_gtpc(){
+  local targetdir=$(grep "targetGsnDir" ${GTPCONFIG} | awk -F : '{print $2}' | sed -e 's/\"//g' -e 's/,//' -e 's/ //')
+  if [[ "${targetdir}" == "null" ]]; then
+  	targetdir="{{ gtp_prime_collector.base_directory }}"
+  fi
+  # Note: symbolic link directory won't work
+  if [[ -d "${targetdir}" ]]; then
+    #stop_gtpc
+    logger daemon.info "{{ gtp_prime_collector.service_name }}: Stopping service"
+    touch "${targetdir}/shutdown.req"
+  else
+  	logger daemon.warning "{{ gtp_prime_collector.service_name }}: Invalid targetGsnDir ${targetdir}. Unable to stop service. Manual intervension is required"
+  fi
+}
+
+
+#Main Script
+
+COMMAND="${1}"
+shift
+
+# reading environment parameters from the gtp.service startup, if not present set them to be default files in /opt/gtpc directory
+GTPCONFIG="${GTPCONFIG:={{ gtp_prime_collector.base_directory }}/config/gtp.json}"
+LOG4JCONFIG="${LOG4JCONFIG:={{ gtp_prime_collector.base_directory }}/config/log4j2.properties}"
+GSNSEQCONFIG="${GSNSEQCONFIG:={{ gtp_prime_collector.base_directory }}/config/sequenceNumbers.json}"
+DEBUG=${DEBUG:=0}
+JAVA_OPTS=${JAVA_OPTS:=''}
+
+# Verify configuration files exist
+INVALID_CONFIG=0
+if [[ ! -e "${GTPCONFIG}" ]]; then
+  logger daemon.error "{{ gtp_prime_collector.service_name }}: Configuration file GTPCONFIG ${GTPCONFIG} does not exist"
+  INVALID_CONFIG=1
+fi
+if [[ ! -e "${LOG4JCONFIG}" ]]; then
+  logger daemon.error "{{ gtp_prime_collector.service_name }}: Logger configuration file LOG4JCONFIG ${LOG4JCONFIG} does not exist"
+  INVALID_CONFIG=1
+fi
+if [[ ! -e "${GSNSEQCONFIG}" ]]; then
+  logger daemon.error "{{ gtp_prime_collector.service_name }}: GSN sequence file GSNSEQCONFIG ${GSNSEQCONFIG} does not exist"
+  INVALID_CONFIG=1
+fi
+(( INVALID_CONFIG > 0 )) && exit 255
+
+#process the service command
+case ${COMMAND} in
+  status)
+    ;;
+  start|stop|restart)
+    #$ECHO
+    if [[ "${COMMAND}" == "stop" ]]; then
+      stop_gtpc
+      sleep 5s
+    elif [[ "${COMMAND}" == "start" ]]; then
+      start_gtpc
+    elif [[ "${COMMAND}" == "restart" ]]; then
+      stop_gtpc
+      sleep 5s
+      start_gtpc
+    fi
+    ;;
+esac
+exit 0

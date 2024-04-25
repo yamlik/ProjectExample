@@ -1,0 +1,18 @@
+---
+
+grafana_data_dir:  /var/lib/grafana/data
+grafana_temp_data_lifetime:  48h
+
+grafana_server_protocol: https
+grafana_server_bind_http_addr:
+grafana_server_http_port: 3000
+grafana_server_host: localhost
+grafana_server_enforce_domain: false
+grafana_server_cert_file: /etc/ssl/grafana_server/grafana_server_certificate.crt
+grafana_server_cert_key: /etc/ssl/grafana_server/private_key.pem
+grafana_datasource: Prometheus
+grafana_datasource_url: "localhost:9090"
+
+rc_file_location: '/opt/TEST/TEST/.mds.rc'
+
+...

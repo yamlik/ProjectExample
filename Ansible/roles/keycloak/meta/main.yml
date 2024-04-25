@@ -1,0 +1,18 @@
+---
+dependencies:
+  - role: check-variables
+    check_variables:
+      - "kc_keystore_password"
+      - "kc_certificate_password"
+      - { variable_name: "kc_preferred_ip_version", condition: 'in (4,6,"4","6")' }
+
+  - role: install-webapp
+    component_name: "Keycloak Web SSO"
+    package_name: "{{ kc_sa_package_name }}"
+    service_name: "{{ kc_service_name }}"
+    ports:
+      - "{{ kc_http_port }}"
+      - "{{ kc_https_port }}"
+    wait_for_port: "{{ kc_http_port }}"
+    wait_for_timeout: "{{ kc_start_wait_timeout }}"
+    restart_webapp: false

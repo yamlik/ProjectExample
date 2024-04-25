@@ -1,0 +1,73 @@
+---
+- name: Ensure that program directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ el_processing_state_user }}"
+    group: "{{ el_processing_state_group }}"
+    mode: 0755
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ el_processing_state_base_path }}"
+
+- name: Create stream file directory
+  file:
+    state: directory
+    dest: "{{ item }}"
+    owner: "{{ el_processing_state_user }}"
+    group: "{{ el_processing_state_group }}"
+    mode: 0755
+  with_items:
+    - "{{ stream_file_directory }}"
+  become: true
+  become_method: sudo
+
+- name: Create timesten directories if needed 
+  file:
+    state: directory
+    dest: "{{ item }}"
+    owner: "{{ el_processing_state_user }}"
+    group: "{{ el_processing_state_group }}"
+    mode: 0755
+  with_items:
+    - "{{ tt_file_directory }}"
+    - "{{ tt_sql_directory }}"
+  become: true
+  become_method: sudo
+  when: monitor_timesten
+
+- name: "Template base application to {{ el_processing_state_install_directory }}"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ el_processing_state_install_directory }}/{{ item.dest }}"
+    mode: 0755
+    force: yes
+    owner: "root"
+    group: "root"
+  become: true
+  become_method: sudo
+  with_items:
+    - { src: 'el-processing-state.py.j2', dest: 'el-processing-state.py' }
+
+- name: "Template systemd service files"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+  with_items:
+    - { src: 'el-processing-state.service.j2', dest: '/etc/systemd/system/el-processing-state.service' }
+    - { src: 'el-processing-state.j2', dest: '/etc/sysconfig/el-processing-state' }
+
+- name: "Enable service"
+  systemd:
+    name: el-processing-state
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo
+...

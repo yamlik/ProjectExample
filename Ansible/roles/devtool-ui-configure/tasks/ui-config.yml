@@ -1,0 +1,9 @@
+---
+# Temporarily solution until Anisble module for UI config is ready
+- name: "Replace ui-config.json file."
+  template:
+    src: ui-config.json.j2
+    dest: "{{ ui_config_file_location }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644

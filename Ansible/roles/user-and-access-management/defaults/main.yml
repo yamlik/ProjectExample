@@ -1,0 +1,7 @@
+---
+password_authentication: "no"
+challenge_response_authentication: "no"
+authorized_keys_file:  ".ssh/authorized_keys"
+disable_console_access: true
+allow_root_login: "no"
+authorized_key: ""

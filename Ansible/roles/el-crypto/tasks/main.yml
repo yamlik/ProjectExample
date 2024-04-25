@@ -1,0 +1,203 @@
+---
+
+# Deploy crypto_tool.sh from template
+- name: deploy crypto_tool.sh script 
+  template:
+    src: crypto_tool.sh.j2
+    dest: "{{ TEST_home }}/bin/crypto_tool.sh"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0544
+    force: yes
+  changed_when: true    
+  notify:
+    - remove crypto_tool.sh script
+  tags:
+    - install
+    
+
+# get db.properties path
+- name: get db.properties file path
+  shell: ". {{ TEST_home }}/bin/db_tools.sh && echo ${DB_CONFIG}"
+  register: dbconf_path
+  tags:
+    - install
+    
+    
+# Retrieve el_password 
+- name: retrieve el password
+  shell: "cat {{ dbconf_path.stdout }} | grep el_dbPassword | awk -F '=' '{print $2}'"
+  register: el_password
+  tags:
+    - install
+    
+  
+# try decrypt the password
+- name: decrypt el password
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh DEC '{{ el_password.stdout }}'"
+  register: decrypted_password
+  tags:
+    - install
+    
+# check if nodemanager.properties exist
+- name: stat nodemanager.properties file
+  stat: 
+    path: "{{ install_dir }}/etc/node-manager/nodemanager.properties"
+  register: nmprop_file
+  tags:
+    - install
+    
+  
+# Retrieve nm.jmx.password 
+- name: retrieve nm.jmx.password
+  shell: "cat {{ install_dir }}/etc/node-manager/nodemanager.properties | grep nm.jmx.password | cut -d'=' -f2-"
+  register: nm_jmx_password
+  when: nmprop_file.stat.exists == True
+  tags:
+    - install
+    
+  
+# try decrypt the password
+- name: decrypt nm.jmx.password
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh DEC '{{ nm_jmx_password.stdout }}'"
+  register: decrypted_jmx_password
+  when: ( nm_jmx_password is defined ) and ( nm_jmx_password.stdout is defined ) and ( nm_jmx_password.stdout | default("") != "" )
+  tags:
+    - install
+  
+# Retrieve symtrcKey value from el_params
+- name: retrieve symtrcKey from el_params
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh GET symtrcKey"
+  register: symtrcKey
+  tags:
+    - install
+  
+  
+# Retrieve cryptoIV value from el_params
+- name: retrieve cryptoIV from el_params
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh GET cryptoIV"
+  register: cryptoIV
+  tags:
+    - install
+  
+  
+# Regenerate crypto key, when el_params table record not exist
+- name: regenerate crypto key    
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh ENC '{{ decrypted_password.stdout }}' regenkey"
+  when: |
+    (( symtrcKey is not defined ) or ( symtrcKey.stdout is not defined ) or ( symtrcKey.stdout | default("") == "" )
+    or ( cryptoIV is not defined ) or ( cryptoIV.stdout is not defined ) or ( cryptoIV.stdout | default("") == "" )
+    or (reconfigure is not defined) or (reconfigure != True)) and ((ha_master is defined) and (inventory_hostname == ha_master)
+    and (vnf_context_data.operation_params.type is not defined))
+  register: regenkey_result
+  tags:
+    - install
+    
+  
+# Check if regenkey encrypted password correctly, when regenkey defined
+- name: fail when regenkey not success
+  fail:
+    msg: "Regenkey failed"
+  when: (( regenkey_result is defined ) and ( regenkey_result.stdout is defined )) 
+    and ( regenkey_result.stdout == decrypted_password.stdout )
+  tags:
+    - install
+    
+
+# Retrieve symtrcKey value from el_params
+- name: retrieve symtrcKey from el_params
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh GET symtrcKey"
+  register: symtrcKey
+  tags:
+    - install
+    
+  
+# Retrieve cryptoIV value from el_params
+- name: retrieve cryptoIV from el_params
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh GET cryptoIV"
+  register: cryptoIV
+  tags:
+    - install
+    
+  
+- name: Always remove crypto file
+  file:
+    path: "{{ install_dir }}/etc/crypto/TEST.txt"
+    state: absent
+  tags:
+   - install
+    
+# check if TEST.txt exist
+- name: stat crypto file
+  stat: 
+    path: "{{ install_dir }}/etc/crypto/TEST.txt"
+  register: crypto_file
+  tags:
+    - install
+
+# Recreate TEST.txt when it is not exist
+- name: recreate crypto file when not exist
+  shell: "{{ item }} >> {{ install_dir }}/etc/crypto/TEST.txt"
+  with_items:
+    - "echo -e {{ symtrcKey.stdout }}"
+    - "echo -e {{ cryptoIV.stdout }}"
+  when: crypto_file.stat.exists == False
+  tags:
+    - install
+
+- name: reset TEST.txt file permission
+  file:
+    path: "{{ install_dir }}/etc/crypto/TEST.txt"
+    state: file
+    mode: 0444
+  tags:
+    - install
+    
+  
+# Get encrypted password
+- name: encrypt el password
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh ENC '{{ decrypted_password.stdout }}'"
+  register: encrypted_password
+  tags:
+    - install
+    
+
+# mask db.properties file password field.
+- name: mask db.properties file
+  lineinfile:
+    dest: "{{ dbconf_path.stdout }}"
+    state: present
+    regexp: "^el_dbPassword="
+    line: "el_dbPassword={{ encrypted_password.stdout }}"
+  tags:
+    - install
+    
+  
+- name: Update DB with new pass
+  shell: PGPASSWORD='{{ db_el_password }}' psql -p {{ postgresql_server_port }} -h {{ db_oam_vip }} -d TEST -U elink -c "update gui_module_config set value='{{ encrypted_password.stdout }}' where parameter = 'db_passwd'";
+  when: (update_db_password is defined) and update_db_password
+  tags:
+   - install
+
+# Encrypt jmx password
+- name: encrypt nm.jmx.password
+  shell: "{{ TEST_home }}/bin/crypto_tool.sh ENC '{{ decrypted_jmx_password.stdout }}'"
+  register: encrypted_jmx_password
+  when: ( nm_jmx_password is defined ) and ( nm_jmx_password.stdout is defined ) and ( nm_jmx_password.stdout | default("") != "" )
+  tags:
+    - install
+    
+  
+# mask nodemanager.properties file password field.
+- name: mask nodemanager.properties file
+  lineinfile:
+    dest: "{{ install_dir }}/etc/node-manager/nodemanager.properties"
+    state: present
+    regexp: "^nm.jmx.password="
+    line: "nm.jmx.password={{ encrypted_jmx_password.stdout }}"
+  when: ( nm_jmx_password is defined ) and ( nm_jmx_password.stdout is defined ) and ( nm_jmx_password.stdout | default("") != "" )
+  tags:
+    - install
+  
+  
+...

@@ -1,0 +1,4 @@
+---
+
+- include: create-symlink.yml
+- include: configure-job.yml

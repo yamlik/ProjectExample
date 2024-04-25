@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+[template]
+src   = "ha-sync/sync-list.tmpl"
+dest  = "/etc/ha-sync/sync-list"
+keys  = ["config/ha/group/{{ ha_group }}/sync-list"]
+owner = "root"
+group = "root"
+mode  = "0644"

@@ -1,0 +1,730 @@
+#! groovy
+@Library('AADO/jenkins/libs') _
+pipeline {
+    options {
+      timeout(time: 600, unit: 'MINUTES')
+      buildDiscarder(logRotator(daysToKeepStr: '30',  artifactDaysToKeepStr: '30', numToKeepStr: '50'))
+      //disableConcurrentBuilds()
+      timestamps()
+    }
+
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl..com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+
+    environment {
+        IMAGE_LOGIN_CREDS = credentials('IMAGE_LOGIN_CREDS')
+        ssh_user = "$IMAGE_LOGIN_CREDS_USR"
+        ssh_user_pass = "$IMAGE_LOGIN_CREDS_PSW"
+        END_USER_CREDS = credentials('end_user')
+        end_user = "$END_USER_CREDS_USR"
+        end_user_pass = "$END_USER_CREDS_PSW"
+        postgresql_major_version = '9'
+        postgresql_minor_version = '2'
+        POSTGRESQL_ADMIN_CREDS = credentials('postgresql_admin')
+        postgresql_admin = "$POSTGRESQL_ADMIN_CREDS_USR"
+        postgresql_admin_password = "$POSTGRESQL_ADMIN_CREDS_PSW"
+        POSTGRESQL_ELINK_CREDS = credentials('postgresql_elink')
+        postgresql_elink_user = "$POSTGRESQL_ELINK_CREDS_USR"
+        postgresql_elink_user_password = "$POSTGRESQL_ELINK_CREDS_PSW"
+        TOMCAT_ADMIN_CREDS = credentials('tomcat_admin')
+        tomcat_admin_username = "$TOMCAT_ADMIN_CREDS_USR"
+        tomcat_admin_password = "$TOMCAT_ADMIN_CREDS_PSW"
+        tomcat_http_port = '8080'
+        tomcat_https_port = '443'
+        tomcat_maxPostSize = '1'
+        cbis_ckaf_playbook_url = '
+        include_cbis_ckaf_playbook = 'true'
+        hdfs_playbook_url = ''
+        include_hdfs_cluster_playbook = 'false'
+        cbis_hdfs_playbook_url = 'https://10.75.217.187/downloads/cbis-hdfs-cluster-1.0.0-tar.gz'
+        include_cbis_hdfs_cluster_playbook = 'false'
+        user_shell = '/usr/bin/bash'
+        user_home_path = '/home/TEST'
+        EM_USER_CREDS = credentials('em_user')
+        em_user = "$EM_USER_CREDS_USR"
+        em_user_pass = "$EM_USER_CREDS_PSW"
+        em_installation_dir = '/opt/event-management'
+        em_hostname = 'localhost'
+        adport = '44660'
+        emport = '44657'
+        //OS_USER_CREDS = credentials('PL_008_OS_CREDS')
+        //OS_AUTH_URL = 'https://10.75.237.4:13000/v3'
+        //OS_INTERFACE ='public'
+        //OS_IDENTITY_API_VERSION = '3'
+        //OS_USER_DOMAIN_NAME = 'Default'
+        //OS_USERNAME = "$OS_USER_CREDS_USR"
+        //OS_PROJECT = 'v8603_DI_DR'
+        //OS_FLAVOR = 'm1.medium'
+        //set OS_AVAILABILITY_ZONE if you want to control which AZ to be used for image building
+        //OS_AVAILABILITY_ZONE = 'Host-Group_B4_z1'
+        //OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+        //OS_PROJECT_NAME = 'v8603_DI_DR'
+        //OS_REGION_NAME = 'regionOne'
+        //OS_NETWORK_ID = '60d47645-d681-4eaa-8b13-21476624bbf9'
+        //OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+        //OS_PASSWORD = "$OS_USER_CREDS_PSW"
+        SATELLITE_HOST = '10.93.138.23'
+        PRODUCT_PLAYBOOK_CREDS = credentials('product_playbook_creds')
+        product_playbook_url_username = "$PRODUCT_PLAYBOOK_CREDS_USR"
+        product_playbook_url_password = "$PRODUCT_PLAYBOOK_CREDS_PSW"
+        ARTIFACTORY_USER = 'devops'
+        EPEL_RPM_URL = 'http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm'
+        CSF_REPO_URL = 'https://repo.lab.pl..com/csf-yum-delivered/'
+        CSF_PUC_REPO_URL = 'https://repo.lab.pl..com/csf-yum-pucontrolled/'
+        EL_VLAB_REPO_URL = 'https://repo.lab.pl..com/-yum-releases/'
+        EL_VLAB_REPO_URL_2 = 'https://repo.lab.pl..com/-yum-candidates/'
+        DOCKER_REPO_URL = 'https://repo.lab.pl..com/download-docker-com/linux/centos/7/x86_64/stable/'
+        ERLANG_REPO_URL = 'https://repo.lab.pl..com/packages-erlang-solutions-com/centos/7/x86_64/'
+        RABBITMQ_REPO_URL = 'https://repo.lab.pl..com/github-com/rabbitmq/rabbitmq-server/releases/download/v3.8.17/'
+        TREASUREDATA_REPO_URL = 'https://repo.lab.pl..com/packages-treasuredata-com/7/x86_64/'
+        XRAY_REPO_URL = 'https://repo.lab.pl..com/xray-yum-releases/'
+        CSF_CONFLUENT_IO_REPO_URL = 'https://10.75.217.187/confluent-io-4_0/'
+        ARTIFACTORY_BASE_URL = 'https://repo.lab.pl..com'
+        include_zookeeper_package = 'false'
+    }
+    parameters {
+        choice(name: 'Invoke_Parameters', choices:"No\nYes", description: "Do you whish to do a dry run to grab parameters?" )
+        string(name: 'GIT_BRANCH', defaultValue: 'develop', description: 'Git Branch to build on.', trim: true)
+        string(name: 'release_version', defaultValue: '-mediation-2100', description: 'Release version of Data Refinery', trim: true)
+        choice(name: 'OS_type', choices: ['centos', 'rhel'], description: 'The appos version we will be using is 19.08-0')
+        choice(
+            name: 'host_type',
+            choices: [
+                'content,ui,processing,db',
+                'ui,processing,db',
+                'content',
+                'ui',
+                'processing',
+                'db',
+                'oam',
+                'crdb'
+            ],
+            description: 'The type of base image to build'
+        )
+        choice(
+            name: 'source_image_name',
+            choices: [
+                'appos-20.11FP2-0_rhel_20210628_015300_vz_pp',
+                'appos-20.11FP2-0_centos_20210628_204708_vz_pp',
+                'appos-20.11FP1-0_centos_20210208_020134-clog.snapshot',
+                'appos-20.11FP1-0_rhel_20210201_000805-clog.snapshot',
+                'appos-20.11FP1-0_centos_20210208_020134.qcow2',
+                'appos-20.11FP1-0_rhel_20210201_000805.qcow2',
+                'appos-20.05-0_centos_20200525_210531-clog.snapshot',
+                'appos-20.05-0_centos_20200525_210531-clog.qcow2',
+                'appos-20.05-0_rhel_20200525_021311-clog.snapshot',
+                'appos-20.05-0_rhel_20200525_021311-clog.qcow2',
+                'appos-20.05-0_centos_20200525_210531.x86_64.qcow2',
+                'appos-20.05-0_rhel_20200525_021311.x86_64.qcow2',
+                'appos-19.11-0_centos_20191112_021042-clog.snapshot',
+                'appos-19.11-0_centos_20191112_021042.qcow2',
+                'appos-19.11-0_rhel_20191112_002112-clog.snapshot',
+                'appos-19.11-0_rhel_20191112_002112.qcow2',
+                'appos_base-19.08-0_centos.qcow2',
+                'appos_base-19.08-0_rhel.qcow2',
+                'appos_base-19.08-2210_rhel.qcow2',
+                'appos_base-19.05-0_centos.qcow2',
+                'appos_base-19.05_rhel.qcow2',
+                'appos_base-18.12-1_centos.x86_64.qcow2',
+                'appos_base-18.12-1_rhel.x86_64.qcow2',
+                'oame-20.11FP2-0_rhel_20210628_015626_vz_pp',
+                'oame-20.11FP2-0_centos_20210628_205200_vz_pp',
+                'oame-20.11FP1-0_centos_20210207_230748-clog.snapshot',
+                'oame-20.11FP1-0_rhel_20210207_204801-clog.snapshot',
+                'oame-20.11FP1-0_centos_20210207_230748.qcow2',
+                'oame-20.11FP1-0_rhel_20210207_204801.qcow2',
+                'oame-20.05-2_centos_20200710_015221-clog.snapshot',
+                'oame-20.05-2_centos_20200710_015221-clog.qcow2',
+                'oame-20.05-2_rhel_20200712_205636-clog.snapshot',
+                'oame-20.05-2_rhel_20200712_205636-clog.qcow2',
+                'oame-20.05-2_centos_20200710_015221.x86_64.qcow2',
+                'oame-20.05-2_rhel_20200712_205636.x86_64.qcow2',
+                'oame-19.11-0_centos_20191112_021332-clog.snapshot',
+                'oame-19.11-0_centos_20191112_021332.qcow2',
+                'oame-19.11-0_rhel_20191112_002341-clog.snapshot',
+                'oame-19.11-0_rhel_20191112_002341.qcow2',
+                'oame-19.08-0_centos_base.x86_64.qcow2',
+                'oame-19.08-0_rhel_base.x86_64.qcow2',
+                'oame-19.05-0_centos_base.qcow2',
+                'oame-18.12-1_centos_20190609_212552.base.x86_64.qcow2',
+                'oame_18.12-1_rhel.x86_64'
+            ],
+            description: 'Choose the name of the image you want to use'
+        )
+        // choice(
+        //     name: 'maturity',
+        //     choices: [
+        //         'dev',
+        //         'test',
+        //         'staging'
+        //     ],
+        //     description: 'For content host image creation only. Defines the maturity level of RPM packages to be downloaded to content host.'
+        // )
+        choice(
+            name: 'include_candidates_repo', 
+            choices: ['No', 'Yes'], 
+            description: 'For content host image creation only. To decide whether to include RPM packages from candidates repository.'
+        )
+        choice(
+            name: 'ui_maturity',
+            choices: [
+                'dev',
+                'test',
+                'staging'
+            ],
+            description: 'For content host image creation only. Defines the maturity level of EL-UI RPM packages to be downloaded to content host.'
+        )
+        choice(
+            name: 'core_maturity',
+            choices: [
+                'dev',
+                'test',
+                'staging'
+            ],
+            description: 'For content host image creation only. Defines the maturity level of EL-CORE RPM packages to be downloaded to content host.'
+        )
+        string(name: 'PACKER_BASE_FOLDER', defaultValue: "internal/tools/base-image-building", description: 'Path to the folder which includes the Packer template to run.', trim: true)
+        choice(
+            name: 'create_content_iso',
+            choices: [
+                'No',
+                'Yes'
+            ],
+            description: 'Select true to create ISO from the content host image.'
+        )
+        choice(
+            name: 'PACKER_LOG',
+            choices: [
+                '',
+                'yes, please',
+                '1'
+            ],
+            description: 'Whether to enable Packer debug logging.'
+        )
+        string(name: 'output_base_path', defaultValue: '/home/jenkins', description: 'Base directory to keep the created ISO images. The path must be writable to the system user that is used to run the packer (Jenkins in this case).')
+        choice(name: 'LSS_REPO', choices: ['csf_centos_lss.repo', 'csf_rhel_lss.repo'], description: 'The operating system yum repository to be used.')
+        choice(name: 'disable_cloud_init', choices:"No\nYes", description: "Disable cloud-init for VMware build?" )
+        string(name: 'EL_VLAB_REPO_URL', defaultValue: 'https://repo.lab.pl..com/-yum-releases/', description: 'The vLAB Artifactory Yum Repository for Data Refinery')
+        choice(
+            name: 'build_lab',
+            choices: [
+                'pl-008',
+                'pl-036'
+            ],
+            description: 'Select a vLab for the build.'
+        )
+    }
+
+    stages {
+
+        stage("Parameterizing") {
+            steps {
+                script {
+                    currentBuild.description = "$OS_type<br/>$host_type"
+                    
+                    sh 'printenv | sort'
+                    
+                    if ("${params.Invoke_Parameters}" == "Yes") {
+                        currentBuild.result = 'SUCCESS'
+                        println "DRY RUN COMPLETED. JOB PARAMETERIZED."
+                    }
+                }
+            }
+        }
+
+        stage("Set vLab pl-008 variables") {
+          when {
+            environment name: 'build_lab', value: 'pl-008'
+          }
+          steps {
+            script {
+              withCredentials([usernamePassword(credentialsId: 'PL_008_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                env.OS_AUTH_URL = 'https://10.75.237.4:13000/v3'
+                env.OS_IDENTITY_API_VERSION = '3'
+                env.OS_PROJECT = 'v8603_DI_DR'
+                env.OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+                env.OS_PROJECT_NAME = 'v8603_DI_DR'
+                env.OS_NETWORK_ID = '2fee903a-eacc-4a9f-af3d-1cf620da0587'
+                env.OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+                env.OS_REGION_NAME = "regionOne"                  
+                env.OS_FLAVOR = 'm1.medium'
+                env.OS_INTERFACE ='public'
+                env.OS_USER_DOMAIN_NAME = 'Default'
+                //set OS_AVAILABILITY_ZONE if you want to control which AZ to be used for image building
+                //env.OS_AVAILABILITY_ZONE = 'zone1'
+                env.OS_USERNAME = lab_user_name
+                env.OS_PASSWORD = lab_user_password
+              }
+            }
+          }
+        }
+              
+        stage("Set vLab pl-036 variables") {
+          when {
+            environment name: 'build_lab', value: 'pl-036'
+          }
+          steps {
+            script {
+              withCredentials([usernamePassword(credentialsId: 'PL_036_OS_CREDS', passwordVariable: 'lab_user_password', usernameVariable: 'lab_user_name')]) {
+                env.OS_AUTH_URL = 'https://10.75.11.196:13000/v3'
+                env.OS_IDENTITY_API_VERSION = '3'
+                env.OS_PROJECT = 'CB0643'
+                env.OS_PROJECT_ID = '4d9ac580707a4bd2bcd6934a2f7af975'
+                env.OS_PROJECT_NAME = 'CB0643'
+                env.OS_NETWORK_ID = '3a5b3934-7e11-4dd7-8350-e1803abb502f'
+                env.OS_CACERT = '/certs/vlab-os_cacert-pl-036.pem'
+                env.OS_REGION_NAME = "regionOne"
+                env.OS_FLAVOR = 'm1.medium'
+                env.OS_INTERFACE ='public'
+                env.OS_USER_DOMAIN_NAME = 'Default'
+                //set OS_AVAILABILITY_ZONE if you want to control which AZ to be used for image building
+                //env.OS_AVAILABILITY_ZONE = 'zone1'
+                env.OS_USERNAME = lab_user_name
+                env.OS_PASSWORD = lab_user_password
+              }
+              sh """
+                cd /certs
+                #wget --no-check-certificate https://10.75.217.187/vlabs/vlab-os_cacert-pl-036.pem
+                #wget --no-check-certificate http://100.69.163.57/data-refinery-21/vlab-os_cacert-pl-036.pem
+		        wget --no-check-certificate http://burp.vlab.us..com/CA.pem
+		        mv CA.pem vlab-os_cacert-pl-036.pem
+                printenv
+              """
+            }
+          }
+        }
+
+        stage ('Retrieve build packaging lists') {
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps {
+              echo "Copying packaging lists"
+              dir('dr-packaging-list') {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/master' ]],
+                    extensions: scm.extensions,
+                    userRemoteConfigs: [[
+                        url: 'git@scm.cci..net:data-refinery/TEST/utility/dr-packaging-list.git',
+                        name: 'dr-packaging-list',
+                        credentialsId: 'ca_drdo_jenkins'
+                    ]]
+                ])
+              }
+              sh '''
+                #home_dir=$PWD
+                #cd $home_dir
+                #find .
+                cp dr-packaging-list/platform-components.txt ${PACKER_BASE_FOLDER}/ansible/templates/deploy/platform-components.lst.j2
+                cp dr-packaging-list/el-core-components.txt ${PACKER_BASE_FOLDER}/ansible/templates/deploy/el-core-components.lst.j2
+                cp dr-packaging-list/el-ui-components.txt ${PACKER_BASE_FOLDER}/ansible/templates/deploy/el-ui-components.lst.j2
+                cp dr-packaging-list/third-party-components.txt ${PACKER_BASE_FOLDER}/ansible/templates/deploy/third-party-components.lst.j2
+              '''
+            }
+        }
+
+        stage('Validate build parameters') {
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            environment {
+              vname = "${params.source_image_name.split('.x86_64')[0]}_"
+            }
+            steps {
+                echo "Validating build parameters"
+                sh '''
+                  echo -e "\nValidating build parameters...\n"
+                  pwd
+
+                  home_dir=$PWD
+
+                  source /env/bin/activate
+
+                  if [ ${host_type} = -* ]; then
+                    exit 1
+                  fi
+
+
+                  set -x
+                  if [ ${host_type} = 'oam' ]; then
+                    cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer validate \
+                    -var "source_image_name=${source_image_name/%[,]/}" \
+                    -var "type=${host_type}" \
+                    -var "ssh_user=${ssh_user}" \
+                    -var "ssh_user_pass=${ssh_user_pass}" \
+                    -var "end_user=${end_user}" \
+                    -var "end_user_pass=${end_user_pass}" \
+                    -var "em_user=${em_user/%[,]/}" \
+                    -var "em_user_pass=${em_user_pass/%[,]/}" \
+                    -var "vname=${vname}"\
+                    -var "user_shell=${user_shell}" \
+                    -var "user_home_path=${user_home_path}" \
+                    -var "installation_dir=${em_installation_dir}" \
+                    -var "em_hostname=${em_hostname}" \
+                    -var "adport=${adport}" \
+                    -var "emport=${emport}" \
+                    -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                    -var "output_base_path=${output_base_path}" \
+                    -var "csf_repo_url=${CSF_REPO_URL}" \
+                    -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                    -var "satellite_host=${SATELLITE_HOST}" \
+                    -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                    -var "OS_USERNAME=${OS_USERNAME}" \
+                    -var "OS_PASSWORD=${OS_PASSWORD}" \
+                    -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                    -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                    -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                    -var "OS_FLAVOR=${OS_FLAVOR}" \
+                    -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                    -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                    -var "network_id=${OS_NETWORK_ID}" \
+                    -var "disable_cloud_init=${disable_cloud_init}" \
+                    -var "release_version=${release_version}"\
+                    -var "artifactory_base_url=${ARTIFACTORY_BASE_URL}" \
+                    $home_dir/${PACKER_BASE_FOLDER}/create_oam_openstack_image.json
+                  elif [ ${host_type} = 'crdb' ]; then
+                    cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer validate \
+                    -var "source_image_name=${source_image_name/%[,]/}" \
+                    -var "type=${host_type}" \
+                    -var "ssh_user=${ssh_user}" \
+                    -var "ssh_user_pass=${ssh_user_pass}" \
+                    -var "end_user=${end_user}" \
+                    -var "end_user_pass=${end_user_pass}" \
+                    -var "em_user=${em_user/%[,]/}" \
+                    -var "em_user_pass=${em_user_pass/%[,]/}" \
+                    -var "vname=${vname}"\
+                    -var "user_shell=${user_shell}" \
+                    -var "user_home_path=${user_home_path}" \
+                    -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                    -var "output_base_path=${output_base_path}" \
+                    -var "csf_repo_url=${CSF_REPO_URL}" \
+                    -var "include_candidates_repo=${include_candidates_repo}" \
+                    -var "el_vlab_repo_url=${EL_VLAB_REPO_URL}" \
+                    -var "el_vlab_repo_url_2=${EL_VLAB_REPO_URL_2}" \
+                    -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                    -var "xray_repo_url=${XRAY_REPO_URL}" \
+                    -var "satellite_host=${SATELLITE_HOST}" \
+                    -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                    -var "OS_USERNAME=${OS_USERNAME}" \
+                    -var "OS_PASSWORD=${OS_PASSWORD}" \
+                    -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                    -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                    -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                    -var "OS_FLAVOR=${OS_FLAVOR}" \
+                    -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                    -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                    -var "network_id=${OS_NETWORK_ID}" \
+                    -var "disable_cloud_init=${disable_cloud_init}" \
+                    -var "release_version=${release_version}"\
+                    $home_dir/${PACKER_BASE_FOLDER}/create_crdb_openstack_image.json
+                  else
+                    cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer validate \
+                    -var "source_image_name=${source_image_name/%[,]/}" \
+                    -var "source_image_id=${source_image_id/%[,]/}"\
+                    -var "type=${host_type}" \
+                    -var "ssh_user=${ssh_user}" \
+                    -var "ssh_user_pass=${ssh_user_pass}" \
+                    -var "end_user=${end_user}" \
+                    -var "end_user_pass=${end_user_pass}" \
+                    -var "vname=${vname}"\
+                    -var "build_number=${BUILD_NUMBER}" \
+                    -var "postgresql_major=${postgresql_major_version}" \
+                    -var "postgresql_minor=${postgresql_minor_version}" \
+                    -var "pgadmin=${postgresql_admin/%[,]/}" \
+                    -var "pgadmin_pass=${postgresql_admin_password/%[,]/}" \
+                    -var "el_user=${postgresql_elink_user/%[,]/}" \
+                    -var "el_user_pass=${postgresql_elink_user_password/%[,]/}" \
+                    -var "tomcat_admin=${tomcat_admin_username/%[,]/}" \
+                    -var "tomcat_pass=${tomcat_admin_password/%[,]/}" \
+                    -var "http_port=${tomcat_http_port/%[,]/}" \
+                    -var "https_port=${tomcat_https_port/%[,]/}" \
+                    -var "tomcat_max_post_size=${tomcat_maxPostSize/%[,]/}" \
+                    -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                    -var "output_base_path=${output_base_path}" \
+                    -var "ui_maturity=${ui_maturity/%[,]/}" \
+                    -var "core_maturity=${core_maturity/%[,]/}" \
+                    -var "product_playbook_url_username=${product_playbook_url_username}" \
+                    -var "product_playbook_url_password=${product_playbook_url_password}" \
+                    -var "cbis_ckaf_playbook_url=${cbis_ckaf_playbook_url/%[,]/}" \
+                    -var "include_cbis_ckaf_playbook=${include_cbis_ckaf_playbook}" \
+                    -var "hdfs_playbook_url=${hdfs_playbook_url/%[,]/}" \
+                    -var "include_hdfs_cluster_playbook=${include_hdfs_cluster_playbook}" \
+                    -var "cbis_hdfs_playbook_url=${cbis_hdfs_playbook_url/%[,]/}" \
+                    -var "include_cbis_hdfs_cluster_playbook=${include_cbis_hdfs_cluster_playbook}" \
+                    -var "user_shell=${user_shell/%[,]/}" \
+                    -var "user_home_path=${user_home_path/%[,]/}" \
+                    -var "satellite_host=${SATELLITE_HOST}" \
+                    -var "artifactory_base_url=${ARTIFACTORY_BASE_URL}" \
+                    -var "csf_repo_url=${CSF_REPO_URL}" \
+                    -var "csf_puc_repo_url=${CSF_PUC_REPO_URL}" \
+                    -var "include_candidates_repo=${include_candidates_repo}" \
+                    -var "el_vlab_repo_url=${EL_VLAB_REPO_URL}" \
+                    -var "el_vlab_repo_url_2=${EL_VLAB_REPO_URL_2}" \
+                    -var "csf_confluent_io_repo_url=${CSF_CONFLUENT_IO_REPO_URL}" \
+                    -var "lss_repo=${LSS_REPO}" \
+                    -var "epel_rpm_url=${EPEL_RPM_URL}" \
+                    -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                    -var "erlang_repo_url=${ERLANG_REPO_URL}" \
+                    -var "rabbitmq_repo_url=${RABBITMQ_REPO_URL}" \
+                    -var "treasuredata_repo_url=${TREASUREDATA_REPO_URL}" \
+                    -var "xray_repo_url=${XRAY_REPO_URL}" \
+                    -var "create_content_iso=${create_content_iso}" \
+                    -var "output_base_path=${output_base_path}" \
+                    -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                    -var "OS_USERNAME=${OS_USERNAME}" \
+                    -var "OS_PASSWORD=${OS_PASSWORD}" \
+                    -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                    -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                    -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                    -var "OS_FLAVOR=${OS_FLAVOR}" \
+                    -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                    -var "network_id=${OS_NETWORK_ID}" \
+                    -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                    -var "include_zookeeper_package=${include_zookeeper_package}" \
+                    -var "disable_cloud_init=${disable_cloud_init}" \
+                    -var "release_version=${release_version}"\
+                    $home_dir/${PACKER_BASE_FOLDER}/create_openstack_images.json
+                    
+        printenv
+                  fi
+                '''
+            }
+        }
+
+        stage('Validate packer ansible'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            steps{
+                echo "Validating packer ansible syntax"
+                sh 'source /env/bin/activate; pip freeze; ansible --version; sudo ansible-playbook $PWD/${PACKER_BASE_FOLDER}/ansible/*.yml --syntax-check'
+
+            }
+        }
+
+        stage('Build and cleanup'){
+            when {
+              environment name: 'Invoke_Parameters', value: 'No'
+            }
+            environment {
+              vname = "${params.source_image_name.split('.x86_64')[0]}_"
+            }
+            steps{
+              retry(count: 3) {
+                  echo "Building the image(s) and cleaning up after"
+                  sh '''
+                    echo -e "\nRemoving manifest file that is generated as a postproces\n"
+
+                    rm -f $home_dir/${PACKER_BASE_FOLDER}/manifest.json
+                    
+                    pwd
+
+                    home_dir=$PWD
+                    
+                    echo -e "\nStart building VM image...\n"
+                    source /env/bin/activate
+                    #The string substitute is needed for active choice reference parameters because of a bug which adds ',' at the end of the input
+                    set -x
+                    if [ ${host_type} = 'oam' ]; then
+                      cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer build \
+                      -var "source_image_name=${source_image_name/%[,]/}" \
+                      -var "type=${host_type}" \
+                      -var "ssh_user=${ssh_user}" \
+                      -var "ssh_user_pass=${ssh_user_pass}" \
+                      -var "end_user=${end_user}" \
+                      -var "end_user_pass=${end_user_pass}" \
+                      -var "em_user=${em_user/%[,]/}" \
+                      -var "em_user_pass=${em_user_pass/%[,]/}" \
+                      -var "vname=${vname}" \
+                      -var "user_shell=${user_shell}" \
+                      -var "user_home_path=${user_home_path}" \
+                      -var "installation_dir=${em_installation_dir}" \
+                      -var "em_hostname=${em_hostname}" \
+                      -var "adport=${adport}" \
+                      -var "emport=${emport}" \
+                      -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                      -var "output_base_path=${output_base_path}" \
+                      -var "csf_repo_url=${CSF_REPO_URL}" \
+                      -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                      -var "satellite_host=${SATELLITE_HOST}" \
+                      -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                      -var "OS_USERNAME=${OS_USERNAME}" \
+                      -var "OS_PASSWORD=${OS_PASSWORD}" \
+                      -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                      -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                      -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                      -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                      -var "OS_FLAVOR=${OS_FLAVOR}" \
+                      -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                      -var "network_id=${OS_NETWORK_ID}" \
+                      -var "disable_cloud_init=${disable_cloud_init}" \
+                      -var "release_version=${release_version}"\
+                      -var "artifactory_base_url=${ARTIFACTORY_BASE_URL}" \
+                      $home_dir/${PACKER_BASE_FOLDER}/create_oam_openstack_image.json
+                    elif [ ${host_type} = 'crdb' ]; then
+                      cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer build \
+                      -var "source_image_name=${source_image_name/%[,]/}" \
+                      -var "type=${host_type}" \
+                      -var "ssh_user=${ssh_user}" \
+                      -var "ssh_user_pass=${ssh_user_pass}" \
+                      -var "end_user=${end_user}" \
+                      -var "end_user_pass=${end_user_pass}" \
+                      -var "em_user=${em_user/%[,]/}" \
+                      -var "em_user_pass=${em_user_pass/%[,]/}" \
+                      -var "vname=${vname}"\
+                      -var "user_shell=${user_shell}" \
+                      -var "user_home_path=${user_home_path}" \
+                      -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                      -var "output_base_path=${output_base_path}" \
+                      -var "satellite_host=${SATELLITE_HOST}" \
+                      -var "csf_repo_url=${CSF_REPO_URL}" \
+                      -var "include_candidates_repo=${include_candidates_repo}" \
+                      -var "el_vlab_repo_url=${EL_VLAB_REPO_URL}" \
+                      -var "el_vlab_repo_url_2=${EL_VLAB_REPO_URL_2}" \
+                      -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                      -var "xray_repo_url=${XRAY_REPO_URL}" \
+                      -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                      -var "OS_USERNAME=${OS_USERNAME}" \
+                      -var "OS_PASSWORD=${OS_PASSWORD}" \
+                      -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                      -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                      -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                      -var "OS_FLAVOR=${OS_FLAVOR}" \
+                      -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                      -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                      -var "network_id=${OS_NETWORK_ID}" \
+                      -var "disable_cloud_init=${disable_cloud_init}" \
+                      -var "release_version=${release_version}"\
+                      $home_dir/${PACKER_BASE_FOLDER}/create_crdb_openstack_image.json
+                    else
+                      echo $host_type
+                      cd $home_dir/${PACKER_BASE_FOLDER} && /usr/local/packer build -only=${host_type} \
+                      -var "source_image_name=${source_image_name/%[,]/}" \
+                      -var "source_image_id=${source_image_id/%[,]/}"\
+                      -var "type=${host_type}" \
+                      -var "ssh_user=${ssh_user}" \
+                      -var "ssh_user_pass=${ssh_user_pass}" \
+                      -var "end_user=${end_user}" \
+                      -var "end_user_pass=${end_user_pass}" \
+                      -var "vname=${vname}"\
+                      -var "build_number=${BUILD_NUMBER}" \
+                      -var "postgresql_major=${postgresql_major_version}" \
+                      -var "postgresql_minor=${postgresql_minor_version}" \
+                      -var "pgadmin=${postgresql_admin/%[,]/}" \
+                      -var "pgadmin_pass=${postgresql_admin_password/%[,]/}" \
+                      -var "el_user=${postgresql_elink_user/%[,]/}" \
+                      -var "el_user_pass=${postgresql_elink_user_password/%[,]/}" \
+                      -var "tomcat_admin=${tomcat_admin_username/%[,]/}" \
+                      -var "tomcat_pass=${tomcat_admin_password/%[,]/}" \
+                      -var "http_port=${tomcat_http_port/%[,]/}" \
+                      -var "https_port=${tomcat_https_port/%[,]/}" \
+                      -var "tomcat_max_post_size=${tomcat_maxPostSize/%[,]/}" \
+                      -var "path=$home_dir/${PACKER_BASE_FOLDER}" \
+                      -var "output_base_path=${output_base_path}" \
+                      -var "ui_maturity=${ui_maturity/%[,]/}" \
+                      -var "core_maturity=${core_maturity/%[,]/}" \
+                      -var "product_playbook_url_username=${product_playbook_url_username}" \
+                      -var "product_playbook_url_password=${product_playbook_url_password}" \
+                      -var "cbis_ckaf_playbook_url=${cbis_ckaf_playbook_url/%[,]/}" \
+                      -var "include_cbis_ckaf_playbook=${include_cbis_ckaf_playbook}" \
+                      -var "hdfs_playbook_url=${hdfs_playbook_url/%[,]/}" \
+                      -var "include_hdfs_cluster_playbook=${include_hdfs_cluster_playbook}" \
+                      -var "cbis_hdfs_playbook_url=${cbis_hdfs_playbook_url/%[,]/}" \
+                      -var "include_cbis_hdfs_cluster_playbook=${include_cbis_hdfs_cluster_playbook}" \
+                      -var "user_shell=${user_shell/%[,]/}" \
+                      -var "user_home_path=${user_home_path/%[,]/}" \
+                      -var "satellite_host=${SATELLITE_HOST}" \
+                      -var "artifactory_base_url=${ARTIFACTORY_BASE_URL}" \
+                      -var "csf_repo_url=${CSF_REPO_URL}" \
+                      -var "csf_puc_repo_url=${CSF_PUC_REPO_URL}" \
+                      -var "include_candidates_repo=${include_candidates_repo}" \
+                      -var "el_vlab_repo_url=${EL_VLAB_REPO_URL}" \
+                      -var "el_vlab_repo_url_2=${EL_VLAB_REPO_URL_2}" \
+                      -var "csf_confluent_io_repo_url=${CSF_CONFLUENT_IO_REPO_URL}" \
+                      -var "lss_repo=${LSS_REPO}" \
+                      -var "epel_rpm_url=${EPEL_RPM_URL}" \
+                      -var "docker_repo_url=${DOCKER_REPO_URL}" \
+                      -var "erlang_repo_url=${ERLANG_REPO_URL}" \
+                      -var "rabbitmq_repo_url=${RABBITMQ_REPO_URL}" \
+                      -var "treasuredata_repo_url=${TREASUREDATA_REPO_URL}" \
+                      -var "xray_repo_url=${XRAY_REPO_URL}" \
+                      -var "create_content_iso=${create_content_iso}" \
+                      -var "output_base_path=${output_base_path}" \
+                      -var "OS_AUTH_URL=${OS_AUTH_URL}" \
+                      -var "OS_USERNAME=${OS_USERNAME}" \
+                      -var "OS_PASSWORD=${OS_PASSWORD}" \
+                      -var "OS_TENANT_ID=${OS_TENANT_ID}" \
+                      -var "OS_REGION_NAME=${OS_REGION_NAME}" \
+                      -var "OS_TENANT_NAME=${OS_TENANT_NAME}" \
+                      -var "OS_FLAVOR=${OS_FLAVOR}" \
+                      -var "OS_AVAILABILITY_ZONE=${OS_AVAILABILITY_ZONE}" \
+                      -var "network_id=${OS_NETWORK_ID}" \
+                      -var "BUILD_NUMBER=${BUILD_NUMBER}" \
+                      -var "include_zookeeper_package=${include_zookeeper_package}" \
+                      -var "disable_cloud_init=${disable_cloud_init}" \
+                      -var "release_version=${release_version}"\
+                      $home_dir/${PACKER_BASE_FOLDER}/create_openstack_images.json
+                    fi
+                '''
+              }
+            }
+        }
+
+        stage('Post-actions'){
+          when {
+            environment name: 'create_content_iso', value: 'Yes'
+            environment name: 'Invoke_Parameters', value: 'No'
+          }
+
+          steps{
+            script {
+              def rtServer = Artifactory.server env.ARTIFACTORY_SERVER_ID
+              rtServer.credentialsId = 'drdo-artifactory'
+
+              def buildInfo = Artifactory.newBuildInfo()
+              buildInfo.env.filter.addExclude("*CREDENTIAL*")
+              buildInfo.env.capture = true
+              buildInfo.env.collect()
+
+              def uploadIso = """{
+                "files": [
+                  {
+                    "pattern": "${env.output_base_path}/iso/**",
+                    "target": "drdo-generic-candidates/${env.BUILD_NUMBER}/"
+                  }
+                ]
+              }
+              """
+
+              rtServer.upload(uploadIso, buildInfo)
+              rtServer.publishBuildInfo(buildInfo)
+
+              def promotionConfig = [
+                        buildName: buildInfo.name,
+                        buildNumber: buildInfo.number,
+                        status: 'Released',
+                        targetRepo: 'drdo-generic-releases',
+                        includeDependencies: false,
+                        copy: true,
+                        failFast: true
+                      ]
+                      
+                      Artifactory.addInteractivePromotion server: rtServer, promotionConfig: promotionConfig, displayName: 'Promote candidates'
+              }
+          }
+        }
+    }
+}

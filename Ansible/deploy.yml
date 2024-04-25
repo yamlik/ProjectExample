@@ -1,0 +1,63 @@
+---
+- name: make sure ssh is up
+  hosts: vdu-ui:vdu-cgf:vdu-processingON:vdu-processingOFF:vdu-db:vdu-oam:vdu-crdb
+  gather_facts: no
+  remote_user: root
+  tasks:
+    - set_fact: 
+        target_host: "{{ ansible_host }}"
+
+    - name: wait for ssh
+      any_errors_fatal: true
+      local_action: |
+        wait_for host={{ target_host }}
+        state=started port=22
+        delay=15 timeout=600 connect_timeout=10
+      retries: 3
+
+    - name: copy keys
+      authorized_key:
+        user: TEST
+        state: present
+        key: "{{ vnf_context_data.stack_params.cbam.publicSshKey }}"
+
+- name: preparations
+  hosts: ui_aspect_group.0.server
+  gather_facts: no
+  tasks:
+    - name: Make group_vars dir
+      file:
+        path: "{{ playbook_dir }}/group_vars"
+        state: directory
+        mode: 0755
+      delegate_to: localhost
+
+    - name: make inventory from template
+      template: src="{{ playbook_dir }}/templates/inventory.j2" dest="{{ inventory_dir }}/inventory"
+      delegate_to: localhost
+
+    - name: Update some values in runplaybook.sh for the 2nd Ansible run
+      replace:
+        path: '{{ inventory_dir }}/runplaybook.sh'
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      delegate_to: localhost
+      with_items:
+        - { regexp: "std.out", replace: "std_TEST.out" }
+        - { regexp: "deploy.yml", replace: "TESTHA.yml" }
+        - { regexp: "-vvvv", replace: "{{ vnf_context_data.stack_params.cbam.extensions.ansible_verbosity }}" }
+        - { regexp: "ansible_inventory.py", replace: "inventory" }
+
+    - name: Create ansible.cfg from template
+      template: src="{{ playbook_dir }}/templates/ansible.cfg.j2" dest="{{ inventory_dir }}/ansible.cfg"
+      delegate_to: localhost
+
+    - name: rerun the script for ansible
+      local_action: script {{ inventory_dir }}/runplaybook.sh
+
+    - name: Create runcustomplaybook.sh from template
+      template: src="{{ playbook_dir }}/templates/runcustomplaybook.sh.j2" dest="{{ inventory_dir }}/runcustomplaybook.sh"
+      delegate_to: localhost
+
+    - name: run custom playbooks
+      local_action: script {{ inventory_dir }}/runcustomplaybook.sh

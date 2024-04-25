@@ -1,0 +1,244 @@
+*** Settings ***
+
+Documentation  Install Smoke Stream to test host
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el.txt
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/cm.txt
+Resource    ${KEYWORDS_PATH}/ccacp.txt
+Resource    ${KEYWORDS_PATH}/manage_releases.txt
+
+Default Tags     Install_smoke
+
+Suite Setup     Prepare Test Environment
+Suite Teardown  Cleanup Testing Environment
+
+*** Variables **
+
+${CCACP_FULL_RELEASE_VERSION}  	${empty}
+${CCACP_EB_RELEASE_VERSION}  	${empty}
+${CM_FULL_RELEASE_VERSION}  	${empty}
+${CM_EB_RELEASE_VERSION}   		${empty}
+${robotDataDirectory}   		smoke_stream_installation
+${ROBOT_LOG_LEVEL}  						WARN
+${smoke_el8_version}            8.0.14
+${SMOKE_FROM_ARTIFACTORY}       ${empty}
+${FTP_SFTP_HOST_FLAG}
+${version}         
+
+
+*** Keywords ***
+Prepare Test Environment
+		manage_releases.Login To Test Host1
+		Log  Copy Smoke Stream Package From Artifactory  ${ROBOT_LOG_LEVEL}
+
+		Write  mkdir -p ${SMOKE_STREAM_DIR}
+		Read Until Prompt
+		Write  cd ${SMOKE_STREAM_DIR}
+		Read Until Prompt
+		Set Client Configuration  timeout=60
+		
+		el_host.Download Binary File  ${REPO_DATA_PATH}/installers/smoke/Smoke_test_el8-${smoke_el8_version}.tar.gz  ${SMOKE_STREAM_DIR}
+		
+		## Ensure Smoke Tar exist before proceed
+		SSHLibrary.File Should Exist   ${SMOKE_STREAM_DIR}/Smoke_test_el8-${smoke_el8_version}.tar.gz
+		
+Install Smoke Stream On Instance Without CCACP Installation
+		Write  tar xvfz Smoke_test_el8-${smoke_el8_version}.tar.gz
+   		Read Until Prompt
+        Write  cd ${SMOKE_STREAM_DIR}/config
+		Read Until Prompt
+		
+		## Returns the value of ${IS_CBIS} from env file or default the value as "No" if the variable does not exist.
+		${IS_CBIS} =	Get Variable Value	${IS_CBIS}  No
+
+		Run Keyword If  '${IS_CBIS}'=='Yes' and '${SMOKE_STREAM_DIR}'!='${AUTO_EL_INST_DIR}/smoke'  Update Configuration For CBIS Env
+		Run Keyword If  '${IS_CBIS}'=='Yes' and '${SMOKE_STREAM_DIR}'=='${AUTO_EL_INST_DIR}/smoke'  Update Configuration For Smoke Regression on CBIS Env
+		Run Keyword If  '${IS_CBIS}'=='Yes' and '${FTP_SFTP_HOSTNAME}'=='ha_vip'  Update the env for sftp and ftp nodes to run in the same host
+		
+		## Returns the value of ${IS_HA_RHEL} from env file or default the value as "No" if the variable does not exist.
+		${IS_HA_RHEL} =	Get Variable Value	${IS_HA_RHEL}  No
+		Run Keyword If  '${IS_HA_RHEL}'=='Yes'  Update hostname to use Processing host VIP hostname
+		
+		## Returns the value of ${FTP_SFTP_HOSTNAME} from env file or default the value as ${empty} if the variable does not exist.
+		${FTP_SFTP_HOSTNAME} =	Get Variable Value	${FTP_SFTP_HOSTNAME}  ${empty}
+		Run Keyword If  '${FTP_SFTP_HOSTNAME}'!='${empty}'  Set Suite Variable  ${FTP_SFTP_HOST_FLAG}  -H ${FTP_SFTP_HOSTNAME}
+		
+		
+		
+		## Returns variable value or default if the variable does not exist.
+		${SMOKE_STREAM_TIMESTEN_DATASTORE} =	Get Variable Value	${SMOKE_STREAM_TIMESTEN_DATASTORE}	/opt/TEST/TimesTen/TEST_timesten/data/Smoke6DS
+		
+		Run Keyword If  '${NO_OF_USERNAME}'=='One'  Log    ./install_smoke_test_el8.ksh -u ${GTAF_SSH_USER} -p '${GTAF_SSH_PASS}' -v ${NODE_PACKAGES_DIR} -l ${LS_PORT} -h ${AUTO_EL_INST_NAME} -t ${TIMESTEN_INSTANCE} -d ${SMOKE_STREAM_TIMESTEN_DATASTORE} ${FTP_SFTP_HOST_FLAG}  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${NO_OF_USERNAME}'=='One'  Write  ./install_smoke_test_el8.ksh -u ${GTAF_SSH_USER} -p '${GTAF_SSH_PASS}' -v ${NODE_PACKAGES_DIR} -l ${LS_PORT} -h ${AUTO_EL_INST_NAME} -t ${TIMESTEN_INSTANCE} -d ${SMOKE_STREAM_TIMESTEN_DATASTORE} ${FTP_SFTP_HOST_FLAG}
+		
+		Run Keyword If  '${NO_OF_USERNAME}'!='One'  Log    ./install_smoke_test_el8.ksh -u ${GTAF_SSH_USER}:${GTAF_SSH_USER}2 -p '${GTAF_SSH_PASS}' -v ${NODE_PACKAGES_DIR} -l ${LS_PORT} -h ${AUTO_EL_INST_NAME} -t ${TIMESTEN_INSTANCE} -d ${SMOKE_STREAM_TIMESTEN_DATASTORE} ${FTP_SFTP_HOST_FLAG} ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${NO_OF_USERNAME}'!='One'  Write  ./install_smoke_test_el8.ksh -u ${GTAF_SSH_USER}:${GTAF_SSH_USER}2 -p '${GTAF_SSH_PASS}' -v ${NODE_PACKAGES_DIR} -l ${LS_PORT} -h ${AUTO_EL_INST_NAME} -t ${TIMESTEN_INSTANCE} -d ${SMOKE_STREAM_TIMESTEN_DATASTORE} ${FTP_SFTP_HOST_FLAG}
+        Wait Until Keyword Succeeds  180   5   el.Wait Until Stream Installation Complete   Installation Done
+		
+		
+		Run Keyword If  '${IS_HA_RHEL}'=='Yes'  Update Lookup Resource On HA RHEL Environment
+		
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Write  sudo systemctl start el-lookup-SmokeServer-OFF-0
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Read Until Prompt
+
+Update hostname to use Processing host VIP hostname
+		Write  mv ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh_original
+		Read Until Prompt
+		Write  cat ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh_original | sed "s%\\$(hostname -f)%el-processing.vip.com%g" > ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+		Write  chmod 755 ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+
+Update Configuration For CBIS Env
+		Write  mv ${SMOKE_STREAM_DIR}/el8_packages/LINUXintel/smoke/stream/stream.xml ${SMOKE_STREAM_DIR}/el8_packages/LINUXintel/smoke/stream/stream.xml_original
+		Read Until Prompt
+		Write  cat ${SMOKE_STREAM_DIR}/el8_packages/LINUXintel/smoke/stream/stream.xml_original | sed "s%SmokeServer%SmokeServer-OFF-0%g" > ${SMOKE_STREAM_DIR}/el8_packages/LINUXintel/smoke/stream/stream.xml
+		Read Until Prompt
+				
+		Write  touch ${NODE_PACKAGES_DIR}/EL_CFG_SDK_BLT_Business_Logic-1.1.1-SmokeServerOFF0.el
+		Read Until Prompt		
+	
+		## Adding DB insertion
+		Write  cp ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql_original
+		Read Until Prompt
+		
+		Write  cat ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql_original | head -n -1 > ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql
+		Read Until Prompt
+		
+		Write  echo "insert into lookupserver_tables (lookupserver_name, lookuptable_name) values ('SmokeServer-OFF-0', 'DURATION');" >> ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql
+		Read Until Prompt
+		Write  echo "insert into lookupserver_tables (lookupserver_name, lookuptable_name) values ('SmokeServer-OFF-0', 'RECORD_TYPE');" >> ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql
+		Read Until Prompt
+		Write  echo "insert into lookupserver_tables (lookupserver_name, lookuptable_name) values ('SmokeServer-OFF-0', 'TARIFF_CLASS');" >> ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql
+		Read Until Prompt
+		Write  echo "\q" >> ${SMOKE_STREAM_DIR}/sql/insert_smoke_lookup_server_postgresql.sql
+		Read Until Prompt
+		
+		##Update hostname to use ha_vip hostname for CBIS 
+		Write  sed -i s/'$(hostname -f)'/ha_vip/g ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+		Write  chmod 755 ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+
+Update Configuration For Smoke Regression on CBIS Env
+		##Update lookup server services from el-lookup-SmokeServer-OFF-0 to el-lookup-SmokeServer
+		Write  sudo cp /etc/systemd/system/el-lookup-SmokeServer-OFF-0.service /etc/systemd/system/el-lookup-SmokeServer.service
+		Read Until Prompt
+		Write  sudo sed -i 's/SmokeServer-OFF-0/SmokeServer/g' /etc/systemd/system/el-lookup-SmokeServer.service
+		Read Until Prompt
+		Write  sudo cp /etc/sysconfig/el-lookup-SmokeServer-OFF-0 /etc/sysconfig/el-lookup-SmokeServer
+		Read Until Prompt  
+		Write  sudo systemctl enable el-lookup-SmokeServer.service
+		Read Until Prompt
+		Write  sudo systemctl start el-lookup-SmokeServer.service
+		Read Until Prompt
+		
+		##Update hostname to use ha_vip hostname for CBIS 
+		Write  sed -i s/'$(hostname -f)'/ha_vip/g ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+		Write  chmod 755 ${SMOKE_STREAM_DIR}/config/install_smoke_test_el8.ksh
+		Read Until Prompt
+
+Update the env for sftp and ftp nodes to run in the same host
+	Log   Update steps for SFTP and FTP node for CBIS environment  ${ROBOT_LOG_LEVEL}
+		##copy the private key from ci host to test host
+		Put File  ${KEY_FILE}  /opt/TEST/TEST/robot_automation/${robotDataDirectory}/private_key_file
+		Write  chmod 600 /opt/TEST/TEST/robot_automation/${robotDataDirectory}/private_key_file
+		Read Until Prompt
+		Write  ssh-keygen -y -f /opt/TEST/TEST/robot_automation/${robotDataDirectory}/private_key_file > /home/TEST/id_rsa.pub
+		Read Until Prompt
+		Write  cp /opt/TEST/TEST/robot_automation/${robotDataDirectory}/private_key_file /home/TEST/id_rsa
+		Read Until Prompt
+		Write  mv /home/TEST/id_rsa* /home/TEST/.ssh/
+		Read Until Prompt
+		Write  chmod 600 /home/TEST/.ssh/id_rsa*
+		Read Until Prompt
+		
+		##update SFTP collector and distributor to add privatekey paramter
+		Write  cd ${SMOKE_STREAM_DIR}/el8_packages/EL_CFG_SFTP_COLLECTOR_SMOKE-7.1.0/AnyOS/
+		Read Until Prompt
+		Write  sed -i '15 a <Parameter name="PrivateKey">/home/TEST/.ssh/id_rsa</Parameter>' transferconfigurations.xml
+		Read Until Prompt
+		Write  cd ${SMOKE_STREAM_DIR}/el8_packages/EL_CFG_SFTP_DISTRIBUTOR_SMOKE-7.1.0/AnyOS/
+		Read Until Prompt
+		Write  sed -i '/PrivateKey/d' transferconfigurations.xml
+		Read Until Prompt
+		Write  sed -i '20 a <Parameter name="PrivateKey">/home/TEST/.ssh/id_rsa</Parameter>' transferconfigurations.xml
+		Read Until Prompt
+		Write  sed -i '50 a <Parameter name="PrivateKey">/home/TEST/.ssh/id_rsa</Parameter>' transferconfigurations.xml
+		Read Until Prompt
+		Write  cd ${SMOKE_STREAM_DIR}/config
+		Read Until Prompt
+		
+		##for FTP node
+		Write  sudo sh -c 'echo "allow_writeable_chroot=YES" >> /etc/vsftpd/vsftpd.conf'
+		Read Until Prompt
+        Write  sudo sh -c 'echo "local_root=/" >> /etc/vsftpd/vsftpd.conf'
+		Read Until Prompt
+        Write  sudo sh -c 'echo "chroot_list_enable=YES" >> /etc/vsftpd/vsftpd.conf'
+		Read Until Prompt
+        Write  sudo sh -c 'echo "TEST" > /etc/vsftpd/chroot_list'
+		Read Until Prompt
+        Write  sudo sed -i -e '3,4s/^/# /' /etc/pam.d/vsftpd
+		Read Until Prompt
+	
+		Write  sudo systemctl enable vsftpd
+		Read Until Prompt
+        Write  sudo systemctl restart vsftpd
+		Read Until Prompt
+		Write  sudo setenforce 0
+		Read Until Prompt
+		
+Update SFTP node parameter to add private key
+	Log  Update SFTP node parameter to add private key  ${ROBOT_LOG_LEVEL}
+		Copy Query File  ${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Collector2  PrivateKey  /home/TEST/.ssh/id_rsa  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Distributor_seq  PrivateKey  /home/TEST/.ssh/id_rsa  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Collector2  PublicKey  /home/TEST/.ssh/id_rsa.pub  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Distributor_seq  PublicKey  /home/TEST/.ssh/id_rsa.pub  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		
+Update SFTP and FTP node to use local protocol on IPV6 env
+	Log  Update SFTP node parameter use local protocol on IPV6 env  ${ROBOT_LOG_LEVEL}
+		Copy Query File  ${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Collector2  TransferProtocol  Local  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Distributor_seq  TransferProtocol  Local  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Collector1  TransferProtocol  Local  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		el.Set Node Parameters  Smoke_stream  Backup  TransferProtocol  Local  /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+				
+		
+Update Lookup Resource On HA RHEL Environment
+		Write  sudo pcs resource create el_lookup_SmokeServer_service lsb:el_lookup_SmokeServer_app op start timeout="300s" on-fail="restart" stop timeout="120s" monitor interval="60s" timeout="120s" on-fail="restart" meta migration-threshold=3 --group proc --before proc_service
+		Read Until Prompt
+		
+Cleanup Testing Environment
+		Write  rm -rf /opt/TEST/TEST/robot_automation/${robotDataDirectory}
+		Read Until Prompt
+		Close All Connections   
+
+*** Test Cases ***
+Smoke Stream Installation
+	Log  Install Smoke Stream  ${ROBOT_LOG_LEVEL}
+		Install Smoke Stream On Instance Without CCACP Installation
+	
+		Run Keyword If  '${IPVERSION}'=='ipv6'  Update SFTP and FTP node to use local protocol on IPV6 env
+		${IS_CBIS} =	Get Variable Value	${IS_CBIS}  No
+		Run Keyword If  '${IS_CBIS}'=='Yes' and '${IPVERSION}'=='ipv4'  Update SFTP node parameter to add private key
+	
+	##Sample_data.ksh does not support remote ftp host with privatekey connection
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Write  cd ${SMOKE_STREAM_DIR}/config
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Read Until Prompt
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Write  sed -i s/ftp_sftp_server_on_same_host=no/ftp_sftp_server_on_same_host=yes/g conf_file.txt
+		Run Keyword If  '${IS_CBIS}'=='Yes'  Read Until Prompt
+	
+	Log  Starting Up TimesTen  ${ROBOT_LOG_LEVEL}
+		Start Command  ttversion -m | grep shortversion |sed 's/.*=//g'
+		${version}=  Read Command Output
+		Run Keyword If  '${version}'=='1122'  Write  sudo systemctl start el-timesten11
+		Run Keyword If  '${version}'=='181'  Write  sudo systemctl start el-timesten
+		Read Until Prompt
+
+ 
+		
+	

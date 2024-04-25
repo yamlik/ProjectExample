@@ -1,0 +1,1266 @@
+*** Settings ***
+Library        SeleniumLibrary
+Library        SSHLibrary
+Library        Collections
+Library        String
+Library        OperatingSystem
+
+Resource	manage_releases.txt
+Resource	${ROBOT_PATH}/installers/CM/el_install_script.txt
+Resource	${ROBOT_PATH}/installers/CM/el_clone_export_script.txt
+Resource	${ROBOT_PATH}/installers/CM/el_clone_import_script.txt
+Resource    ${KEYWORDS_PATH}/sql/db_script_${DB_VENDOR_NAME}.txt
+
+
+*** Variables ***
+${result}
+
+#CM 6.3.0
+${CM_6.3.0_INSTALL_DIR}       		${BASE_DIR}
+${CM_6.3.0_PACKAGE_DIR}       		${BASE_DIR}/tar_package_cm630
+${CM_6.3.0_INSTALL_PACKAGE}   		${CM_6.3.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.3.0_PACKAGE_DIR_2nd}   		${PRI_BASE_DIR}/tar_package_cm630
+
+#CM 6.3.1
+${CM_6.3.1_INSTALL_DIR}       		${BASE_DIR}
+${CM_6.3.1_PACKAGE_DIR}       		${BASE_DIR}/tar_package_cm631
+${CM_6.3.1_INSTALL_PACKAGE}   		${CM_6.3.1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.3.1_PACKAGE_DIR_2nd}   		${PRI_BASE_DIR}/tar_package_cm631
+
+#CM 6.3.1 EB1
+${CM_6.3.1_EB1_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.3.1_EB1_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm631_eb1
+${CM_6.3.1_EB1_INSTALL_PACKAGE}   	${CM_6.3.1_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.3.1_EB1_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm631_eb1
+
+#CM 6.3.1 EB2
+${CM_6.3.1_EB2_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.3.1_EB2_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm631_eb2
+${CM_6.3.1_EB2_INSTALL_PACKAGE}   	${CM_6.3.1_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.3.1_EB2_PACKAGE_DIR_2nd}  	${PRI_BASE_DIR}/tar_package_cm631_eb2
+
+#CM 6.3.1 EB3
+${CM_6.3.1_EB3_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.3.1_EB3_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm631_eb3
+${CM_6.3.1_EB3_INSTALL_PACKAGE}   	${CM_6.3.1_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.3.1_EB3_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm631_eb3
+
+#CM 6.4.0
+${CM_6.4.0_INSTALL_DIR}       		${BASE_DIR}
+${CM_6.4.0_PACKAGE_DIR}       		${BASE_DIR}/tar_package_cm640
+${CM_6.4.0_INSTALL_PACKAGE}   		${CM_6.4.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.4.0_PACKAGE_DIR_2nd}   		${PRI_BASE_DIR}/tar_package_cm640
+
+#CM 6.4.1
+${CM_6.4.1_INSTALL_DIR}       		${BASE_DIR}
+${CM_6.4.1_PACKAGE_DIR}       		${BASE_DIR}/tar_package_cm641
+${CM_6.4.1_INSTALL_PACKAGE}   		${CM_6.4.1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.4.1_PACKAGE_DIR_2nd}   		${PRI_BASE_DIR}/tar_package_cm641
+
+#CM 6.4.1 EB1
+${CM_6.4.1_EB1_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.4.1_EB1_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm641_eb1
+${CM_6.4.1_EB1_INSTALL_PACKAGE}   	${CM_6.4.1_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.4.1_EB1_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm641_eb1
+
+#CM 6.4.1 EB2
+${CM_6.4.1_EB2_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.4.1_EB2_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm641_eb2
+${CM_6.4.1_EB2_INSTALL_PACKAGE}   	${CM_6.4.1_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.4.1_EB2_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm641_eb2
+
+#CM 6.4.1 EB3
+${CM_6.4.1_EB3_INSTALL_DIR}             ${BASE_DIR}
+${CM_6.4.1_EB3_PACKAGE_DIR}             ${BASE_DIR}/tar_package_cm641_eb3
+${CM_6.4.1_EB3_INSTALL_PACKAGE}		${CM_6.4.1_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.4.1_EB3_PACKAGE_DIR_2nd}         ${PRI_BASE_DIR}/tar_package_cm641_eb3
+
+#CM 6.5.0
+${CM_6.5.0_INSTALL_DIR}       		${BASE_DIR}
+${CM_6.5.0_PACKAGE_DIR}       		${BASE_DIR}/tar_package_cm650
+${CM_6.5.0_INSTALL_PACKAGE}   		${CM_6.5.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_PACKAGE_DIR_2nd}   		${PRI_BASE_DIR}/tar_package_cm650
+
+#CM 6.5.0 EB1
+${CM_6.5.0_EB1_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.5.0_EB1_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm650_eb1
+${CM_6.5.0_EB1_INSTALL_PACKAGE}   	${CM_6.5.0_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_EB1_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm650_eb1
+
+#CM 6.5.0 EB2
+${CM_6.5.0_EB2_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.5.0_EB2_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm650_eb2
+${CM_6.5.0_EB2_INSTALL_PACKAGE}   	${CM_6.5.0_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_EB2_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm650_eb2
+
+#CM 6.5.0 EB3
+${CM_6.5.0_EB3_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.5.0_EB3_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm650_eb3
+${CM_6.5.0_EB3_INSTALL_PACKAGE}   	${CM_6.5.0_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_EB3_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm650_eb3
+
+#CM 6.5.0 EB4
+${CM_6.5.0_EB4_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.5.0_EB4_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm650_eb4
+${CM_6.5.0_EB4_INSTALL_PACKAGE}   	${CM_6.5.0_EB4_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_EB4_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm650_eb4
+
+#CM 6.5.0 EB5
+${CM_6.5.0_EB5_INSTALL_DIR}       	${BASE_DIR}
+${CM_6.5.0_EB5_PACKAGE_DIR}       	${BASE_DIR}/tar_package_cm650_eb5
+${CM_6.5.0_EB5_INSTALL_PACKAGE}   	${CM_6.5.0_EB5_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_6.5.0_EB5_PACKAGE_DIR_2nd}   	${PRI_BASE_DIR}/tar_package_cm650_eb5
+
+#CM 7.0.0_Installer5
+${CM_7.0.0_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm700
+${CM_7.0.0_INSTALL_PACKAGE}   ${CM_7.0.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm700
+
+#CM 7.0.1_Installer5
+${CM_7.0.1_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701
+${CM_7.0.1_INSTALL_PACKAGE}   ${CM_7.0.1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701
+
+#CM 7.0.1_EB1
+${CM_7.0.1_EB1_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb1
+${CM_7.0.1_EB1_INSTALL_PACKAGE}   ${CM_7.0.1_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb1
+
+#CM 7.0.1_EB2
+${CM_7.0.1_EB2_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb2
+${CM_7.0.1_EB2_INSTALL_PACKAGE}   ${CM_7.0.1_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb2
+
+#CM 7.0.1_EB3
+${CM_7.0.1_EB3_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB3_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb3
+${CM_7.0.1_EB3_INSTALL_PACKAGE}   ${CM_7.0.1_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB3_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb3
+
+#CM 7.0.1_EB4
+${CM_7.0.1_EB4_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB4_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb4
+${CM_7.0.1_EB4_INSTALL_PACKAGE}   ${CM_7.0.1_EB4_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB4_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb4
+
+#CM 7.0.1_EB5
+${CM_7.0.1_EB5_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB5_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb5
+${CM_7.0.1_EB5_INSTALL_PACKAGE}   ${CM_7.0.1_EB5_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB5_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb5
+
+#CM 7.0.1_EB6
+${CM_7.0.1_EB6_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_EB6_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701_eb6
+${CM_7.0.1_EB6_INSTALL_PACKAGE}   ${CM_7.0.1_EB6_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_EB6_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701_eb6
+
+#CM 7.1.0_Installer5
+${CM_7.1.0_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm710
+${CM_7.1.0_INSTALL_PACKAGE}   ${CM_7.1.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm710
+
+#CM 7.1.1_Installer5
+${CM_7.1.1_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm711
+${CM_7.1.1_INSTALL_PACKAGE}   ${CM_7.1.1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm711
+
+#CM 7.1.1_EB1 Installer5
+${CM_7.1.1_EB1_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.1_EB1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm711_eb1
+${CM_7.1.1_EB1_INSTALL_PACKAGE}   ${CM_7.1.1_EB1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.1_EB1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm711_eb1
+
+#CM 7.1.1_EB2 Installer5
+${CM_7.1.1_EB2_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.1_EB2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm711_eb2
+${CM_7.1.1_EB2_INSTALL_PACKAGE}   ${CM_7.1.1_EB2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.1_EB2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm711_eb2
+
+#CM 7.1.1_EB3 Installer5
+${CM_7.1.1_EB3_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.1_EB3_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm711_eb3
+${CM_7.1.1_EB3_INSTALL_PACKAGE}   ${CM_7.1.1_EB3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.1_EB3_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm711_eb3
+
+#CM 7.1.1_EB4 Installer5
+${CM_7.1.1_EB4_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.1.1_EB4_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm711_eb4
+${CM_7.1.1_EB4_INSTALL_PACKAGE}   ${CM_7.1.1_EB4_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.1.1_EB4_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm711_eb4
+
+#CM 7.2.0_Installer5
+${CM_7.2.0_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.2.0_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm720
+${CM_7.2.0_INSTALL_PACKAGE}   ${CM_7.2.0_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.2.0_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm720
+
+#CM 7.2.1_Installer5
+${CM_7.2.1_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.2.1_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm721
+${CM_7.2.1_INSTALL_PACKAGE}   ${CM_7.2.1_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.2.1_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm721
+
+#CM 7.2.2_Installer5
+${CM_7.2.2_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.2.2_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm722
+${CM_7.2.2_INSTALL_PACKAGE}   ${CM_7.2.2_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.2.2_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm722
+
+${CM_7.2.2_AIX_SUNOS_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.2.2_AIX_SUNOS_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm722
+${CM_7.2.2_AIX_SUNOS_INSTALL_PACKAGE}   ${CM_7.2.2_AIX_SUNOS_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.2.2_AIX_SUNOS_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm722
+
+#CM 7.2.3_Installer5
+${CM_7.2.3_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.2.3_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm723
+${CM_7.2.3_INSTALL_PACKAGE}   ${CM_7.2.3_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.2.3_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm723
+
+#CM 7.0.1_withNewNB
+${CM_7.0.1_withNewNB_INSTALL_DIR}       ${BASE_DIR}
+${CM_7.0.1_withNewNB_PACKAGE_DIR}       ${BASE_DIR}/tar_package_cm701
+${CM_7.0.1_withNewNB_INSTALL_PACKAGE}   ${CM_7.0.1_withNewNB_INSTALL_PACKAGE_${INSTALL_FILE_HOST}}
+${CM_7.0.1_withNewNB_PACKAGE_DIR_2nd}   ${PRI_BASE_DIR}/tar_package_cm701
+
+
+
+${CHOICE_FOR_QUIT}   q
+
+# Values 1 or 2 in the variable name mean HOST_PRIORITY
+${INSTALLATION_OPTION_TO_UPGRAGE_1_FROM_7.1.0}        2
+${INSTALLATION_OPTION_TO_UPGRAGE_2_FROM_7.1.0}        4
+${INSTALLATION_OPTION_TO_UPGRAGE_1_FROM_7.1.0_EB1}    2
+${INSTALLATION_OPTION_TO_UPGRAGE_2_FROM_7.1.0_EB1}    4
+
+# This is global variable set by the manage_releases
+${cm_inst_pkg}  ${empty}
+
+## For DB
+${TABLESPACE_NAME} 			${empty}
+${INDEX_TABLESPACE_NAME}  	${empty}
+
+## For Java Keystore
+${USE_JAVA_KEYSTORE} 		${empty}
+
+## For flume
+${HDFS_PATH}    hdfs://krh65hw01.TEST.com:8020/user/elink1/\%{hostname}
+
+## For Question on Directory
+${INTERNAL_BUFFERING_DIR_PATH}   				${empty}
+${NODE_CONTROL_DIR_PATH}						${empty}
+${NODE_INTERNAL_STORAGE_DIR_PATH}				${empty}
+${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}		${empty} 
+
+## For EL720 above use pre-prepared java		
+${ROBOT_JAVA_HOME}								${empty}	
+
+${SOURCE_PROFILE}  ${empty}
+
+${ROBOT_LOG_LEVEL}  WARN
+*** Keywords ***
+
+##################
+#
+# PUBLIC KEYWORDS
+#
+
+Install CM Release  [Arguments]  ${release_version}
+		manage_releases.Find Latest CM Installation Pkg  ${release_version}
+
+	Log  ${cm_inst_pkg}  WARN
+		cm.Do Install  ${release_version}  ${cm_inst_pkg}
+
+Install CM EB  [Arguments]  ${release_version}
+    	manage_releases.Find Latest CM Installation Pkg  ${release_version}
+
+	Log  ${cm_inst_pkg}  WARN
+		cm.Do EB Install  ${release_version}  ${cm_inst_pkg}
+
+Install CM Release Installer5  [Arguments]  ${release_version}
+		manage_releases.Find Latest CM Installation Pkg  ${release_version}
+
+	Log  ${cm_inst_pkg}  WARN
+		cm.Do Install Installer5  ${release_version}  ${cm_inst_pkg}
+
+
+Uninstall CM Release_700  [Arguments]  ${release_version}
+		cm.Do Uninstall_700  ${release_version}
+
+
+
+########################
+#
+# PRIVATE KEYWORDS
+# For installing release
+#
+    
+Do Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  cm.Do Primary Install    ${release_version}  ${cm_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  cm.Do Secondary Install  ${release_version}  ${cm_inst_pkg}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Do Uninstall_700  [Arguments]  ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  cm.Do Primary Uninstall_700    ${release_version}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  cm.Do Secondary Uninstall  ${release_version}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+
+Do Install Installer5  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	## To determine current version of TEST installed on host before upgrade as there will be different question if upgrade from different version
+	Run Keyword If  ${CHOICE_FOR_INSTALLATION}==2 or ${CHOICE_FOR_INSTALLATION}==4  Get Current Installed Version
+	
+	Run Keyword If  '${HOST_PRIORITY}'=='1'  cm.Do Primary Install Installer5    ${release_version}  ${cm_inst_pkg}
+	Run Keyword If  '${HOST_PRIORITY}'=='2'  cm.Do Secondary Install Installer5  ${release_version}  ${cm_inst_pkg}
+	Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+Get Current Installed Version
+	manage_releases.Login To Test Host1
+	${INSTALLED_EL_VERSION}=  el_host.Get CM Version
+	Set Suite variable  ${INSTALLED_EL_VERSION}  ${INSTALLED_EL_VERSION}
+	Log  Current Installed Version is ${INSTALLED_EL_VERSION}  ${ROBOT_LOG_LEVEL}
+	Close Connection
+
+Do Secondary Uninstall  [Arguments]  ${release_version}
+	# Stop secondary EL
+		Run Keyword And Ignore Error  cm.Stop EL  ${HOST_PRIORITY}
+
+	# Stop primary EL
+    	cm.Change AUTO_EL_INST_DIR To Primary
+		Run Keyword And Ignore Error  cm.Stop EL
+		cm.Change AUTO_EL_INST_DIR To Secondary
+
+		manage_releases.Uninstall CM TimesTen
+    	manage_releases.Delete Secondary Host
+
+		manage_releases.Login To Test Host1
+		Set Client Configuration  timeout=120
+
+		cm.Remove Directory  ${AUTO_EL_INST_DIR}
+
+		cm.Remove Directory  ${CM_${release_version}_INSTALL_DIR}/${RELEASE_AREA}
+
+		cm.Remove Directory  ${BASE_DIR}
+
+		Run Keyword If  '${NODE_CONTROL_DIR_PATH}'!='${empty}'  			cm.Remove Directory   ${NODE_CONTROL_DIR_PATH}
+		
+		Run Keyword If  '${NODE_INTERNAL_STORAGE_DIR_PATH}'!='${empty}'   	cm.Remove Directory   ${NODE_INTERNAL_STORAGE_DIR_PATH}
+		
+		Run Keyword If  '${INTERNAL_BUFFERING_DIR_PATH}'!='${empty}'  		cm.Remove Directory   ${INTERNAL_BUFFERING_DIR_PATH}
+		
+		Run Keyword If  '${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}'!='${empty}'  cm.Remove Directory   ${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}
+
+		Close Connection
+
+Do Primary Install Preparations  [Arguments]  ${release_version}  ${cm_inst_pkg}
+		manage_releases.Login To Test Host1
+		Write  rm -fr ${CM_${release_version}_PACKAGE_DIR}
+		Read Until Prompt
+		Close Connection
+
+	Log  Copying pkg in to the test host ...  WARN
+   		manage_releases.Copy Release Package To Test Host  ${CM_${release_version}_PRODUCTS_PKG_DIR}  ${CM_${release_version}_PACKAGE_DIR}  ${cm_inst_pkg}
+
+		manage_releases.Login To Test Host1
+		Set Client Configuration  timeout=900
+
+	Log  cd ${CM_${release_version}_PACKAGE_DIR}  WARN
+   		Write  cd ${CM_${release_version}_PACKAGE_DIR}
+		Read Until Prompt
+
+	Log  tar xvf ./${cm_inst_pkg}  WARN
+		Set Client Configuration  timeout=1800
+		Write  tar xvf ./${cm_inst_pkg}
+		Read Until Prompt
+		Set Client Configuration  timeout=900
+		manage_releases.Check If Command Exit Is Zero
+		Write  mkdir -p ${BASE_DIR}
+		Read Until Prompt
+
+		## Remove tar package
+		Write  rm ${cm_inst_pkg}
+		Read Until Prompt
+
+		## And create a directory with the package name so knowing which package version is using for installation
+		Write  mkdir ${cm_inst_pkg}
+		Read Until Prompt
+
+		## And create a directory with the UI URL for Primary host
+		Run Keyword If  ${HOST_PRIORITY} == 1  Write  touch ../${EL_INST_ELUI_FRAMEWORK_PORT}
+		Run Keyword If  ${HOST_PRIORITY} == 1  Read Until Prompt
+		
+
+#################################
+# Installation for CM650 or below
+#################################
+Do Primary Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+    	cm.Stop EL
+    	cm.Do Primary Install Preparations  ${release_version}  ${cm_inst_pkg}
+
+		manage_releases.Login To Test Host1
+		Write  cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+		Write  . ./.profile
+		Read Until Prompt
+
+		Write  cd ${CM_${release_version}_PACKAGE_DIR}
+		Read Until Prompt
+		cm.Run CM Installation Script  ${release_version}  ${cm_inst_pkg}
+		Close Connection
+    	Run Keyword If  '${release_version}' < '6.5.0'  manage_releases.Give Admin Access To Blt
+		cm.Start EL
+
+Do Secondary Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+    # Stop Secondary EL
+		cm.Stop EL  ${HOST_PRIORITY}
+
+		manage_releases.Login To Test Host1
+		Write  cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+		Write  . ./.profile
+		Read Until Prompt
+
+	Log  cd ${CM_${release_version}_PACKAGE_DIR_2nd}  WARN
+    	Write  cd ${CM_${release_version}_PACKAGE_DIR_2nd}
+		Read Until Prompt
+    	cm.Run CM Installation Script  ${release_version}  ${cm_inst_pkg}
+		Close Connection
+
+	# Start Secondary EL
+		cm.Start EL	${HOST_PRIORITY}
+
+Do EB Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+		Run Keyword If  '${HOST_PRIORITY}'=='1'  cm.Do Primary EB Install    ${release_version}  ${cm_inst_pkg}
+		Run Keyword If  '${HOST_PRIORITY}'=='2'  cm.Do Secondary EB Install  ${release_version}  ${cm_inst_pkg}
+		Run Keyword Unless  '${HOST_PRIORITY}'=='1'  Run Keyword Unless  '${HOST_PRIORITY}'=='2'  Log  HOST_PRIORITY value ${HOST_PRIORITY} not supported.  WARN
+
+
+Do Primary EB Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+		cm.Stop EL
+
+		cm.Do Primary Install Preparations  ${release_version}  ${cm_inst_pkg}
+
+    	manage_releases.Login To Test Host1
+		Write  . ${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+
+		Write  cd ${CM_${release_version}_PACKAGE_DIR}
+		Read Until Prompt
+
+		${CM_Version}=  el_host.Get CM Version
+		Run Keyword If  ${CM_Version}<700  cm.Run CM EB Installation Script  ${release_version}  ${cm_inst_pkg}
+		Run Keyword If  ${CM_Version}>=700  cm.Run EL EB Installation Script  ${release_version}  ${cm_inst_pkg}
+		
+		Close Connection
+		
+		## Assigning password value for DB2
+		Run Keyword If  ${DB_VENDOR}==2  Set Suite Variable  ${DB_PASSWORD}  ${DB2_PASSWORD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${DB_PASSWORD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${DB_PASSWORD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${CREP_DB_PASSWD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${CREP_DB_PASSWD}
+
+		cm.Start EL
+
+Do Secondary EB Install  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	# Stop Secondary EL
+		cm.Stop EL  ${HOST_PRIORITY}
+		manage_releases.Login To Test Host1
+		Write  . ${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+        Write   cd ${CM_${release_version}_PACKAGE_DIR_2nd}
+		Read Until Prompt
+
+    	${CM_Version}=  el_host.Get CM Version
+		Run Keyword If  ${CM_Version}<700  cm.Run CM EB Installation Script  ${release_version}  ${cm_inst_pkg}
+		Run Keyword If  ${CM_Version}>=700  cm.Run EL EB Installation Script  ${release_version}  ${cm_inst_pkg}
+	
+		Close Connection
+		
+		Run Keyword If  ${DB_VENDOR}==2  Set Suite Variable  ${DB_PASSWORD}  ${DB2_PASSWORD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${DB_PASSWORD}
+		Run Keyword If  ${CM_Version}>=700 and '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${DB_PASSWORD}
+
+	# Start Secondary EL
+		cm.Start EL  ${HOST_PRIORITY}
+
+########################
+#
+# PRIVATE KEYWORDS
+# For manipulating
+# global variables
+#
+
+Change AUTO_EL_INST_DIR To Primary
+    	${AUTO_EL_INST_DIR}  Set Variable  ${BASE_DIR}/${EL_TEST_HOST_SHORT}_a
+    	Set Global Variable  ${AUTO_EL_INST_DIR}
+
+Change AUTO_EL_INST_DIR To Secondary
+    	${AUTO_EL_INST_DIR}   Set Variable  ${BASE_DIR}/${EL_TEST_HOST_SHORT}_b
+    	Set Global Variable  ${AUTO_EL_INST_DIR}
+
+Change Installation Option To Upgrade From  [Arguments]  ${host_priority}  ${upgrade_from}
+    	${CHOICE_FOR_INSTALLATION}=  Set Variable  ${INSTALLATION_OPTION_TO_UPGRAGE_${host_priority}_FROM_${upgrade_from}}
+    	Set Global Variable  ${CHOICE_FOR_INSTALLATION}
+
+
+########################
+#
+# PRIVATE KEYWORDS
+# For Command Resolution
+#
+
+Run CM EB Installation Script  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	Log  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+		Write  ./install_eb.ksh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+
+	# This will wait until the script has initiated itself
+	# i.e. wait until the script is ready to start taking input
+        Read Until Regexp  Installed
+		Wait Until Keyword Succeeds  600   0.3   CM Install Script Interaction
+		Write  ${CHOICE_FOR_QUIT}
+		Read Until Prompt
+		manage_releases.Check If Command Exit Is Zero
+
+## For EL 701 and above EB installation
+Run EL EB Installation Script  [Arguments]  ${release_version}  ${cm_inst_pkg}
+		Start Command  echo ${release_version} | awk -F_ '{print $1}'
+		${release_version}=  Read Command Output
+		Set Suite Variable  ${release_version}  ${release_version}
+				
+		## Sleep for 60 second so that port are fully released before start new installation
+		Sleep  60
+
+	Log  ./install_eb.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+		Write  ./install_eb.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+
+		el_install_script.Start Installation
+
+
+
+	
+Run CM Installation Script  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	Log  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}  WARN
+		Write  ./install.ksh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA}
+
+	# This will wait until the script has initiated itself
+	# i.e. wait until the script is ready to start taking input
+   	# Read Until Regexp  Installer Info|Installed
+		${result}=  Wait Until Keyword Succeeds  1200   0.3   CM Install Script Interaction
+    Log  ${result}
+
+CM Install Script Interaction
+	# Reads whatever received so far
+		${result}=  Read
+	Log  ${result}  WARN
+		#CM Ok Interaction Values To Exit
+	Should Match  ${result}  *After reading this information, press enter to continue*
+
+CM Ok Interaction Values To Exit
+	# When this kw returns PASS, then the calling function will exit
+	Should Match  ${result}  *After reading this information, press enter to continue*
+
+
+
+
+#############################################
+#
+# EL 7 and above - Installation
+#
+#############################################
+Do Primary Install Installer5  [Arguments]  ${release_version}  ${cm_inst_pkg}
+    ## Stop EL before Upgrade
+    	Run Keyword If  '${CHOICE_FOR_INSTALLATION}'=='2'  cm.Stop EL
+    	cm.Do Primary Install Preparations  ${release_version}  ${cm_inst_pkg}
+
+		manage_releases.Login To Test Host1
+		Write  cd ${CM_${release_version}_PACKAGE_DIR}
+		Read Until Prompt
+		
+		
+		cm.Run EL Installation Script Installer5  ${release_version}  ${cm_inst_pkg}
+		
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Log  Workaround to make LookupServer on SunOS work  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  el_host.Configure LookupServer On SunOS
+		Close Connection
+		
+		manage_releases.Check Installation Errors
+
+		manage_releases.Configure ODBCINI Environment Variable
+
+
+	Log  Include JCE Into $JAVA_HOME/lib/security  ${ROBOT_LOG_LEVEL}
+	## This is to make the test case of SFTP_distributor/cmdl_2088_03_multi_distribute_cipher.txt work
+		cm.Moving JCE Into JAVA_HOME
+
+	Log  Start EL Instance  ${ROBOT_LOG_LEVEL}
+		cm.Start EL
+		
+		Run Keyword If  ${DB_VENDOR}==2  Set Suite Variable  ${DB_PASSWORD}  ${DB2_PASSWORD}
+	## Post Verification
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${DB_PASSWORD}
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${DB_PASSWORD}
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${CREP_DB_PASSWD}
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${CREP_DB_PASSWD}
+		
+		Run Keyword If  '${FINALISE_CHECK_FOR_RELEASE}' == 'Yes'  manage_releases.Verify Package Version If RC or SNAPSHOT on Release Directory
+		
+		manage_releases.Login To Test Host1
+		${CM_Version}=  el_host.Get CM Version
+		Run Keyword If  ${CM_Version}>=720 and '${FINALISE_CHECK_FOR_RELEASE}' == 'Yes'  Verify Package Version If RC or SNAPSHOT in Template File
+
+		
+
+Do Secondary Install Installer5  [Arguments]  ${release_version}  ${cm_inst_pkg}
+	# Stop primary EL before install secondary host
+		cm.Change AUTO_EL_INST_DIR To Primary
+		cm.Stop EL
+		cm.Change AUTO_EL_INST_DIR To Secondary
+	# Stop Secondary host before upgrade on secondary host
+    	Run Keyword If  '${CHOICE_FOR_INSTALLATION}'=='4'  cm.Stop EL  2
+
+		manage_releases.Login To Test Host1
+ 		Write  mkdir -p ${BASE_DIR}
+		Read Until Prompt
+    Log  cd ${CM_${release_version}_PACKAGE_DIR_2nd}  WARN
+    	Write  cd ${CM_${release_version}_PACKAGE_DIR_2nd}
+		Read Until Prompt
+
+	# Obtain System tools authentication_key in .mdr.rc file on Primary host to be answered in secondary host installation
+		Start Command  awk '/TEST/ { getline; print $0 }' ${PRI_BASE_DIR}/${EL_TEST_HOST_SHORT}_a/.mds.rc | grep authentication_key | sed 's%authentication_key: %%'
+		${AUTHENTICATION_KEY}=  Read Command Output
+		Set Suite Variable  ${AUTHENTICATION_KEY}  ${AUTHENTICATION_KEY}
+
+   		cm.Run EL Installation Script Installer5  ${release_version}  ${cm_inst_pkg}
+
+   		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Log  Workaround to make LookupServer on SunOS work  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  el_host.Configure LookupServer On SunOS
+
+		Close Connection
+		
+
+		manage_releases.Check Installation Errors
+
+		manage_releases.Configure ODBCINI Environment Variable
+
+	# Start Primary EL
+    	cm.Change AUTO_EL_INST_DIR To Primary
+		cm.Start EL
+		cm.Change AUTO_EL_INST_DIR To Secondary
+
+	# Start Secondary EL
+		cm.Start EL	${HOST_PRIORITY}
+		
+		Run Keyword If  ${DB_VENDOR}==2  Set Suite Variable  ${DB_PASSWORD}  ${DB2_PASSWORD}
+		## Post Verification
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Install Directory  ${DB_PASSWORD}
+		Run Keyword If  '${EL_INST_PASSWORD_ENCRYPTION}' == 'y'  manage_releases.Verify Password Encryption on Release Directory  ${DB_PASSWORD}
+
+
+Run EL Installation Script Installer5  [Arguments]  ${release_version}  ${cm_inst_pkg}
+    	## Generate solution config ONLY
+        Run Keyword If    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location' or '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_default_location'    Generate Solution Config For Fresh Installation
+		
+	   	## Move solution config to base directory if USE_FORCE_MODE has defined (by default solution config will be generated at tar_package directory
+	    ## having this define will meant to use -f option and give own define location for the solution config for installation)
+	    Run Keyword If    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location'    Move Solution Config to Base Dir
+	   	
+   	
+		## This is to test if source profile before upgrade could be successfully done with installation
+    	Run Keyword If  '${CHOICE_FOR_INSTALLATION}'=='2' or '${CHOICE_FOR_INSTALLATION}'=='4'  Source Profile Before Upgrade
+		
+		## Passing -f option with or without own defined path for installation
+        ${force_mode_option}=    Set Variable If    
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_default_location'    	-f
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location'    		-f ${BASE_DIR}/el-solution_force_mode.config
+        ...    '${USE_FORCE_MODE}' == 'NONE' or '${USE_FORCE_MODE}' == ''								${EMPTY}
+        
+		       
+        ## Using self prepared java to avoid overwritten of cacert on same host - for EL720 onward
+        Run Keyword If   '${ROBOT_JAVA_HOME}'!='${empty}'   Use Self Prepared Java
+		
+		## ksol10ft has now installed with latest OpenSSL version [ OpenSSL 1.0.2k  26 Jan 2017 ]
+		## As such old version of EL7 series will have installation failed at APACHE component (configuration hang) 
+		## Following workaround is to have EL701 and EL711 installation to use compatible version of OpenSSL, i.e. OpenSSL 1.0.1t  3 May 2016 
+		Run Keyword If  ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${RELEASE_VERSION}'=='7.2.0' or '${RELEASE_VERSION}'=='7.2.1' or '${RELEASE_VERSION}'=='7.2.2' or '${RELEASE_VERSION}'=='7.2.3' or '${RELEASE_VERSION}'=='7.2.2_AIX_SUNOS')  Log  Workaround to export OpenSSL 1.0.1t  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${RELEASE_VERSION}'=='7.2.0' or '${RELEASE_VERSION}'=='7.2.1' or '${RELEASE_VERSION}'=='7.2.2' or '${RELEASE_VERSION}'=='7.2.3' or '${RELEASE_VERSION}'=='7.2.2_AIX_SUNOS')  Write  export PATH=/usr/local/ssl/bin/:$PATH
+		
+		Run Keyword If  ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${RELEASE_VERSION}'=='7.0.1' or '${RELEASE_VERSION}'=='7.1.0' or '${RELEASE_VERSION}'=='7.1.1')  Log  Workaround to export OpenSSL 0.9.8  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${RELEASE_VERSION}'=='7.0.1' or '${RELEASE_VERSION}'=='7.1.0' or '${RELEASE_VERSION}'=='7.1.1')  Write  export PATH=/usr/sfw/bin/:$PATH
+		
+		Run Keyword If  ('${SERVER_SHORT_NAME}'=='ksol10ft1' or '${SERVER_SHORT_NAME}'=='ksol10bm') and ('${RELEASE_VERSION}'=='7.0.1' or '${RELEASE_VERSION}'=='7.1.0' or '${RELEASE_VERSION}'=='7.1.1' or '${RELEASE_VERSION}'=='7.2.0' or '${RELEASE_VERSION}'=='7.2.1' or '${RELEASE_VERSION}'=='7.2.2' or '${RELEASE_VERSION}'=='7.2.2_AIX_SUNOS')  Read Until Prompt
+		
+		
+		
+		
+        Log  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} ${force_mode_option}  ${ROBOT_LOG_LEVEL}
+		Write  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} ${force_mode_option}
+		
+		
+		## If it has got solution config generated, use it!! else anwering the questions through
+		${question}=    Set Variable If    
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_default_location'    	skip_question
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location'    		skip_question
+        ...    '${USE_FORCE_MODE}' == 'NONE' or '${USE_FORCE_MODE}' == ''								answer_question
+        
+            el_install_script.EL Install Script Interaction    do_install    ${question}
+
+
+
+## Execute install command with -s command.
+Generate Solution Config For Fresh Installation
+	    Log  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -s  ${ROBOT_LOG_LEVEL}
+	    Write  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -s
+	
+	    el_install_script.EL Install Script Interaction    dont_install    answer_question
+	    Read Until Prompt
+	    
+	    Log  \n\n ================================================ \n\n  Warn
+    
+    
+Document    Expect package directory contains solution config file and move it to base directory
+Move Solution Config to Base Dir
+    Write    mv -f ${CM_${release_version}_PACKAGE_DIR_2nd}/el-solution.config.?????? ${BASE_DIR}/el-solution_force_mode.config
+    Read Until Prompt
+    
+
+Do Primary Uninstall_700  [Arguments]  ${release_version}
+		Run Keyword And Ignore Error  cm.Stop EL
+
+		manage_releases.Uninstall CM TimesTen
+		Set Default Configuration  timeout=180
+
+		Run Keyword If  '${DB_VENDOR}'=='1'  manage_releases.Drop All Db User Objects
+		Run Keyword If  '${DB_VENDOR}'=='2'  manage_releases.Drop All Db User Objects DB2
+		Run Keyword If  '${DB_VENDOR}'=='3'  manage_releases.Drop All Db User Objects POSTGRESQL
+
+		manage_releases.Login To Test Host1
+		Set Client Configuration  timeout=300
+		
+
+		cm.Remove Directory  ${AUTO_EL_INST_DIR}
+
+		cm.Remove Directory  ${CM_${release_version}_INSTALL_DIR}/${RELEASE_AREA}
+
+		cm.Remove Directory  ${CM_${release_version}_INSTALL_DIR}
+
+		Run Keyword If  '${NODE_CONTROL_DIR_PATH}'!='${empty}'  			cm.Remove Directory   ${NODE_CONTROL_DIR_PATH}
+		
+		Run Keyword If  '${NODE_INTERNAL_STORAGE_DIR_PATH}'!='${empty}'   	cm.Remove Directory   ${NODE_INTERNAL_STORAGE_DIR_PATH}
+		
+		Run Keyword If  '${INTERNAL_BUFFERING_DIR_PATH}'!='${empty}'  		cm.Remove Directory   ${INTERNAL_BUFFERING_DIR_PATH}
+		
+		Run Keyword If  '${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}'!='${empty}'  cm.Remove Directory   ${REJECTED_RECORDS_OFFLINE_STORAGE_PATH}
+		
+	
+	
+	Log  Kill all process  WARN
+		Run Keyword If  "${INSTALL_FILE_HOST}" == "SunOS"  Write  /usr/ucb/ps -auxww | grep "${BASE_DIR}" | grep -v grep | awk '{print $2}' | xargs kill -9
+        Run Keyword If  "${INSTALL_FILE_HOST}" == "HP-UXita"  Write  ps -axz | grep "${BASE_DIR}" | grep -v grep | awk '{print $2}' | xargs kill -9
+        Run Keyword If  "${INSTALL_FILE_HOST}" == "AIX" or "${INSTALL_FILE_HOST}" == "LINUXintel"    Write  ps -ef | grep "${BASE_DIR}" | grep -v grep | awk '{print $2}' | xargs kill -9
+        Read Until Prompt
+
+	Log  Removing .openssocfg...  WARN
+ 		Start Command  echo ${BASE_DIR} | sed -e "s|/|_|g"
+		${openAM_file}=  Read Command Output
+		Write  rm -fr ~/.openssocfg/*${openAM_file}_${AUTO_EL_INST_NAME}*
+		Read Until Prompt
+
+		Close Connection
+
+Remove Directory  [Arguments]  ${directory}
+	Log  Removing ${directory}...  WARN
+		Write  rm -rf ${directory}
+		Read Until Prompt
+	
+
+Source Profile Before Upgrade
+		## Only source profile if environment file has been set it to
+		Run Keyword If  '${SOURCE_PROFILE}'=='y'  Log  Source Profile before upgrade  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${SOURCE_PROFILE}'=='y'  Write  . ${AUTO_EL_INST_DIR}/.profile
+		Run Keyword If  '${SOURCE_PROFILE}'=='y'  Read Until Prompt
+
+Use Self Prepared Java
+	Log  Using Self Prepared Java  	${ROBOT_LOG_LEVEL}
+	Log  export JAVA_HOME=${ROBOT_JAVA_HOME}  ${ROBOT_LOG_LEVEL}
+	Log  export PATH=${ROBOT_JAVA_HOME}/jre/bin:$PATH  ${ROBOT_LOG_LEVEL}	
+		Write  export JAVA_HOME=${ROBOT_JAVA_HOME}
+		Read Until Prompt
+		Write  export PATH=${ROBOT_JAVA_HOME}/bin:$PATH
+		Read Until Prompt
+
+
+########################
+# For Clone Instance
+########################
+Clone Export Installer5  [Arguments]  ${release_version}
+		cm.Stop EL  ${HOST_PRIORITY}
+
+		manage_releases.Login To Test Host1
+		
+		Run Keyword If  '${RELEASE_VERSION}'=='7.0.1'  Check If RCT OR SDK Is Installed
+		
+		# Target host free diskspace checking
+		# Primary host: 14 GiB or more
+		# Secondary host: 7.2 GiB or more
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='AIX'  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $2}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='HP-UXita'  Start Command  df -k ${BASE_DIR} | head -2 | tail -1 | awk '{print $1}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $2}'
+
+		# The df command output is different in RHEL6 & RHEL7
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel'  Start Command  cat /etc/redhat-release | awk '{printf "%d", $7}'
+		${rhel_version}=  Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel'  Read Command Output
+		Set Suite Variable  ${RHEL_VERSION}  ${rhel_version}
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel' and ${RHEL_VERSION} > 6  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $4}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel' and ${RHEL_VERSION} <= 6  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $3}'
+		
+		${free_diskspace}=  Read Command Output
+		Set Suite Variable  ${TARGET_FREE_DISKSPACE}  ${free_diskspace}
+		
+		Log  Target host has ${TARGET_FREE_DISKSPACE} KiB in ${BASE_DIR}  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${HOST_PRIORITY}' == '1' and ${TARGET_FREE_DISKSPACE} <= 14680064  Fatal Error  Not enough free disk space for exporting primary instance. Target host has <= 14 GiB in ${BASE_DIR}
+		Run Keyword If  '${HOST_PRIORITY}' == '2' and ${TARGET_FREE_DISKSPACE} <= 7549747  Fatal Error  Not enough free disk space for exporting secondary instance. Target host has <= 7.2 GiB in ${BASE_DIR}
+
+		## Start Clone Export
+		Write  cd ${AUTO_EL_INST_DIR}/TEST/base/bin/
+		Read Until Prompt
+
+		Log  ./clone_el.sh -m exp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${BASE_DIR}  ${ROBOT_LOG_LEVEL}
+		Write  ./clone_el.sh -m exp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${BASE_DIR}
+
+		el_clone_export_script.EL Clone Export Script Interaction
+
+	Log  Copying clone script to ${AUTO_EL_INST_DIR}  WARN
+		Write  cp ${AUTO_EL_INST_DIR}/TEST/base/bin/clone_el.sh ${BASE_DIR}
+		Read Until Prompt
+		Close All Connections
+
+
+Clone Import Installer5  [Arguments]  ${release_version}  ${silent_import}=N
+		manage_releases.Login To Test Host1
+
+		# DON"T delete if the BASE_DIR exists in the target host - Ask the user to do his/her own clean up on the target instance
+		Start Command  test -a ${BASE_DIR} && echo 1 || echo 0
+		${base_dir_exists}=  Read Command Output
+		Run Keyword If  ${base_dir_exists} > 0  Fatal Error  ${BASE_DIR} exists in ${EL_TEST_HOST}. Please uninstall the instance before importing the clone.
+
+
+	Log  Creating ${BASE_DIR} in the target host ${EL_TEST_HOST}  ${ROBOT_LOG_LEVEL}
+		Write  mkdir -p ${BASE_DIR}
+		Read Until Prompt
+		Write  cd ${BASE_DIR}
+		Read Until Prompt
+
+		# Target host free diskspace checking
+		# Primary host: 20 GiB or more
+		# Secondary host: 10.8 GiB or more
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='AIX'  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $2}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='HP-UXita'  Start Command  df -k ${BASE_DIR} | head -2 | tail -1 | awk '{print $1}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $2}'
+		# The df command output is different in RHEL6 & RHEL7
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel'  Start Command  cat /etc/redhat-release | awk '{printf "%d", $7}'
+		${rhel_version}=  Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel'  Read Command Output
+		Set Suite Variable  ${RHEL_VERSION}  ${rhel_version}
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel' and ${RHEL_VERSION} > 6  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $4}'
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='LINUXintel' and ${RHEL_VERSION} <= 6  Start Command  df -k ${BASE_DIR} | tail -1 | awk '{print $3}'
+		
+		${free_diskspace}=  Read Command Output
+		Set Suite Variable  ${TARGET_FREE_DISKSPACE}  ${free_diskspace}
+		
+	Log  Target host has ${TARGET_FREE_DISKSPACE} KiB in ${BASE_DIR}  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${HOST_PRIORITY}' == '1' and ${TARGET_FREE_DISKSPACE} <= 20971520  Write  cd ${BASE_DIR}/.. && rmdir $(basename ${BASE_DIR})
+		Run Keyword If  '${HOST_PRIORITY}' == '1' and ${TARGET_FREE_DISKSPACE} <= 20971520  Write  Read Until Prompt
+		Run Keyword If  '${HOST_PRIORITY}' == '1' and ${TARGET_FREE_DISKSPACE} <= 20971520  Fatal Error  Not enough free disk space for importing primary instance. Target host has <= 20 GiB in ${BASE_DIR}
+		Run Keyword If  '${HOST_PRIORITY}' == '2' and ${TARGET_FREE_DISKSPACE} <= 1415577  Write  cd ${BASE_DIR}/.. && rmdir $(basename ${BASE_DIR})
+		Run Keyword If  '${HOST_PRIORITY}' == '2' and ${TARGET_FREE_DISKSPACE} <= 1415577  Write  Read Until Prompt
+		Run Keyword If  '${HOST_PRIORITY}' == '2' and ${TARGET_FREE_DISKSPACE} <= 1415577  Fatal Error  Not enough free disk space for importing secondary instance. Target host has <= 10.8 GiB in ${BASE_DIR}
+
+		
+		Start Command  echo ${RELEASE_VERSION} | tr -d '.'
+		${version_without_dot}=  Read Command Output
+		Set Suite Variable  ${version_without_dot}  ${version_without_dot}
+		Run Keyword If  '${USE_FORCE_MODE}'=='generate_solution_config_and_install_with_new_location'  Generate Solution Config For Clone Import
+		## Get back to base dir
+		Run Keyword If  '${USE_FORCE_MODE}'=='generate_solution_config_and_install_with_new_location'  Write  cd ${BASE_DIR} 
+		Run Keyword If  '${USE_FORCE_MODE}'=='generate_solution_config_and_install_with_new_location'  Read Until Prompt
+		
+		## Identify if copy of clone tar required
+		Start Command  echo ${IMPORT_CLONE_TARBALL_HOST_PATH} | awk -F'@' '{print $2}' | awk -F':' '{print $1}'
+		${server_name}=  Read Command Output
+		
+		## If the clone tar ball in same server - use it
+		Run Keyword If  '${server_name.strip()}'=='${EL_TEST_HOST_SHORT.strip()}' or '${server_name.strip()}'=='${EL_TEST_HOST.strip()}'  Use Clone Tar Locally
+	
+		## If it's from another server - Copy it using scp to BASE_DIR
+		Run Keyword If  '${server_name.strip()}'!='${EL_TEST_HOST_SHORT.strip()}' and '${server_name.strip()}'!='${EL_TEST_HOST.strip()}'   Copy Clone Tar Over Network		  
+		
+		
+	Log  Copying clone script from the source host ${IMPORT_CLONE_TARBALL_HOST_PATH}  ${ROBOT_LOG_LEVEL}	
+		Write  scp ${IMPORT_CLONE_TARBALL_HOST_PATH}/clone_el.sh .
+		Read Until Prompt
+		Write  chmod +x clone_el.sh
+		Read Until Prompt
+
+
+	Log  \n  ${ROBOT_LOG_LEVEL}
+		Log  Extracting clone archive. This will take quite some times for the next message to be shown here.  ${ROBOT_LOG_LEVEL}
+		Log  Realtime log is available in the target host ${EL_TEST_HOST} at ${BASE_DIR}/el_clone.log.${version_without_dot}000  ${ROBOT_LOG_LEVEL}
+		
+
+        ## Passing -s option with own defined specified solution config for installation
+        ${force_mode_option}=    Set Variable If    
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location'    		-s ${BASE_DIR}/el-solution_force_mode.config
+        ...    '${USE_FORCE_MODE}' == 'NONE' or '${USE_FORCE_MODE}' == ''								${EMPTY}
+                  
+               
+	Log  ./clone_el.sh -m imp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${clone_tar_path} ${force_mode_option}  ${ROBOT_LOG_LEVEL}
+		Write  ./clone_el.sh -m imp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${clone_tar_path} ${force_mode_option}
+
+		## If it has got solution config generated, use it!! else anwering the questions through
+		${question}=    Set Variable If    
+        ...    '${USE_FORCE_MODE}' == 'generate_solution_config_and_install_with_new_location'    		skip_question
+        ...    '${USE_FORCE_MODE}' == 'NONE' or '${USE_FORCE_MODE}' == ''								answer_question
+		
+		el_clone_import_script.EL Clone Import Script Interaction  ${question}
+        
+		Log  Removing clone archive from the target host  ${ROBOT_LOG_LEVEL}
+		Write  rm -f ${BASE_DIR}/clone_TEST.tar
+		Read Until Prompt
+	
+	## Check if SmokeServer configuration is needed
+		Start Command  ls ${AUTO_EL_INST_DIR}/TEST/init/lookup_server | grep SmokeServer | wc -l
+		${result_count}=  Read Command Output
+		Run Keyword If  '${result_count.strip()}' == '1'  Configure SmokeServer On Cloned Instance
+	
+	
+		Close All Connections
+		
+	Log  Starting Instance ....  ${ROBOT_LOG_LEVEL}
+		cm.Start EL  ${HOST_PRIORITY}
+
+
+Check If RCT OR SDK Is Installed
+		Start Command  ls -1 ${BASE_DIR}/${RELEASE_AREA}/RCT_REL_7*/meta/RCT | wc -l
+		${INSTANCE_HAS_RCT_INSTALLED}=  Read Command Output
+		
+		Run Keyword If  '${INSTANCE_HAS_RCT_INSTALLED.strip()}' != '0'  Fatal Error  Cloning feature is not supported for instance installed with add on solution - e.g. RCT & SDK
+
+		Start Command  ls -1 ${BASE_DIR}/${RELEASE_AREA}/TEST_SDK_REL_7*/meta/TEST_SDK | wc -l
+		${INSTANCE_HAS_SDK_INSTALLED}=  Read Command Output
+		
+		Run Keyword If  '${INSTANCE_HAS_SDK_INSTALLED.strip()}' != '0'  Fatal Error  Cloning feature is not supported for instance installed with add on solution - e.g. RCT & SDK
+		
+		
+Use Clone Tar Locally	
+		Start Command  echo ${IMPORT_CLONE_TARBALL_HOST_PATH} | awk -F'@' '{print $2}' | awk -F':' '{print $2}'
+		${clone_tar_path}=  Read Command Output
+		
+	Log  Using Clone tar ball from ${clone_tar_path}  ${ROBOT_LOG_LEVEL}
+		Set Suite Variable  ${clone_tar_path}  ${clone_tar_path}
+
+Copy Clone Tar Over Network
+	Log  Copying clone archive from the source host ${IMPORT_CLONE_TARBALL_HOST_PATH}  ${ROBOT_LOG_LEVEL}	
+		Set Client Configuration  timeout=420
+		
+		Write  scp ${IMPORT_CLONE_TARBALL_HOST_PATH}/clone_TEST.tar .
+		Read Until Prompt
+		Set Suite Variable  ${clone_tar_path}  ${BASE_DIR}
+		
+		## Reset back timeout
+		Set Client Configuration  timeout=60
+
+Generate Solution Config For Clone Import
+   		Run Keyword If  '${HOST_PRIORITY}'=='1'  Set Suite Variable  ${CHOICE_FOR_INSTALLATION}  1
+		Run Keyword If  '${HOST_PRIORITY}'=='2'  Set Suite Variable  ${CHOICE_FOR_INSTALLATION}  3
+   
+   Log  Generate Solution Config Only ${ROBOT_LOG_LEVEL}
+        Start Command  echo ${IMPORT_CLONE_TARBALL_HOST_PATH} | awk -F'@' '{print $2}' | awk -F':' '{print $2}'
+		${original_server_path}=  Read Command Output
+		
+		Run Keyword If  '${HOST_PRIORITY}'=='2'  Set Path for Secondary Host to generate solution config for clone import
+		
+		Write  cd ${original_server_path}/tar_package_cm${version_without_dot}
+		Read Until Prompt
+		
+   Log  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${original_server_path}/tar_package_cm${version_without_dot} -r ${BASE_DIR}/${RELEASE_AREA} -s  ${ROBOT_LOG_LEVEL}
+	   Write  ./install_el.sh -i ${AUTO_EL_INST_DIR} -p ${original_server_path}/tar_package_cm${version_without_dot} -r ${BASE_DIR}/${RELEASE_AREA} -s
+	
+	    el_install_script.EL Install Script Interaction    dont_install    answer_question
+	    Read Until Prompt
+	    
+	    Write    mv -f ${original_server_path}/tar_package_cm${version_without_dot}/el-solution.config.?????? ${BASE_DIR}/el-solution_force_mode.config
+    	Read Until Prompt
+	    
+	    Log  \n\n ================================================ \n\n  Warn
+    
+
+Set Path for Secondary Host to generate solution config for clone import
+		Start Command  echo ${original_server_path} | sed 's/_2nd//'
+		${original_server_path}=  Run Keyword If  '${HOST_PRIORITY}'=='2'  Read Command Output
+
+Configure SmokeServer On Cloned Instance
+	Log  Configuring SmokeServer on ${AUTO_EL_INST_DIR} ...  WARN 	
+		Write  . ${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+		Write  ${AUTO_EL_INST_DIR}/TEST/lookup_server3/bin/remove_server SmokeServer
+		Read Until Prompt
+		Write  ${AUTO_EL_INST_DIR}/TEST/lookup_server3/bin/add_server SmokeServer ${LS_PORT}
+		Read Until Prompt
+		Write  mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/clone_import_tmp_script
+		Read Until Prompt
+		Put File  ${ROBOT_PATH}/keywords/exec_query.ksh  ${AUTO_EL_INST_DIR}/robot_automation/clone_import_tmp_script/
+		
+		## Keyword from sql/db_script_${DB_VENDOR_NAME}.txt
+		SQL - Update Lookup Server Port Number  ${AUTO_EL_INST_DIR}/robot_automation/clone_import_tmp_script  SmokeServer  ${LS_PORT}
+		Write  rm ${AUTO_EL_INST_DIR}/robot_automation/clone_import_tmp_script
+		Read Until Prompt
+
+
+CM Release_700_Installer5_Clone_Import_Restart_Configure  [Arguments]  ${release_version}
+		manage_releases.Login To Test Host1
+		Write  cd ${BASE_DIR}
+		Read Until Prompt
+
+		Log  ./clone_el.sh -m imp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${BASE_DIR} -c  ${ROBOT_LOG_LEVEL}
+		Write  ./clone_el.sh -m imp -i ${AUTO_EL_INST_DIR} -p ${CM_${release_version}_PACKAGE_DIR_2nd} -r ${BASE_DIR}/${RELEASE_AREA} -t ${BASE_DIR} -c
+
+		Run Keyword If  '${RELEASE_VERSION}'=='7.0.0'  cm7_interaction_clone_instance.CM Clone Import Instance Interaction_710_Restart_Configuration
+		Run Keyword If  '${RELEASE_VERSION}'=='7.0.1'  cm7_interaction_clone_instance.CM Clone Import Instance Interaction_710_Restart_Configuration
+		Run Keyword If  '${RELEASE_VERSION}'=='7.1.0'  cm7_interaction_clone_instance.CM Clone Import Instance Interaction_710_Restart_Configuration
+		Run Keyword If  '${RELEASE_VERSION}'=='7.1.1'  cm7_interaction_clone_instance.CM Clone Import Instance Interaction_710_Restart_Configuration
+
+		Log  Removing clone archive from the target host  ${ROBOT_LOG_LEVEL}
+		Write  rm -f ${BASE_DIR}/clone_TEST.tar
+		Read Until Prompt
+
+		Close Connection
+
+
+CM Release_710_Installer5_Clone_Import_Restart_Configure  [Arguments]  ${release_version}
+	CM Release_700_Installer5_Clone_Import_Restart_Configure  ${release_version}
+
+
+
+########################
+# For Reconfigure Instance
+########################
+Reconfigure Connection Protocol  [Arguments]  ${protocol}
+	Log  Stopping Instance ....  ${ROBOT_LOG_LEVEL}	
+		cm.Stop EL  ${HOST_PRIORITY}
+
+		manage_releases.Login To Test Host1
+		
+		Put File  ${ROBOT_PATH}/installers/CM/scripts/reconfigure_connection_protocol.sh  ${BASE_DIR}/
+		
+	Log  Preparing Solution Config for << ${protocol} >>  ${ROBOT_LOG_LEVEL}	
+		Write  cd ${BASE_DIR}/
+		Read Until Prompt
+		Write  cp ${BASE_DIR}/${RELEASE_AREA}/installation_specs/current.spec current.spec.reconfigure
+		Read Until Prompt
+		Write  ./reconfigure_connection_protocol.sh current.spec.reconfigure ${protocol} ${USE_KEYSTORE} ${KEYSTORE_LOCATION}
+		Read Until Prompt
+		
+		# Verify if the script successfully executed
+		Write  echo $?
+		${output_result}=  Read Until Prompt
+		Should Start With  ${output_result}  0
+		
+	Log  Start Reconfiguration  ${ROBOT_LOG_LEVEL}
+		
+		## Get latest tar package directory
+		Start Command  cd ${PRI_BASE_DIR} && ls -d $PWD/* | grep -v _eb |grep ^$PWD/tar_package_cm7 | tail -1
+		${EL7_tar_PACKAGE_DIR}=  Read Command Output
+		
+		
+		
+		## Setting timeout for installation
+		${timeout}=  Set Variable If
+		...   '${INSTALL_FILE_HOST}'=='LINUXintel'  5400
+		...   '${INSTALL_FILE_HOST}'=='AIX'        	5400
+		...   '${INSTALL_FILE_HOST}'=='HP-UXita'    5400
+		...   '${INSTALL_FILE_HOST}'=='SunOS'      	9000
+
+		Write   cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+		
+		Write  . .profile
+		Read Until Prompt
+				
+		Write  cd ${EL7_tar_PACKAGE_DIR}
+		Read Until Prompt
+
+			
+		Write  ./reconfigure_el.sh -i ${AUTO_EL_INST_DIR} -r ${BASE_DIR}/${RELEASE_AREA} -p ${EL7_tar_PACKAGE_DIR} -s ${BASE_DIR}/updated_solution_config_${protocol}.txt  
+		
+		Wait Until Keyword Succeeds  ${timeout}  5   Wait For Reconfiguration Complete
+		
+		Write  ${empty}
+		Read Until Prompt
+		
+		Close All Connections
+		
+	Log  Starting Instance ....  ${ROBOT_LOG_LEVEL}
+		cm.Start EL  ${HOST_PRIORITY}
+		Run Keyword If  '${IS_SECONDARY}' == "no"  Post Verification After Reconfiguration of Protocol  ${protocol} 
+		Run Keyword If  '${IS_SECONDARY}' == "yes"  Post Verification Secondary After Reconfiguration of Protocol  ${protocol} 
+				
+		
+Wait For Reconfiguration Complete
+		${result}=  Read
+		Log  ${result}   ${ROBOT_LOG_LEVEL}
+
+     	## This is allow instllation stop immediately when there is error thrown during the installation process
+        ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *ERROR*
+        Run Keyword If  '${match[0]}'=='PASS'   Fatal Error  ${result}
+
+		##Should Contain  ${result}  *Reconfiguration has completed successfully*
+		Should Match Regexp  ${result}  [\\0-\\255]*Reconfiguration has completed successfully.*[\\0-\\255]                           		
+
+
+Post Verification After Reconfiguration of Protocol  [Arguments]  ${protocol}
+		manage_releases.Login To Test Host1
+				
+		Write  ./${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+				
+	Log  Accessing page with curl   ${ROBOT_LOG_LEVEL}  
+		Run Keyword If  '${protocol}' == 'http'   Write  curl -k http://${EL_TEST_HOST}:${EL_INST_ELUI_FRAMEWORK_PORT}
+		Run Keyword If  '${protocol}' == 'https'  Write  curl -k https://${EL_TEST_HOST}:${EL_INST_HTTPS_ELUI_FRAMEWORK_PORT}
+		Read Until Prompt
+		
+		Write  echo $?
+		${output_result}=  Read Until Prompt
+		Should Start With  ${output_result}  0
+		
+Post Verification Secondary After Reconfiguration of Protocol  [Arguments]  ${protocol}		
+		manage_releases.Login To Test Host1
+		
+		Write  ./${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+		
+		${protocol_type}=  Set Variable If
+		...  '${protocol}'=='https'  use_https=true
+		...  '${protocol}'=='http'  use_https=false
+		
+	Log  Verify Spec File  ${ROBOT_LOG_LEVEL}  	
+	 	Write  grep '${protocol_type}' ${BASE_DIR}/${RELEASE_AREA}/installation_specs/current.spec | head -n1
+		${output_result}=  Read Until Prompt
+		
+		Should Contain  ${output_result}  ${protocol_type}
+		
+		
+		
+###################
+#
+# PRIVATE KEYWORDS
+#
+##
+
+Stop EL   [Arguments]  ${host_priority}=1
+		${result}=  cm.Is Ctl_control Found
+		Run Keyword If      '${result}'=='PASS'  cm.Do Stop EL  ${host_priority}
+		Run Keyword Unless  '${result}'=='PASS'  Log  ctl_control not found. EL not stopped.
+
+Do Stop EL   [Arguments]  ${host_priority}
+		manage_releases.Login To Test Host1
+		Set Client Configuration  timeout=180
+
+		Write  cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+
+		Write  . ./.profile
+		Read Until Prompt
+
+		Write  ctl_control -fv stop
+		Read Until Regexp  TimesTen
+		Read Until Prompt
+
+		Start Command  . /${AUTO_EL_INST_DIR}/.profile && ctl_control -f status
+		${result}=  Read Command Output
+	# Note at this point Lookup Server might not yet be installed/configured
+		Should Contain  ${result}  [TimesTen] Component status STOPPED
+		Should Contain  ${result}  [TEST] Component status STOPPED
+		Run Keyword If  '${host_priority}'=='1'  Should Contain  ${result}  [TEST_ui] Component status STOPPED
+
+    	Close Connection
+
+Start EL   [Arguments]  ${host_priority}=1
+		${result}=  cm.Is Ctl_control Found
+		Run Keyword If      '${result}'=='PASS'  cm.Do Start EL  ${host_priority}
+		Run Keyword Unless  '${result}'=='PASS'  Log  ctl_control not found. EL not started.
+
+Do Start EL  [Arguments]  ${host_priority}
+
+		manage_releases.Login To Test Host1
+		Run Keyword Unless  '${INSTALL_FILE_HOST}'=='SunOS'  Set Client Configuration  timeout=600
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Set Client Configuration  timeout=900
+
+
+		Write  cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+
+		Write  . ./.profile
+		Read Until Prompt
+
+		Write  ctl_control -fv start
+		Run Keyword If      '${host_priority}'=='1'  Read Until Regexp  (TEST_UI|TEST_ui)
+		Run Keyword Unless  '${host_priority}'=='1'  Read Until Regexp  TEST
+		Read Until Prompt
+
+    	Write  ctl_control -f status
+		${result}=  Read Until Prompt
+	# Note at this point Lookup Server not not yet be installed/configured
+		Should Contain  ${result}  [TimesTen] Component status RUNNING
+		Should Contain  ${result}  [TEST] Component status RUNNING
+		Run Keyword If  '${host_priority}'=='1'  Should Contain  ${result}  [TEST_ui] Component status RUNNING
+
+		Close Connection
+
+
+Is Ctl_control Found
+      	manage_releases.Login To Test Host1
+		Set Client Configuration  timeout=60
+		Write  cd ${AUTO_EL_INST_DIR}
+		Read Until Prompt
+		Write  . ./.profile
+		Read Until Prompt
+		Write  which ctl_control
+		${result}=  Read Until Prompt
+		Close Connection
+		${result}=  Run Keyword And Ignore Error  Should Not Match Regexp  ${result}  no ctl_control
+	Log  ${result[0]}
+		# Return PASS or FAIL
+		[return]  ${result[0]}
+
+Moving JCE Into JAVA_HOME
+		manage_releases.Login To Test Host1
+		Write  . ${AUTO_EL_INST_DIR}/.profile
+		Read Until Prompt
+		Write  cd $JAVA_HOME/lib/security
+		Read Until Prompt
+		Write  mv -f local_policy.jar local_policy.jar_bak
+		Read Until Prompt
+		Write  mv -f US_export_policy.jar US_export_policy.jar_bak
+		Read Until Prompt
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='AIX'  Put File  /TEST/vertex/robot/keywords/data/JCE/AIX/*  ${AUTO_EL_INST_DIR}/
+		Run Keyword Unless  '${INSTALL_FILE_HOST}'=='AIX'  Put File  /TEST/vertex/robot/keywords/data/JCE/*  ${AUTO_EL_INST_DIR}/
+		Write  mv -f ${AUTO_EL_INST_DIR}/local_policy.jar $JAVA_HOME/lib/security
+		Read Until Prompt
+		Write  mv -f ${AUTO_EL_INST_DIR}/US_export_policy.jar $JAVA_HOME/lib/security
+		Read Until Prompt
+
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  Log  Workaround to make LookupServer on SunOS work  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${INSTALL_FILE_HOST}'=='SunOS'  el_host.Configure LookupServer On SunOS
+		Close Connection
+
+		
+
+################################
+		

@@ -1,0 +1,236 @@
+#!/usr/bin/python
+
+import os
+import sys
+import time
+import thread
+import os.path
+import argparse
+from os import listdir
+from shutil import copy2
+from datetime import datetime
+from os.path import isfile, join
+from subprocess import Popen, PIPE
+
+NOTIFY='notify'
+CHECK='check'
+
+OK = 1
+FAIL = 2
+TIMEOUT = 3
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("type", help="The first argument to a script, defines the type of operation")
+    parser.add_argument("state", help="The second argument to a script, target state of transition")
+    return parser.parse_args()
+
+def remove_file(path):
+    try:
+        os.remove(path)
+    except OSError:
+        print 'No file to delete: %s' % (path)
+
+{% if host_type == "el" or host_type == "cgf" %}
+def cleanup_pids():
+    remove_file('{{ TEST_home }}/status/pidfile')
+    remove_file('{{ TEST_home }}/status/nm_proc.lock')
+{% endif %}
+
+def execute_scripts_in_dir(path):
+    for f in listdir(path):
+        full_file_path = join(path, f)
+        if isfile(full_file_path):
+            Popen([full_file_path]).wait()
+
+def notify_master():
+{% if host_type == "el" or host_type == "cgf" %}
+    cleanup_pids()
+{% endif %}
+    execute_scripts_in_dir('/opt/vrrp/pre_start')
+
+# Try to start data mounts in loop before trying to start services
+    rc = 1
+    while rc != 0:
+{% for mount in cinder_volumes %}
+{% if loop.index == 1 %}
+        rc = Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% else %}
+        rc = rc + Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% endif %}
+        if rc != 0:
+            time.sleep(5)
+{% endfor %}
+{% if host_type == "el" %}
+    rc = Popen(['systemctl', 'start', 'el-timesten']).wait()
+    rc = rc + Popen(['systemctl', 'start', 'el-node-manager']).wait()
+    rc = rc + Popen(['systemctl', 'start', 'docker']).wait()
+    rc = rc + Popen(['systemctl', 'start', 'el-processing-state']).wait()
+    if rc != 0:
+        return FAIL
+
+{% elif host_type == "cgf" %}
+    rc = Popen(['systemctl', 'start', 'el-node-manager']).wait()
+    rc = rc + Popen(['systemctl', 'start', 'el-processing-state']).wait()
+{% if vnf_context_data.stack_params.cbam.extensions.cgf_enable_timesten == true %}
+    rc = rc + Popen(['systemctl', 'start', 'el-timesten']).wait()
+{% endif %}
+    if rc != 0:
+        return FAIL
+{% elif host_type == "ui" %}
+    # GUI is running on both nodes. On active and on standby.
+    Popen(['systemctl', 'start', 'httpd']).wait()
+    Popen(['systemctl', 'start', 'docker']).wait()
+    Popen(['systemctl', 'start', 'docker-distribution']).wait()
+    Popen(['systemctl', 'restart', 'keycloak']).wait()
+    Popen(['systemctl', 'restart', 'tomcat']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@admintools']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@devtool-backend']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@devtool']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@el-ui']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@reports']).wait()
+    Popen(['systemctl', 'start', 'prometheus-server']).wait()
+    Popen(['systemctl', 'start', 'grafana-server']).wait()
+
+{% if audit_3gppxml_enabled %} #FMPM
+    Popen(['systemctl', 'start', 'gen3gppxml']).wait()
+{% endif %}
+
+{% if alarm_version == '2' %} #FMPM
+    Popen(['systemctl', 'start', 'rabbitmq-server']).wait()
+    Popen(['systemctl', 'start', 'calm-alma']).wait()
+{% if sms_email_enabled %}
+    Popen(['systemctl', 'start', 'wildfly-cnot']).wait()
+{% endif %}
+{% endif %}
+
+
+{% endif %}
+    execute_scripts_in_dir('/opt/vrrp/post_start')
+    return OK
+
+def notify_standby():
+{% if host_type == "el" %}
+    Popen(['systemctl', 'stop', 'el-node-manager']).wait()
+    Popen(['systemctl', 'stop', 'el-timesten']).wait()
+    Popen(['systemctl', 'stop', 'docker']).wait()
+    Popen(['systemctl', 'stop', 'el-processing-state']).wait()
+    execute_scripts_in_dir('/opt/vrrp/post_stop')
+# Unmount Cinder volumes
+{% for mount in cinder_volumes %}
+    Popen(['umount', '-f', '{{ mount.mount_point }}']).wait()
+{% endfor %}
+
+{% elif host_type == "cgf" %}
+    notify_master()
+
+{% elif host_type == "ui" %}
+    execute_scripts_in_dir('/opt/vrrp/pre_start')
+    # Try to start UI data mounts in loop before trying to start services
+    rc = 1
+    while rc != 0:
+{% for mount in cinder_volumes %}
+{% if loop.index == 1 %}
+        rc = Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% else %}
+        rc = rc + Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% endif %}
+        if rc != 0:
+            time.sleep(5)
+{% endfor %}
+
+    # GUI is running on both nodes. On active and on standby.
+    Popen(['systemctl', 'start', 'httpd']).wait()
+    Popen(['systemctl', 'start', 'docker']).wait()
+    Popen(['systemctl', 'start', 'docker-distribution']).wait()
+    Popen(['systemctl', 'restart', 'keycloak']).wait()
+    Popen(['systemctl', 'restart', 'tomcat']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@admintools']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@devtool-backend']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@devtool']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@el-ui']).wait()
+    Popen(['systemctl', 'restart', 'tomcat@reports']).wait()
+    Popen(['systemctl', 'start', 'prometheus-server']).wait()
+    Popen(['systemctl', 'start', 'grafana-server']).wait()
+
+{% if audit_3gppxml_enabled %} #FMPM
+    Popen(['systemctl', 'start', 'gen3gppxml']).wait()
+{% endif %}
+
+{% if alarm_version == '2' %} #FMPM
+    Popen(['systemctl', 'start', 'rabbitmq-server']).wait()
+    Popen(['systemctl', 'start', 'calm-alma']).wait()
+{% if sms_email_enabled %}
+    Popen(['systemctl', 'start', 'wildfly-cnot']).wait()
+{% endif %}
+{% endif %}
+    execute_scripts_in_dir('/opt/vrrp/post_start')
+{% endif %}
+    return OK
+
+def process_notify(args):
+    if args.state == 'STANDBY':
+        return notify_standby()
+    elif args.state == 'ACTIVE':
+        return notify_master()
+    else:
+        return OK
+
+def check_standby():
+    return OK
+
+def check_active():
+{% if host_type == "el" %}
+    services = ['el-node-manager', 'el-timesten', 'docker', 'el-processing-state']
+{% elif host_type == "cgf" %}
+{% if vnf_context_data.stack_params.cbam.extensions.cgf_enable_timesten == true %}
+    services = ['el-node-manager', 'el-timesten', 'el-processing-state']
+{% else %}
+    services = ['el-node-manager', 'el-processing-state']
+{% endif %}
+{% elif host_type == "ui" %}
+    services = ['httpd', 'tomcat@admintools', 'keycloak', 'tomcat@devtool', 'tomcat@devtool-backend', 'tomcat@el-ui', 'tomcat@reports', 'docker', 'docker-distribution', 'prometheus-server', 'grafana-server']
+{% if audit_3gppxml_enabled %} #FMPM
+    services.append('gen3gppxml')
+{% endif %}
+
+{% if alarm_version == '2' %} #FMPM
+    services.append('calm-alma')
+    services.append('rabbitmq-server')
+
+{% if sms_email_enabled %}
+    services.append('wildfly-cnot')
+{% endif %}
+{% endif %}
+{% endif %}
+
+    for service in services:
+        return_code = Popen(['systemctl', 'status', service]).wait()
+        if return_code != 0:
+            return FAIL
+    return OK
+
+def process_check(args):
+    if args.state == 'STANDBY':
+        return check_standby()
+    elif args.state == 'ACTIVE':
+        return check_active()
+    else:
+        print 'checking ' + args.state
+        return OK
+
+def process_transition(args):
+    now = datetime.now()
+    print '%s process_transition(): %s, %s' % ( str(now), args.type, args.state,  )
+
+    if(args.type == NOTIFY):
+        return process_notify(args)
+    elif(args.type == CHECK):
+        return process_check(args);
+
+def call():
+    returncode = process_transition(parse_arguments())
+    if returncode != 1:
+        sys.exit(1)
+
+call()

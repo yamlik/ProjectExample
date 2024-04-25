@@ -1,0 +1,720 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <!-- Next changeset will tag the db state before  installing db sdk packages-->
+    <changeSet author="liquibase-docs" id="1530702421444-15">
+        <tagDatabase tag="no_devtool-workspace"/>
+    </changeSet>
+
+	<changeSet author="TEST (generated)" id="1530702421444-20">
+        <createSequence sequenceName="el_work_config_files_ids_seq"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-19">
+        <createSequence sequenceName="el_work_app_files_ids_seq"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-21">
+        <createSequence sequenceName="el_work_library_files_ids_seq"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-18">
+        <createSequence sequenceName="el_work_appversionid_seq"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-17">
+        <createSequence sequenceName="el_work_cfgversionid_seq"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-16">
+        <createSequence sequenceName="el_work_libversionid_seq"/>
+    </changeSet>
+	
+	<changeSet author="TEST (generated)" id="1530702421444-127">
+        <createTable tableName="el_work_configurations">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgversionpatch" type="VARCHAR(1000)"/>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="username" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appname" type="VARCHAR(50)"/>
+            <column name="appversionmajor" type="SMALLINT"/>
+            <column name="appversionminor" type="SMALLINT"/>
+            <column name="appversiondefect" type="SMALLINT"/>
+            <column name="nodetype" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nodeflags" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scalability" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scalabilityhashfields" type="VARCHAR(200)"/>
+            <column name="nodebase" type="VARCHAR(30)"/>
+            <column name="appversionexact" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-128">
+        <createTable tableName="el_work_editor_settings">
+            <column name="settingid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(250)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-119">
+        <createTable tableName="el_work_configuration_auditkeys">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="auditkey" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-122">
+        <createTable tableName="el_work_configuration_files_ids">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-120">
+        <createTable tableName="el_work_configuration_docs">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-121">
+        <createTable tableName="el_work_configuration_files">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+            <column name="checksum" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="editable" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exportpath" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filetype" type="VARCHAR(50)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-123">
+        <createTable tableName="el_work_configuration_links">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="linkname" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-124">
+        <createTable tableName="el_work_configuration_messages">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="VARCHAR(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="explanation" type="VARCHAR(2000)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-125">
+        <createTable tableName="el_work_configuration_params">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(2000)"/>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="valuetype" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valuetypeattrib" type="VARCHAR(1000)"/>
+            <column name="valuecheckregexp" type="VARCHAR(1000)"/>
+            <column name="dependentonparam" type="VARCHAR(50)"/>
+            <column name="dependentvalues" type="VARCHAR(300)"/>
+            <column name="parameterflags" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-126">
+        <createTable tableName="el_work_configuration_storages">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="storagename" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-118">
+        <createTable tableName="el_work_applications">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appversionpatch" type="VARCHAR(1000)"/>
+            <column name="nodetype" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nodebase" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-115">
+        <createTable tableName="el_work_application_files_ids">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-112">
+        <createTable tableName="el_work_application_auditkeys">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="auditkey" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-113">
+        <createTable tableName="el_work_application_docs">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-114">
+        <createTable tableName="el_work_application_files">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="checksum" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exportpath" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-116">
+        <createTable tableName="el_work_application_messages">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="VARCHAR(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="explanation" type="VARCHAR(2000)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-117">
+        <createTable tableName="el_work_application_params">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(2000)"/>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="valuetype" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valuetypeattrib" type="VARCHAR(1000)"/>
+            <column name="valuecheckregexp" type="VARCHAR(1000)"/>
+            <column name="dependentonparam" type="VARCHAR(50)"/>
+            <column name="dependentvalues" type="VARCHAR(300)"/>
+            <column name="parameterflags" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-132">
+        <createTable tableName="el_work_libraries">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionpatch" type="VARCHAR(1000)"/>
+            <column name="libparamprefix" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-136">
+        <createTable tableName="el_work_library_files_ids">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-133">
+        <createTable tableName="el_work_library_auditkeys">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="auditkey" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-134">
+        <createTable tableName="el_work_library_docs">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-135">
+        <createTable tableName="el_work_library_files">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filepath" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="os" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filecontent" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+            <column name="checksum" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exportpath" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-137">
+        <createTable tableName="el_work_library_messages">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="VARCHAR(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="explanation" type="VARCHAR(2000)"/>
+        </createTable>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-138">
+        <createTable tableName="el_work_library_params">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(2000)"/>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="valuetype" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valuetypeattrib" type="VARCHAR(1000)"/>
+            <column name="valuecheckregexp" type="VARCHAR(1000)"/>
+            <column name="dependentonparam" type="VARCHAR(50)"/>
+            <column name="dependentvalues" type="VARCHAR(300)"/>
+            <column name="parameterflags" type="CHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1530702421444-139">
+        <createTable tableName="el_work_libs_in_apps">
+            <column name="appversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionexact" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1530702421444-140">
+        <createTable tableName="el_work_libs_in_cfgs">
+            <column name="cfgversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionexact" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1530702421444-141">
+        <createTable tableName="el_work_libs_in_libs">
+            <column name="libversionid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionmajor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversionminor" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minversiondefect" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libversionexact" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+	
+	<changeSet author="TEST (generated)" id="1530702421444-288">
+        <addPrimaryKey columnNames="settingid, username, parameter" constraintName="pk_el_work_editor_settings" tableName="el_work_editor_settings"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-287">
+        <addPrimaryKey columnNames="cfgversionid" constraintName="pk_el_work_configurations" tableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-282">
+        <addPrimaryKey columnNames="id" constraintName="pk_el_work_configuration_files_ids" tableName="el_work_configuration_files_ids"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-279">
+        <addPrimaryKey columnNames="cfgversionid, auditkey" constraintName="pk_el_work_configuration_auditkeys" tableName="el_work_configuration_auditkeys"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-280">
+        <addPrimaryKey columnNames="cfgversionid, filename" constraintName="pk_el_work_configuration_docs" tableName="el_work_configuration_docs"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-281">
+        <addPrimaryKey columnNames="cfgversionid, filename, filepath, os" constraintName="pk_el_work_configuration_files" tableName="el_work_configuration_files"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-283">
+        <addPrimaryKey columnNames="cfgversionid, linkname" constraintName="pk_el_work_configuration_links" tableName="el_work_configuration_links"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-284">
+        <addPrimaryKey columnNames="cfgversionid, key" constraintName="pk_el_work_configuration_messages" tableName="el_work_configuration_messages"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-285">
+        <addPrimaryKey columnNames="cfgversionid, parameter" constraintName="pk_el_work_configuration_params" tableName="el_work_configuration_params"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-286">
+        <addPrimaryKey columnNames="cfgversionid, storagename" constraintName="pk_el_work_configuration_storages" tableName="el_work_configuration_storages"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-278">
+        <addPrimaryKey columnNames="appversionid" constraintName="pk_el_work_applications" tableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-275">
+        <addPrimaryKey columnNames="id" constraintName="pk_el_work_application_files_ids" tableName="el_work_application_files_ids"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-272">
+        <addPrimaryKey columnNames="appversionid, auditkey" constraintName="pk_el_work_application_auditkeys" tableName="el_work_application_auditkeys"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-273">
+        <addPrimaryKey columnNames="appversionid, filename" constraintName="pk_el_work_application_docs" tableName="el_work_application_docs"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-274">
+        <addPrimaryKey columnNames="appversionid, filename, filepath, os" constraintName="pk_el_work_application_files" tableName="el_work_application_files"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-276">
+        <addPrimaryKey columnNames="appversionid, key" constraintName="pk_el_work_application_messages" tableName="el_work_application_messages"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-277">
+        <addPrimaryKey columnNames="appversionid, parameter" constraintName="pk_el_work_application_params" tableName="el_work_application_params"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-292">
+        <addPrimaryKey columnNames="libversionid" constraintName="pk_el_work_libraries" tableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-296">
+        <addPrimaryKey columnNames="id" constraintName="pk_el_work_library_files_ids" tableName="el_work_library_files_ids"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-293">
+        <addPrimaryKey columnNames="libversionid, auditkey" constraintName="pk_el_work_library_auditkeys" tableName="el_work_library_auditkeys"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-294">
+        <addPrimaryKey columnNames="libversionid, filename" constraintName="pk_el_work_library_docs" tableName="el_work_library_docs"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-295">
+        <addPrimaryKey columnNames="libversionid, filename, filepath, os" constraintName="pk_el_work_library_files" tableName="el_work_library_files"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-297">
+        <addPrimaryKey columnNames="libversionid, key" constraintName="pk_el_work_library_messages" tableName="el_work_library_messages"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-298">
+        <addPrimaryKey columnNames="libversionid, parameter" constraintName="pk_el_work_library_params" tableName="el_work_library_params"/>
+    </changeSet>
+	
+	<changeSet author="TEST (generated)" id="1530702421444-321">
+        <addUniqueConstraint columnNames="cfgname, cfgversionmajor, cfgversionminor, cfgversiondefect, cfgversionpatch" constraintName="uq_el_work_configurations" tableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-320">
+        <addUniqueConstraint columnNames="appname, appversionmajor, appversionminor, appversiondefect, appversionpatch" constraintName="uq_el_work_applications" tableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-322">
+        <addUniqueConstraint columnNames="libname, libversionmajor, libversionminor, libversiondefect, libversionpatch" constraintName="uq_el_work_libraries" tableName="el_work_libraries"/>
+    </changeSet>
+	
+	<changeSet author="TEST (generated)" id="1530702421444-345">
+        <createIndex indexName="idx_el_work_editor_settings" tableName="el_work_editor_settings">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-345">
+        <createIndex indexName="idx_el_work_editor_settings" tableName="el_work_editor_settings">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+	
+	<changeSet author="TEST (generated)" id="1530702421444-436">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_params" constraintName="fk1_el_work_library_params" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-423">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_files_ids" constraintName="fk1_el_work_configuration_files_ids" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-420">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_auditkeys" constraintName="fk1_el_work_configuration_auditkeys" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-421">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_docs" constraintName="fk1_el_work_configuration_docs" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-422">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_files" constraintName="fk1_el_work_configuration_files" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-424">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_links" constraintName="fk1_el_work_configuration_links" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-425">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_messages" constraintName="fk1_el_work_configuration_messages" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-426">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_params" constraintName="fk1_el_work_configuration_params" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-427">
+        <addForeignKeyConstraint baseColumnNames="cfgversionid" baseTableName="el_work_configuration_storages" constraintName="fk1_el_work_configuration_storages" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="cfgversionid" referencedTableName="el_work_configurations"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-417">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_files_ids" constraintName="fk1_el_work_application_files_ids" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-414">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_auditkeys" constraintName="fk1_el_work_application_auditkeys" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-415">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_docs" constraintName="fk1_el_work_application_docs" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-416">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_files" constraintName="fk1_el_work_application_files" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-418">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_messages" constraintName="fk1_el_work_application_messages" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-419">
+        <addForeignKeyConstraint baseColumnNames="appversionid" baseTableName="el_work_application_params" constraintName="fk1_el_work_application_params" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="appversionid" referencedTableName="el_work_applications"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-434">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_files_ids" constraintName="fk1_el_work_library_files_ids" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-431">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_auditkeys" constraintName="fk1_el_work_library_auditkeys" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-432">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_docs" constraintName="fk1_el_work_library_docs" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-433">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_files" constraintName="fk1_el_work_library_files" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+	<changeSet author="TEST (generated)" id="1530702421444-435">
+        <addForeignKeyConstraint baseColumnNames="libversionid" baseTableName="el_work_library_messages" constraintName="fk1_el_work_library_messages" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="libversionid" referencedTableName="el_work_libraries"/>
+    </changeSet>
+
+    <!-- Next changeset will tag the db state after  installing db sdk packages-->
+    <changeSet author="liquibase-docs" id="1530702421444-438">
+        <tagDatabase tag="devtool-workspace-db"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,94 @@
+*** Settings ***
+
+Documentation  Remove Smoke_stream from the instance
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/manage_releases.txt
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+
+
+Default Tags     Run_smoke
+
+Suite Setup     Prepare Environment
+Suite Teardown  Cleanup Testing Environment
+
+*** Variables ***
+${ROBOT_LOG_LEVEL}				WARN
+${robotDataDirectory}  	uninstall_Smoke_stream
+${stream_name}  Smoke_stream
+
+
+*** Keywords ***
+Prepare Environment
+    Log  Login to test environment  ${ROBOT_LOG_LEVEL}
+    	manage_releases.Login To Test Host1
+    	Set Client Configuration  prompt=]$
+    	Write   export PS1=]$
+    	Read Until Prompt
+
+Cleanup Testing Environment
+		Write  rm -rf ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory}
+		Read Until Prompt
+		Close All Connections   	
+
+Perform Stop And Delete Stream  [Arguments]   ${stream_name}
+		${stream_status}=  el_host.Tools Get Stream Status  ${stream_name}
+    Log  \nCurrent status of the stream: ${stream_status}. Stopping Smoke_stream...  ${ROBOT_LOG_LEVEL}
+    	Run Keyword Unless  "${stream_status}"=="STOPPED"   Stop Stream  ${stream_name} 
+    	el.Wait Until Stream Is   ${stream_name}   5 minute   Stopped
+		
+	Log  Delete Stream  ${ROBOT_LOG_LEVEL}
+		el.Hide Monitored Stream   ${stream_name}  ${robotDataDirectory}
+		el.Delete Stream   ${stream_name}  ${robotDataDirectory}
+    	Write   tools.pl -c cleanupdeletedstreams
+    	Wait Until Keyword Succeeds  3 min  5 sec  SSHLibrary.Read Until Regexp  Command successfully executed
+    	Read Until Prompt
+
+Delete secondary Folder
+		Start Command  cat ${SMOKE_STREAM_DIR}/bin/userid.txt | grep Username | awk -F'=' '{print $NF}' | awk '{split($0,uname,":"); print uname[1]}'
+    	${first_username}=  Read Command Output
+		Start Command  echo ${BASE_DIR} | sed "s/${first_username}/${second_username}/"
+		${second_directory}=   Read Command Output
+		Write  LIBPATH=/usr/lib:$LIBPATH ssh ${second_username}@${EL_TEST_HOST} "rm -rf ${second_directory}"
+		Read Until Prompt
+
+
+Run Uninstall Script And Delete Smoke Folder
+    Log  Perform Uninstallation with uninstall script  ${ROBOT_LOG_LEVEL}
+		Write  cd ${SMOKE_STREAM_DIR}/config
+		Read Until Prompt
+		Write  ./uninstall.ksh
+		Read Until Regexp  Answer y or n
+		Write  y
+    	${result}=  SSHLibrary.Read Until Prompt
+    	Log  ${result}  ${ROBOT_LOG_LEVEL}
+    	Should Match  ${result}  *Done*
+    	
+*** Test Cases ***
+Smoke Stream Uninstallation
+		Run Uninstall Script And Delete Smoke Folder
+	
+	Log  Remove second user data folder if exist  ${ROBOT_LOG_LEVEL}
+    	Start Command  cat ${SMOKE_STREAM_DIR}/bin/userid.txt | grep Username | awk -F'=' '{print $NF}' | awk '{split($0,uname,":"); print uname[2]}'
+    	${second_username}=  Read Command Output
+    	${ifExist}=  Get Length  ${second_username}
+    	Run Keyword If  ${ifExist} > 1  Delete secondary Folder
+    	
+    Log  Remove Smoke directory  ${ROBOT_LOG_LEVEL}
+		#Back one level so not to affect the deletion of smoke folder
+    	Write  cd ${AUTO_EL_INST_DIR}
+    	Read Until Prompt
+		Write  rm -rf ${SMOKE_STREAM_DIR}
+		Read Until Prompt
+	
+	Log  Deleting Smoke Stream  ${ROBOT_LOG_LEVEL}
+	Log  Stop The Stream  		${ROBOT_LOG_LEVEL}
+		${count}=  el.Is Stream Exists  ${stream_name}
+		Run Keyword Unless  '${count}' == '0' or '${count}' == ''  Perform Stop And Delete Stream  ${stream_name}
+	
+	Log  Delete Stream And Nodes Data  ${ROBOT_LOG_LEVEL}
+		Write  rm -rf $TEST_HOME/status/streams/${stream_name}
+		Read Until Prompt
+		
+		

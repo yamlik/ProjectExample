@@ -1,0 +1,12 @@
+[Unit]
+Description=TEST Lookup Server Agent Service
+
+[Service]
+User={{ user }}
+Group={{ group }}
+Type=forking
+ExecStart={{ install_dir }}/lookup_server/bin/agent/ls_agent_ctl start
+ExecStop={{ install_dir }}/lookup_server/bin/agent/ls_agent_ctl stop
+
+[Install]
+WantedBy=multi-user.target

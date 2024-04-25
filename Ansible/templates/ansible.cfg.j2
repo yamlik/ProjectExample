@@ -1,0 +1,13 @@
+[defaults]
+remote_tmp = ~/.ansible/tmp
+local_tmp = /tmp/ansible_tmp
+nocows=1
+#gathering = smart
+#fact_caching = jsonfile
+#fact_caching_connection = /tmp/ansible_facts
+#fact_caching_timeout = 86400
+# debug = True
+
+[ssh_connection]
+control_path=/tmp/ssh_control_path_%%h-%%p-%%r
+scp_if_ssh=True

@@ -1,0 +1,5 @@
+- name: backup files
+  include: ha-sync/backup.yml
+
+- name: add backuped tarfile to LCM policy
+  script: add-backup-to-lcm.py /appdata/ha-sync/backup.tar.gz

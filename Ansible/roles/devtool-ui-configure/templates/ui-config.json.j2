@@ -1,0 +1,88 @@
+{
+  "uiMainMenu": {
+    "items": [
+      {
+        "id": "devtool",
+        "productUri": "/devtool",
+        "permissions": [
+          "devtool.read",
+          "TEST.browse"
+        ],
+        "tooltip": "TEST Mediation DevTool",
+        "label": "TEST Mediation Development Tool",
+        "iconName": "DT",
+        "items": [
+          {
+            "id": "development",
+            "label": "Development",
+            "url": "/devtool/development",
+            "permissions": [
+              "devtool.read",
+              "TEST.browse"
+            ],
+            "items": [
+              {
+                "id": "streams-repository",
+                "label": "Streams Repository",
+                "url": "/devtool/development/streams-repository",
+                "permissions": [
+                  "devtool.read",
+                  "TEST.browse"
+                ]
+              },
+              {
+                "id": "node-packages-repository",
+                "label": "Node Packages Repository",
+                "url": "/devtool/development/node-packages-repository",
+                "permissions": [
+                  "devtool.read",
+                  "TEST.browse"
+                ]
+              },
+              {
+                "id": "edit-packages",
+                "label": "Edit packages",
+                "url": "/devtool/development/workspace/:packageType/:id",
+                "permissions": [
+                  "devtool.workspace.read",
+                  "devtool.workspace.write"
+                ],
+				"hideFromMenu": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "TEST",
+        "productUri": "/TEST",
+        "permissions": ["TEST.browse"],
+        "tooltip": "TEST Mediation",
+        "label": "TEST Mediation",
+        "iconName": "EL",
+        "items": []
+      },
+      {
+        "id": "test-tool",
+        "label": "Test tool",
+        "url": "/devtool/development/testtool/:packageType/:source/:id",
+        "hideFromMenu": "true",
+        "permissions": [
+          "testtool.read"
+        ]
+      }
+    ]
+  },
+  "config": {
+    "environmentBanner": {
+      "mode": "thin",
+      "theme": "orange-theme",
+      "host": "example.TEST.com",
+      "description": "Development setup",
+      "enabled": false
+    },
+    "api": {
+      "currentUserUrl": "/devtool/api/current"
+    }
+  }
+}

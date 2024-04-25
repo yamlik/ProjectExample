@@ -1,0 +1,43 @@
+---      
+
+- name: "Check if rrdcached service Exists"
+  shell: "systemctl is-active rrdcached"
+  register: rrdcached_service_status
+  ignore_errors: true
+
+# Remove the sftp user "measurement"
+- name: remove measurement sftp user
+  shell: "/opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN destroy"
+  when: rrdcached_service_status.stdout != 'unknown'
+  become: true
+  become_method: sudo
+  
+# Remove the cron job
+- name: replace measCollecXml.conf
+  template:
+    src: measCollecXmlStop.conf.j2
+    dest: "/opt/ganglia/3gpptool/measCollecXml.conf"
+    mode: 0755
+    force: yes
+    backup: yes
+  when: rrdcached_service_status.stdout != 'unknown'
+  become: true
+  become_method: sudo
+  
+- name: remove 3GPPM cron job
+  shell: "/opt/ganglia/3gpptool/GAN_3GPPPM_ADMIN ganglia"
+  when: rrdcached_service_status.stdout != 'unknown'
+  become: true
+  become_method: sudo
+
+# Stop rrdcached service
+- name: stop rrdcached service
+  systemd:
+    name: rrdcached
+    enabled: yes
+    state: stopped
+  when: rrdcached_service_status.stdout != 'unknown'
+  become: true
+  become_method: sudo
+  
+...

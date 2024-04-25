@@ -1,0 +1,57 @@
+---
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - db_el_vendor
+    - db_el_user
+    - db_el_password
+    - db_el_host
+    - db_el_port
+    - db_el_name
+    - db_el_tablespace
+    - db_el_tablespace_index
+    - db_el_jdbc_driver
+    - db_el_properties
+    - db_el_type
+  tags:
+    - always
+
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+# Output discarded since there are passwords
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  no_log: "{{ hide_sensitive_debug_info }}"
+  with_items:
+    - { name: "db_el_vendor", value: "{{ db_el_vendor }}" }
+    - { name: "db_el_user", value: "{{ db_el_user }}" }
+    - { name: "db_el_password", value: "{{ db_el_password }}" }
+    - { name: "db_el_host", value: "{{ db_el_host }}" }
+    - { name: "db_el_port", value: "{{ db_el_port }}" }
+    - { name: "db_el_name", value: "{{ db_el_name }}" }
+    - { name: "db_el_tablespace", value: "{{ db_el_tablespace }}" }
+    - { name: "db_el_tablespace_index", value: "{{ db_el_tablespace_index }}" }
+    - { name: "db_el_jdbc_driver", value: "{{ db_el_jdbc_driver }}" }
+  tags:
+    - always
+
+## Replace db.properties template
+- name: replace db.properties
+  template:
+    src: db.properties.j2
+    dest: "{{ install_dir }}/etc/db/db.properties"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+  tags:
+    - always
+
+
+...

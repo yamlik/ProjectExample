@@ -1,0 +1,1083 @@
+*** Settings ***
+Library        SSHLibrary
+Library        String
+Library        OperatingSystem
+Resource       ${KEYWORDS_PATH}/sql/db_script_${DB_VENDOR_NAME}.txt
+Resource       ${KEYWORDS_PATH}/sql/el_host_db_script_${DB_VENDOR_NAME}.txt
+
+*** Variables **
+${STREAM}                 teststream
+${TEMPFOLDER}             ${EL_CUSTOM_ENV}_temp
+
+${NMON_INTERVAL}    60
+
+${CHECK_INTERVAL}  2 seconds
+${output}
+${versiontxt}
+
+*** Keywords ***
+Download Binary File  [Arguments]  ${source}  ${target}
+	## To copy file from server uncomment following:
+	## Put File  ${source}  ${target}
+    Write  wget ${source} -P ${target}
+	Read Until Prompt
+	
+
+Download Binary Files Recursively  [Arguments]  ${source}  ${target}
+    ## To copy file from server uncomment following:
+	## Put File  ${source}/*  ${target}
+	Write  wget -e robots=off --cut-dirs=3 --user-agent=Mozilla/5.0 --reject="index.html*" --no-parent --recursive --relative --level=1 --no-directories ${source} -P ${target}
+	Read Until Prompt
+	
+Send Answer  [Arguments]  ${input}
+    Write  ${input}
+
+Tools Start Versioned Stream  [Arguments]  ${stream_name}  ${stream_version}
+    ${stream_id}=  Tools Get Stream Id  ${stream_name}
+    Write   . ${AUTO_EL_INST_DIR}/.profile
+    Read Until Prompt
+	${ROBOT_LOG_LEVEL}=  BuiltIn.Set Variable  WARN
+
+	    Write  tools.pl
+		${output}=  Read Until Regexp      [\\0-\\255]*System\\s+Tools[\\0-\\255]+Maintenance[\\0-\\255]+Quit[\\0-\\255]*[Qq]*uit[\\0-\\255]*
+		Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		Write  1
+		${output}=  Read Until Regexp      [\\0-\\255]*Start\\s+and[\\0-\\255]+stop\\s+streams[\\0-\\255]+Quit[\\0-\\255]*Quit[\\0-\\255]*
+		Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		Write  4
+		${output}=  Read Until Regexp      [\\0-\\255]*Change\\s+Node[\\0-\\255]+Diagnostic\\s+Level[\\0-\\255]+Quit[\\0-\\255]*Quit[\\0-\\255]*
+		Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		SSHLibrary.Write  1
+		${output}=  SSHLibrary.Read Until Regexp      [\\0-\\255]*Give stream ID:[\\0-\\255]*
+		BuiltIn.Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		SSHLibrary.Write  ${stream_id}
+		${output}=  SSHLibrary.Read Until Regexp      [\\0-\\255]*Give stream version:[\\0-\\255]*
+		BuiltIn.Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		SSHLibrary.Write  ${stream_version}
+		${output}=  SSHLibrary.Read Until Regexp      [\\0-\\255]*Do you want to start the nodes.*:[\\0-\\255]*
+		BuiltIn.Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		SSHLibrary.Write  y
+		${output}=  SSHLibrary.Read Until Regexp      [\\0-\\255]*(Adding start order for stream .* succeeded.)|(Another version of the stream is active, do you want to do reconfiguration.*:)[\\0-\\255]*
+		BuiltIn.Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+		${match}=  Run Keyword And Ignore Error  BuiltIn.Should Match  ${output}  *Another version of the stream is active, do you want to do reconfiguration*
+		Run Keyword If  '${match[0]}'=='PASS'  SSHLibrary.Write  y
+		${output2}=  Run Keyword If  '${match[0]}'=='PASS'  SSHLibrary.Read Until Regexp  [\\0-\\255]*Should the internal storages be flushed in reconfiguration.*:[\\0-\\255]*
+		Run Keyword If  '${match[0]}'=='PASS'  BuiltIn.Log  ${output2}  ${ROBOT_LOG_LEVEL}
+		Run Keyword If  '${match[0]}'=='PASS'  SSHLibrary.Write  y
+		${output2}=  Run Keyword If  '${match[0]}'=='PASS'  SSHLibrary.Read Until Regexp  [\\0-\\255]*Adding start order for stream .* succeeded.[\\0-\\255]*
+		${output}=  BuiltIn.Set Variable If  '${match[0]}'=='PASS'   ${output2}   ${output}
+		Run Keyword If  '${match[0]}'=='PASS'  BuiltIn.Log  ${output}  ${ROBOT_LOG_LEVEL}
+
+	    Write   <Enter>
+		${output}=  Wait Until Keyword Succeeds  300   0.3  Read Until Regexp      [\\0-\\255]*Quit[\\0-\\255]*[Qq]*uit[\\0-\\255]*
+		Log  ${output}  ${ROBOT_LOG_LEVEL}
+	    Write  q
+	    Read Until Prompt
+
+Tools interaction start stream  [Arguments]  ${stream_id}
+
+    # Reads whatever received so far
+    ${result}=  Read
+    Log  ${result}  WARN
+
+    # answer questions
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *System Tools*Management*Maintenance*
+    #answer: 1 Management
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  1
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *System Management*Monitor Streams*
+    #answer: 4 Stream orders
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  4
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Stream Orders*Start Stream*
+    #answer: 1 Start Stream
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  1
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give stream ID:*
+    Log  Giving stream ID: ${stream_id}  INFO
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  ${stream_id}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Give stream version:*
+    Log  Giving stream version: ${stream_version}  INFO
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  ${stream_version}
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Do you want to start the nodes* (y/n):*
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  y
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Another version of the stream is active, do you want to do reconfiguration?*
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  y
+
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *Should the internal storages be flushed in reconfiguration?*
+    Run Keyword If  '${match[0]}'=='PASS'  Send Answer  y
+
+    # catch errors.
+    ${match}=  Run Keyword And Ignore Error  Should Match  ${result}  *'SYSTEMTOOLS*
+    Run Keyword If  '${match[0]}'=='PASS'  Fatal Error  ${result}
+
+    # return result
+    Should Match  ${result}  *Adding start order for stream * succeeded.*
+    Write  \n
+    Read Until Prompt
+    Write  q
+    Read Until Prompt
+
+Import Stream   [Arguments]  ${streamname}
+    Set Client Configuration  timeout=60
+    Start Command  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${AUTO_EL_INST_DIR}/${streamname}/stream.xml ${JAVANODE_LIB_FILE}
+    Start Command   tools.pl -c import -r ${streamname} -H ${EL_TEST_HOST_SHORT}_a
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Import Stream to Host   [Arguments]  ${hostname}  ${streamname}
+    Set Client Configuration  timeout= 60
+    Start Command  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${AUTO_EL_INST_DIR}/${streamname}/stream.xml ${JAVANODE_LIB_FILE}
+    Start Command   tools.pl -c import -r ${streamname} -H ${hostname}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Import Node   [Arguments]  ${nodename}
+    Import Package  ${nodename}
+
+Import Package     [Arguments]  ${package_name}
+    Start Command  cd ${AUTO_EL_INST_DIR}
+    Set Client Configuration  timeout=60
+    Start Command  tools.pl -c import -r ${package_name}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Login To Test Host
+    Open Connection  ${EL_TEST_HOST}  alias=test_host
+    #Set Client Configuration  timeout=60
+    Set Client Configuration  timeout=60  prompt=${HOST_PROMPT}
+    #Set Client Configuration  prompt=${HOST_PROMPT}
+    #Login  ${GTAF_SSH_USER}   ${GTAF_SSH_PASS}
+    Run Keyword If  '${IS_CLOUD}'=='0'  Login  ${GTAF_SSH_USER}   ${GTAF_SSH_PASS}
+    Run Keyword If  '${IS_CLOUD}'=='1'  Login With Public Key  ${GTAF_SSH_USER}  ${KEY_FILE}  ${GTAF_SSH_PASS}
+    #Set Client Configuration  prompt= $
+    Set Client Configuration  prompt=$
+    Write   export PS1=${HOST_PROMPT}
+    Read Until Prompt
+
+Login To Test Host As Root
+    Open Connection  ${EL_TEST_HOST}
+    Set Client Configuration  timeout=60  prompt=#
+    Run Keyword If  '${IS_CLOUD}'=='0'  Login  root   ${ROOT_SSH_PASS}
+    Run Keyword If  '${IS_CLOUD}'=='1'  Login With Public Key  root  ${KEY_FILE}  ${ROOT_SSH_PASS}
+    #Set Client Configuration  prompt= $
+    #Set Client Configuration  prompt=#
+    Write   export PS1=#
+    Read Until Prompt	
+	
+	
+Login To CMCI Host
+    Open Connection  ${EL_CMCI_HOST}
+    Set Client Configuration  prompt=${EL_CMCI_HOST_PROMPT}
+    Login  ${CMCI_SSH_USER}   ${CMCI_SSH_PASS}
+
+Login To Seagull Host
+    Open Connection  ${EL_SEAGULL_HOST}
+    Set Client Configuration  prompt=${SEAGULL_PROMPT}
+    Login  ${SEAGULL_USER}   ${SEAGULL_PASS}
+
+Login To Seagull Radiator Host
+     Open Connection  ${EL_SEAGULL_RADIATOR_HOST_LONG}
+     Set Client Configuration  prompt=${EL_SEAGULL_RADIATOR_PROMPT}
+     Login  ${EL_SEAGULL_RADIATOR_USER}   ${EL_SEAGULL_RADIATOR_PASS}
+     Write  pwd
+     Read Until Prompt
+
+Login To Host  [Arguments]  ${hostname}  ${username}  ${password}
+    Open Connection  ${hostname}
+    Run Keyword If  '${username}'=='root'  Set Client Configuration  timeout=60  prompt=#
+	Run Keyword If  '${username}'!='root'  Set Client Configuration  timeout=60  prompt=$
+    Run Keyword If  '${IS_CLOUD}'=='0'  Login  ${username}   ${password}
+    Run Keyword If  '${IS_CLOUD}'=='1'  Login With Public Key  ${username}  ${KEY_FILE}  ${ROOT_SSH_PASS}
+    Run Keyword If  '${username}'=='root'  Write   export PS1=#
+	Run Keyword If  '${username}'!='root'  Write   export PS1=$
+    Read Until Prompt	
+
+
+Jump Host  [Arguments]  ${username}  ${password}  ${host}
+	Write  sshpass -p "${password}" ssh -o StrictHostKeyChecking=no ${username}@${host}
+	Read Until Prompt
+	
+Copy File From Other Host  [Arguments]  ${username}  ${password}  ${source_host}  ${source_file}  ${targeted_location}
+	Write  sshpass -p ${password} scp -r -o "StrictHostKeyChecking no" ${username}@${source_host}:${source_file} ${targeted_location}
+	Read Until Prompt
+
+Restart Node Manager
+    Stop Node Manager
+    Start Node Manager
+
+Check Node Manager is  [Arguments]  ${status}
+    #Write  cd ${AUTO_EL_INST_DIR}\n. .profile\nTEST.pl status
+    Set Client Configuration  timeout=2 min
+    Write  TEST.pl status
+    Read Until Regexp  ${status}
+    Read Until Prompt
+
+Start Node Manager if it is not Running
+     Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nTEST.pl status
+     ${result}=  Read Command Output
+     ${regexp_result}=  Get Lines Containing String  ${result}  not running
+     ${line_count}=  Get Line Count  ${regexp_result}
+     Run Keyword If  ${line_count}>0   Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nctl_control -f start >./filee
+
+Kill Node Manager
+     Start Command   kill -9 `ps -ef | grep nm/NodeManager | grep ${BASE_DIR} | awk '{print $2}'`
+     Read Command Output
+
+Start Node Manager
+	${node_manager_status}=  Check Node Manager Status  Active: active (running)
+	Run Keyword If  ${node_manager_status.strip()} != 1    Execute Start Node Manager
+
+Stop Node Manager
+	${node_manager_status}=  Check Node Manager Status  Active: inactive (dead)
+	Run Keyword If  ${node_manager_status.strip()} != 1    Execute Stop Node Manager
+
+Check Node Manager Status  [Arguments]  ${expected_status}
+	Start Command  systemctl status el-node-manager | grep "${expected_status}" | wc -l
+	${node_manager_status}=  Read Command Output
+	[Return]  ${node_manager_status}
+
+Execute Start Node Manager
+	Set Client Configuration  timeout=3 min
+	Write  sudo systemctl start el-node-manager
+    Read Until Prompt
+    ${node_manager_status}=  Check Node Manager Status  Active: active (running)
+	Should Be True  ${node_manager_status.strip()} == 1	
+
+Execute Stop Node Manager
+	Set Client Configuration  timeout=3 min
+	Write  sudo systemctl stop el-node-manager
+    Read Until Prompt
+    ${node_manager_status}=  Check Node Manager Status  Active: inactive (dead)
+	Should Be True  ${node_manager_status.strip()} == 1	
+
+Start Daemontools
+	Start Command  ctl_control -c Daemontools status | grep "System status: RUNNING" | wc -l
+	${Daemontools_status}=  Read Command Output
+	## Start Daemontools if currently not running
+	Run Keyword If  	${Daemontools_status.strip()}==0  Write  ctl_control -c Daemontools start
+    Run Keyword If  	${Daemontools_status.strip()}==0  Read Until Regexp  [\\0-\\255]*Operation start successful[\\0-\\255]*Started Daemontools services[\\0-\\255]*
+    Run Keyword If  	${Daemontools_status.strip()}==0  Read Until Prompt
+
+Stop Daemontools
+	Start Command  ctl_control -c Daemontools status | grep "System status: RUNNING" | wc -l
+	${Daemontools_status}=  Read Command Output
+	## Stop Daemontools if currently running
+	Run Keyword If  	${Daemontools_status.strip()}==1  Write  ctl_control -c Daemontools stop
+    Run Keyword If  	${Daemontools_status.strip()}==1  Read Until Regexp  [\\0-\\255]*Operation stop successful[\\0-\\255]*Daemontools services stopped[\\0-\\255]*
+    Run Keyword If  	${Daemontools_status.strip()}==1  Read Until Prompt
+
+#############
+# TimesTen
+#############
+
+Start TimesTen
+	${TimesTen_status}=  Check TimesTen Status  Active: active (running)
+	Run Keyword If  ${TimesTen_status.strip()} != 1    Execute Start TimesTen
+
+Stop TimesTen
+	${TimesTen_status}=  Check TimesTen Status  Active: inactive (dead)
+	## Stop TimesTen if currently running
+	Run Keyword If  ${TimesTen_status.strip()} != 1    Execute Stop TimesTen
+
+Check TimesTen Status  [Arguments]  ${expected_status}
+	Write  systemctl status el-timesten | grep "${expected_status}" | wc -l
+	${systemctl_output}=   Read Until Prompt 
+	${TimesTen_status}=  Get Line	${systemctl_output} 	0
+	[Return]  ${TimesTen_status}
+
+Execute Start TimesTen
+	Write  sudo systemctl start el-timesten
+    Read Until Prompt
+    ${TimesTen_status}=  Check TimesTen Status  Active: active (running)
+	Should Be True  ${TimesTen_status.strip()} == 1	
+
+Execute Stop TimesTen
+	Write  sudo systemctl stop el-timesten
+    Read Until Prompt
+    ${TimesTen_status}=  Check TimesTen Status  Active: inactive (dead)
+	Should Be True  ${TimesTen_status.strip()} == 1	
+
+Restart TimesTen
+    Stop TimesTen
+    Start TimesTen
+	
+#############
+# FirewallD
+#############
+
+Start FirewallD
+	${FirewallD_status}=  Check FirewallD Status  Active: active (running)
+	## Start FirewallD if not currently running
+	Run Keyword If  ${FirewallD_status.strip()} != 1    Execute Start FirewallD
+
+Stop FirewallD
+	${FirewallD_status}=  Check FirewallD Status  Active: inactive (dead)
+	## Stop FirewallD if currently running
+	Run Keyword If  ${FirewallD_status.strip()} != 1    Execute Stop FirewallD
+
+Check FirewallD Status  [Arguments]  ${expected_status}
+	Write  systemctl status firewalld | grep "${expected_status}" | wc -l
+	${systemctl_output}=   Read Until Prompt 
+	${FirewallD_status}=  Get Line	${systemctl_output} 	0
+	[Return]  ${FirewallD_status}
+
+Execute Start FirewallD
+	Write  sudo systemctl start firewalld
+    Read Until Prompt
+    ${FirewallD_status}=  Check FirewallD Status  Active: active (running)
+	Should Be True  ${FirewallD_status.strip()} == 1	
+
+Execute Stop FirewallD
+	Write  sudo systemctl stop firewalld
+    Read Until Prompt
+    ${FirewallD_status}=  Check FirewallD Status  Active: inactive (dead)
+	Should Be True  ${FirewallD_status.strip()} == 1	
+
+Restart FirewallD
+    Stop FirewallD
+    Start FirewallD
+	
+
+Export ODBCINI Environment Variable
+	Start Command  cat /etc/sysconfig/el-node-manager | grep "ODBCINI"
+	${ODBCINI_PATH}=  Read Command Output
+	Write  	export ${ODBCINI_PATH}
+	Read Until Prompt
+
+Configure LookupServer On SunOS
+		Write  cd ${AUTO_EL_INST_DIR}/TEST/lookup_server3/bin
+		Read Until Prompt
+
+		## Update lookup_server_startup
+		Start Command  grep "/usr/ucb/ps" lookup_server_startup | wc -l
+		${isUpdated}=  Read Command Output
+		Run Keyword If  '${isUpdated.strip()}'=='0'  Do Replace GetProcessID  lookup_server_startup
+
+		## Update lookup_server_shutdown
+		Start Command  grep "/usr/ucb/ps" lookup_server_shutdown | wc -l
+		${isUpdated}=  Read Command Output
+		Run Keyword If  '${isUpdated.strip()}'=='0'  Do Replace GetProcessID  lookup_server_shutdown
+
+Do Replace GetProcessID  [Arguments]  ${lookup_server_mode}
+		Write  mv ${lookup_server_mode} ${lookup_server_mode}.bak && chmod 755 ${lookup_server_mode}.bak
+		Read Until Prompt
+		Write  sed -e 's%ps -f -p $pid%/usr/ucb/ps -awwux | grep $pid%g' ${lookup_server_mode}.bak > ${lookup_server_mode}
+		Read Until Prompt
+		Write  chmod 550 ${lookup_server_mode}
+		Read Until Prompt
+
+
+Start Lookup Server  [Arguments]  ${lookup_server_name}
+	${LookupServer_status}=  Get Lookup Server Status With Given State  ${lookup_server_name}  Active: active (running)
+	Run Keyword If  ${LookupServer_status.strip()} != 1    Execute Start Lookup Server  ${lookup_server_name}
+
+Stop Lookup Server  [Arguments]  ${lookup_server_name}
+	${LookupServer_status}=  Get Lookup Server Status With Given State  ${lookup_server_name}  Active: inactive (dead)
+	Run Keyword If  ${LookupServer_status.strip()} != 1    Execute Stop Lookup Server  ${lookup_server_name}
+
+Execute Start Lookup Server  [Arguments]  ${lookup_server_name}
+	Write  sudo systemctl start el-lookup-${lookup_server_name}
+    Read Until Prompt
+    ## Waiting as server might slow 
+    Wait Until Keyword Succeeds  1 min  5 sec  Return Lookup Server Status  ${lookup_server_name}  Active: active (running)
+    
+Execute Stop Lookup Server  [Arguments]  ${lookup_server_name}
+	Write  sudo systemctl stop el-lookup-${lookup_server_name}
+    Read Until Prompt
+    ## Waiting as server might slow 
+    Wait Until Keyword Succeeds  1 min  5 sec   Return Lookup Server Status  ${lookup_server_name}  Active: inactive (dead)
+
+Return Lookup Server Status  [Arguments]  ${lookup_server_name}   ${status}
+	${LookupServer_status}=  Get Lookup Server Status With Given State   ${lookup_server_name}    ${status} 
+	Should Be True  ${LookupServer_status.strip()} == 1		
+	
+Get Lookup Server Status With Given State  [Arguments]  ${lookup_server_name}  ${expected_status}
+	Start Command  systemctl status el-lookup-${lookup_server_name} | grep "${expected_status}" | wc -l
+	${LookupServer_status}=  Read Command Output
+	[Return]  ${LookupServer_status}
+
+Get Lookup Server Status  [Arguments]  ${lookup_server_name}
+	Start Command  sudo systemctl status el-lookup-${lookup_server_name}
+	${LookupServer_status}=  Read Command Output
+	[Return]  ${LookupServer_status}
+	
+Restart Lookup Server  [Arguments]  ${lookup_server_name}
+    Write  sudo systemctl restart el-lookup-${lookup_server_name}
+    Read Until Prompt
+	Wait Until Keyword Succeeds  1 min  5 sec   Return Lookup Server Status  ${lookup_server_name}  Active: active (running)
+
+	
+Check LS File Exists  [Arguments]  ${path}
+	Start Command   ls ${path} | wc -l
+	${count}=  Read Command Output
+	Should Match   ${count.strip()}   1
+	
+Check LS File Not Exists  [Arguments]  ${path}
+	Start Command   ls ${path} | wc -l
+	${count}=  Read Command Output
+	Should Match   ${count.strip()}   0
+
+Stop Single lookup_server On SunOS
+	Write  cd ${AUTO_EL_INST_DIR}/TEST/lookup_server3/bin && /usr/ucb/ps -auxww | grep "${PRI_BASE_DIR}\/.*lookup_server" | awk '{print $2}' > running_lookup_server.txt
+   	Read Until Prompt
+   	Write  cd ${AUTO_EL_INST_DIR}/TEST/lookup_server3/bin && cat running_lookup_server.txt | while read line; do kill -9 $line; done
+   	Read Until Prompt
+   	Write  rm ${AUTO_EL_INST_DIR}/TEST/lookup_server3/tmp/*pid && rm ${AUTO_EL_INST_DIR}/TEST/lookup_server3/tmp/*shmid
+   	Read Until Prompt
+
+Send File To Host   [Arguments]   ${filename}  ${target_dir}=${AUTO_EL_INST_DIR}/
+    Put File   ${filename}   ${target_dir}
+
+Move File On Host   [Arguments]   ${source_filename}  ${target_filename}
+    Start And Check Command  mv ${source_filename} ${target_filename}
+
+Check file exists  [Arguments]  ${filename}
+    Write  ${AUTO_EL_INST_DIR}/\nls ${filename}
+    Read Until Regexp  ${filename}
+
+Run JavaNode From CommandLine  [Arguments]  ${streamname}  ${nodename}
+    Execute Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nsleep 20\ncd $TEST_HOME/status/streams/${streamname}/nodes/${nodename}\n$TEST_HOME/lib/java_node -c control/1/config >${AUTO_EL_INST_DIR}/java_node_stdout
+
+Delete Logs  [Arguments]  ${streamname}  ${nodename}
+    Start Command  ls $TEST_HOME/status/streams/${streamname}/nodes/${nodename}/log/1/*.log
+    ${result}=  Read Command Output
+    ${line_count}=  Get Line Count  ${result}
+    Log   ${line_count}
+    Run Keyword If   ${line_count}>1  Start Command  cd $TEST_HOME/status/streams/${streamname}/nodes/${nodename}/log/1\nrm -r *.log
+
+Clear All Node Record Statistics  [Arguments]  ${script_directory}
+    SQL - Clear All Node Record Statistics  ${script_directory}
+
+Check File In Audit  [Arguments]  ${script_directory}  ${filein_id}
+    SQL - Check File In Audit  ${script_directory}  ${filein_id}
+
+Check File Out Audit  [Arguments]  ${fileout_id}
+    SQL - Check File Out Audit  ${script_directory}  ${fileout_id}
+
+File Should Contain   [Arguments]  ${filename}  ${test_item}
+    ${output2}=  Start Command  cat ${filename}
+    ${output2}=  Read Command Output
+    Should Contain  ${output2}  ${test_item}
+
+File Should Not Contain   [Arguments]  ${filename}  ${test_item}
+    ${output2}=  Start Command  cat ${filename}
+    ${output2}=  Read Command Output
+    Should Not Contain  ${output2}  ${test_item}
+
+Start And Check Command   [Arguments]    ${command_string}
+    Write   ${command_string}
+    ${result}=  Read Until Prompt
+    Write  echo $?
+    ${command_result}=  Read Until Prompt
+    Should Start With  ${command_result}  0
+    [Return]  ${result}
+
+Start And Check Command Fails       [Arguments]    ${command_string}
+    Write   ${command_string}
+    ${result}=  Read Until Prompt
+    Write  echo $?
+    ${command_result}=  Read Until Prompt
+    Should Not Start With  ${command_result}  0
+    [Return]  ${result}
+
+Start Command And Expect Failure  [Arguments]    ${command_string}
+    Write   ${command_string}
+    ${result}=  Read Until Prompt
+    Write  echo $?
+    ${command_result}=  Read Until Prompt
+    Should Not Start With  ${command_result}  0   Command did not fail as expected
+    [Return]  ${result}
+
+Start Seagull Server  [Arguments]    ${test_case}   ${testcase_main_folder}
+    Login To Seagull Host
+
+
+	Write  kill `ps -ef | grep seagull | grep ${EL_SEAGULL_HOST} | grep -v grep | awk '{print $2}'`
+    Read Until Prompt
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/seagull_server_pid
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/server_${EL_SEAGULL_HOST}.xml
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/logs
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/logs/*
+    Read Command Output
+    Put File  ${testcase_main_folder}/${test_case}/testdata/*  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/
+   SSHLibrary.Write   cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cat ./server_${EL_SEAGULL_HOST}.xml | sed 's/:.*$/:${SEAGULL_SERVER_PORT_1}\"\>/g' > ./server_${EL_SEAGULL_HOST}.xml.temp
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   mv ./server_${EL_SEAGULL_HOST}.xml.temp ./server_${EL_SEAGULL_HOST}.xml
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cd ~/TEST_TOOLS/CI/
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   . .profile
+    SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cd ./Seagull_${EL_CUSTOM_ENV}/${test_case}
+    SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   ./start_server.ksh ${EL_SEAGULL_HOST} 2>./seagull_server_pid
+    SSHLibrary.Read Until Prompt
+    Close Connection
+
+Start Seagull Server For Online Smoke Stream  [Arguments]    ${test_case}   ${testcase_main_folder}
+    Login To Seagull Host
+
+
+    Write  kill `ps -ef | grep seagull | grep ${EL_CUSTOM_ENV} | grep -v grep | awk '{print $2}'`
+    Read Until Prompt
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/server_pid
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/logs
+    Read Command Output
+    Put File  ${testcase_main_folder}/${test_case}/testdataOnlineSmoke/*  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/logs/*
+    Read Command Output
+    Start Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}\n cat ./server.xml | sed 's/:.*$/:${EL_INST_CONNECTPORT}\"\>/g' > ./server.xml.temp; mv ./server.xml.temp ./server.xml
+    Read Command Output
+    Start Command  cd ~/TEST_TOOLS/CI/\n . .profile\n cd ./Seagull_${EL_CUSTOM_ENV}\n ./start_server.ksh 2>./server_pid
+    Close Connection
+
+Start Seagull Server For Online Smoke Stream Medium  [Arguments]    ${test_case}   ${testcase_main_folder}
+    Login To Seagull Host
+    Start Command  kill -9 `head -n 10 server_pid | sed "s/[^0-9]//g;s/^$/-1/;"`
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/server_pid
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/logs
+    Read Command Output
+    Put File  ${testcase_main_folder}/${test_case}/testdataOnlineSmokeMedium/*  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/logs/*
+    Read Command Output
+    Start Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}\n cat ./server.xml | sed 's/:.*$/:${EL_INST_CONNECTPORT}\"\>/g' > ./server.xml.temp; mv ./server.xml.temp ./server.xml
+    Read Command Output
+    Start Command  cd ~/TEST_TOOLS/CI/\n . .profile\n cd ./Seagull_${EL_CUSTOM_ENV}\n ./start_server.ksh 2>./server_pid
+    Close Connection
+
+Start Seagull Client  [Arguments]    ${test_case}  ${testcase_main_folder}  ${host}=${EL_TEST_HOST_SHORT}
+    Login To Seagull Host
+    Start Command  kill -9 `head -n 10 seagull_client_pid | sed "s/[^0-9]//g;s/^$/-1/;"`
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/seagull_client_pid
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}
+    Read Command Output
+    Start Command  mkdir -p ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/logs
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/client_${host}.xml
+    Read Command Output
+    Put File  ${testcase_main_folder}/${test_case}/testdata/*client*  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/
+	Put File  ${testcase_main_folder}/${test_case}/testdata/check_if_ready.sh  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/
+	Put File  ${testcase_main_folder}/${test_case}/testdata/*dictionary*  ${SEAGULL_HOME}/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}/
+    #Start Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}\n cat ./client_hki-xred5st5.xml | sed 's/dest\=.*$/dest\=${host}.TEST.com:${SEAGULL_CLIENT_PORT_1}\"\>/g' > ./client_${host}.xml.temp; mv ./client_${host}.xml.temp ./client_${host}.xml
+    #Read Command Output
+    SSHLibrary.Write   cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cat ./client_hki-xred5st5.xml | sed 's/dest\=.*$/dest\=${host}.TEST.com:${SEAGULL_CLIENT_PORT_1}\"\>/g' > ./client_${host}.xml.temp
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   mv ./client_${host}.xml.temp ./client_${host}.xml
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cd ~/TEST_TOOLS/CI/
+	SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   . .profile
+    SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   cd ./Seagull_${EL_CUSTOM_ENV}/${test_case}
+    SSHLibrary.Read Until Prompt
+	SSHLibrary.Write   nohup ./start_client.ksh ${host} 2>./seagull_client_pid &
+    SSHLibrary.Read Until Prompt
+    Close Connection
+
+Start Seagull Client For Online Smoke Stream  [Arguments]    ${test_case}  ${testcase_main_folder}  ${host}=${EL_TEST_HOST_SHORT}
+    Login To Seagull Host
+    Start Command  kill -9 `head -n 10 client_pid | sed "s/[^0-9]//g;s/^$/-1/;"`
+    Read Command Output
+    Start Command  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/client_pid
+    Read Command Output
+     Start Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}\n cat ./client.xml | sed 's/dest\=.*$/dest\=${host}.TEST.com:${EL_INST_LISTENPORTS}\"\>/g' > ./client.xml.temp; mv ./client.xml.temp ./client.xml
+    Read Command Output
+    Start Command  cd ~/TEST_TOOLS/CI/\n . .profile\n cd ./Seagull_${EL_CUSTOM_ENV}\n ./start_client.ksh >.client_run.txt &
+    Close Connection
+
+Check Seagull Client Messages  [Arguments]    ${test_case}   ${number_of_requests}
+    Login To Seagull Host
+    ${command_result}  Execute Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/${test_case}\n ./check_if_ready.sh ${number_of_requests}\necho $?
+    ${count}  Get Line Count  ${command_result}
+    ${count}  Evaluate   ${count}-1
+    ${last_line}  Get Line   ${command_result}  ${count}
+    Close Connection
+    [Return]  ${last_line}
+
+
+Clean Seagull Processes
+    Login To Seagull Host
+    Execute Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/\n head -n 1 `find . | grep pid` | egrep "[0-9]{1,}" -o >./kill_these && kill `cat ./kill_these`
+    #Start Command   kill `ps -ef | grep seagull | grep ${SEAGULL_USER} | grep -v grep | awk '{print $2}'`
+    Write  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/kill_these
+    Close Connection
+
+Clean Seagull And Firefox Processes For Performance Test
+    Login To Seagull Host
+    #Execute Command  cd ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/\n head -n 1 `find . | grep pid` | egrep "[0-9]{1,}" -o >./kill_these && kill `cat ./kill_these`
+    Start Command   kill `ps -ef | grep seagull | grep ${SEAGULL_USER} | grep -v grep | awk '{print $2}'`
+    Start Command   kill `ps -ef | grep firefox | grep ${SEAGULL_USER} | grep -v grep | awk '{print $2}'`
+    Write  rm -f ~/TEST_TOOLS/CI/Seagull_${EL_CUSTOM_ENV}/kill_these
+    Close Connection
+
+Import Online Engine
+    Import Javanode Lib
+    Get Online Engine Files To Local Host
+    Login To Test Host
+    Send File To Host   ./${TEMPFOLDER}/${ONLINE_ENGINE_NODE}
+    #Send File To Host   ./${TEMPFOLDER}/stream.xml
+    Send File To Host   ./${TEMPFOLDER}/${ONLINE_ENGINE_STREAM_PACAKAGE}
+    Start And Check Command  cd ${AUTO_EL_INST_DIR}
+    #Start And Check Command  rm -f ${AUTO_EL_INST_DIR}/${STREAM}/stream.xml
+    #Start And Check Command  mkdir -p ${STREAM}
+    #Start And Check Command  mv stream.xml ${AUTO_EL_INST_DIR}/${ONLINE_STREAM}/stream.xml
+    Import Node         ${ONLINE_ENGINE_NODE}
+    #Import Stream       ${STREAM}
+    Import Stream      ${ONLINE_ENGINE_STREAM_PACAKAGE}
+    Remove Node Pacakges From Host
+    Close Connection
+
+Import Javanode Lib
+    Remove Files  ./${TEMPFOLDER}/*.*
+    Remove Directory  ./${TEMPFOLDER}
+    Open Connection  doom.TEST.com
+    Set Client Configuration  prompt=${HOST_PROMPT}
+    Login  jenkins  jenkins
+    Log   ${JAVANODE_LIB_PATH}/${JAVANODE_LIB_FILE}
+    SSHLibrary.Get File  ${JAVANODE_LIB_PATH}/${JAVANODE_LIB_FILE}     ./${TEMPFOLDER}/${JAVANODE_LIB_FILE}
+    Close Connection
+    Login To Test Host
+    Send File To Host   ./${TEMPFOLDER}/${JAVANODE_LIB_FILE}
+    Import Package      ${JAVANODE_LIB_FILE}
+    Close Connection
+
+Import Relay Stream
+    Get Relay Stream Files To Local Host
+    Login To Test Host
+    Send File To Host   ./${TEMPFOLDER}/stream.xml
+    #Start And Check Command       cd ${AUTO_EL_INST_DIR}\nmkdir -p ${STREAM}\nmv stream.xml ${AUTO_EL_INST_DIR}/${STREAM}/stream.xml
+    Start And Check Command  cd ${AUTO_EL_INST_DIR}
+    Start And Check Command  mkdir -p ${STREAM}
+    Start And Check Command  mv stream.xml ${AUTO_EL_INST_DIR}/${STREAM}/stream.xml
+    Import Stream to Host  OnlineEngineHost  ${STREAM}
+    #Remove Node Pacakges From Host
+
+Get Relay Stream Files To Local Host
+    Remove Files  ./${TEMPFOLDER}/*.*
+    Remove Directory  ./${TEMPFOLDER}
+    Open Connection  doom.TEST.com
+    Set Client Configuration  prompt=${HOST_PROMPT}
+    Login  jenkins   jenkins
+    #SSHLibrary.Get File  ${STREAM_XML_PATH}  ./${TEMPFOLDER}/stream.xml
+    SSHLibrary.Get File  ${DIAMETER_RELAY_STREAM_XML_PATH}  ./${TEMPFOLDER}/stream.xml
+    Close Connection
+
+
+Get Online Engine Files To Local Host
+    Remove Files  ./${TEMPFOLDER}/*.*
+    Remove Directory  ./${TEMPFOLDER}
+    Open Connection  doom.TEST.com
+    Set Client Configuration  prompt=${HOST_PROMPT}
+    Login  jenkins  jenkins
+    SSHLibrary.Get File  ${ONLINE_ENGINE_CFG_DIR}/${ONLINE_ENGINE_NODE}                          ./${TEMPFOLDER}/${ONLINE_ENGINE_NODE}
+    #SSHLibrary.Get File  ${ONLINE_ENGINESTREAM_XML_PATH}                    ./${TEMPFOLDER}/stream.xml
+    SSHLibrary.Get File  ${ONLINE_ENGINESTREAM_PACKAGE_PATH}/${ONLINE_ENGINE_STREAM_PACAKAGE}    ./${TEMPFOLDER}/${ONLINE_ENGINE_STREAM_PACAKAGE}
+    Close Connection
+
+Remove Node Pacakges From Host
+    Write  ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  rm -r *.el
+    Read Until Prompt
+
+Cleanup Deleted Streams
+    Start Command   tools.pl -c cleanupdeletedstreams
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+
+Set Standard Plugin If It Is Not Set
+    Start Command  cat /TEST/elink/CM621_CI_CLEAN/kana_a/TEST/base/internal/manager/config/nodemanager.properties | grep standard
+    ${result}  Read Command Output
+    ${lenght}  Get Length  ${result}
+    Run Keyword If   ${lenght}==0  Set Standard Plugin To Node Manager
+
+Set Standard Plugin To Node Manager
+    Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nctl_control -f stop
+    ${result}  Read Command Output
+    Start Command  cat $TEST_HOME/internal/manager/config/nodemanager.properties | grep audit.plugins
+    ${plugin_line}  Read Command Output
+    Start Command  sed 's/${plugin_line}/${AUDIT_PLUGIN_STANDARD}/g' ${AUTO_EL_INST_DIR}/${NM_PROP_PATH} > ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}2
+    ${result}  Read Command Output
+    Start Command  mv ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}2 ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}
+    ${result}  Read Command Output
+    Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nctl_control -f start
+    ${result}  Read Command Output
+
+Modify NodeManager Properties  [Arguments]   ${parameter}  ${new_value}
+    Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nctl_control -f stop
+    ${result}  Read Command Output
+    Run  sleep 2
+    Start Command  cat $TEST_HOME/internal/manager/config/nodemanager.properties | grep ${parameter}
+    ${properties_line}  Read Command Output
+    Start Command  sed 's/${properties_line}/${parameter}=${new_value}/g' ${AUTO_EL_INST_DIR}/${NM_PROP_PATH} > ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}2
+    ${result}  Read Command Output
+    Start Command  mv ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}2 ${AUTO_EL_INST_DIR}/${NM_PROP_PATH}
+    ${result}  Read Command Output
+    Start Command  cd ${AUTO_EL_INST_DIR}\n. .profile\nctl_control -f start
+    ${result}  Read Command Output
+    Run  sleep 2
+
+Delete Online Diags
+    Login To Test Host
+    Start Command  rm -f ${ONLINE_ENGINE_LOG_PATH}/*.log
+    Start Command  rm -f ${STREAM_LOG_PATH}/*/log/*.log
+    Close Connection
+
+Delete Stream Logs
+    Login To Test Host
+    Start Command  rm -f ${STREAM_LOG_PATH}/*/log/*.log
+    Close Connection
+
+Check Diag Has No Exceptions
+    Login To Test Host
+    Set Client Configuration  timeout=1 minute 10 seconds
+    Start Command And Expect Failure  cat ${ONLINE_ENGINE_LOG_PATH}/*.log | grep "SEVERE: Exception"
+    Close Connection
+
+Build Test Nodes
+    ${rc}  ${output}  Run And Return Rc And Output     cd ${NODE_BUILD_DIR}\nmvn clean install
+
+Start Nmon To Monitor Host  [Arguments]  ${exec_time}  ${output_file}
+    ${nmon_exec_time}  Evaluate  ${exec_time}/${NMON_INTERVAL}
+    Log  result:${nmon_exec_time}
+    Login To Test Host
+    Start and Check Command  nmon -fT -s ${NMON_INTERVAL} -c ${nmon_exec_time} -F ${output_file}
+    Close Connection
+
+#Documentation  Stream name and node name should be double quoted if it contains space in the name.
+Tools Get Node Id  [Arguments]   ${stream_name}  ${node_name}
+    Start Command  tools.pl -c monitorstream -n ${stream_name} | grep -w '${node_name}' | awk '{print $1}'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+#Documentation  Stream name should be double quoted if it contains space in the name.
+Tools Get Stream Id  [Arguments]   ${stream_name}
+    Start Command  tools.pl -c browsestreams | grep -w '${stream_name} ' | awk '{print $1}'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+Tools Enable Node   [Arguments]   ${stream_name}  ${node_name}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}  ${node_name}
+    Start Command   tools.pl -c enablenode -n ${stream_name} -o ${node_id}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Kill Node    [Arguments]   ${stream_name}  ${node_name}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}    ${node_name}
+    Start Command   tools.pl -c killnode -n ${stream_name} -o ${node_id}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Disable Node    [Arguments]   ${stream_name}  ${node_name}  ${stop_type}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}    ${node_name}
+    Start Command   tools.pl -c disablenode -n ${stream_name} -o ${node_id} -t ${stop_type}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Restart Node    [Arguments]   ${stream_name}  ${node_name}  ${stop_type}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}   ${node_name}
+    ${stream_id}  Tools Get Stream Id  ${stream_name}
+    Start Command  tools.pl -c restartnode -n ${stream_name} -o ${node_id} -t ${stop_type}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Start Monitored Stream    [Arguments]   ${stream_name}
+    Set Client Configuration  timeout=60
+    Start Command   tools.pl -c startstream -n ${stream_name}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Stop Stream    [Arguments]   ${stream_name}  ${stop_type}
+    Set Client Configuration  timeout=60
+    Start Command   tools.pl -c stopstream -n ${stream_name} -t ${stop_type}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Restart Stream  [Arguments]   ${stream_name}  ${type_of_stop}
+    Set Client Configuration  timeout=60
+    ${stream_id}  Tools Get Stream Id  ${stream_name}
+    Start Command   tools.pl -c restartstream -n ${stream_name} -t ${type_of_stop}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Restart Streams  [Arguments]   ${type_of_stop}
+    Set Client Configuration  timeout=60
+    Start Command   tools.pl -c restartstreams -t ${type_of_stop}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Copy Node Data  [Arguments]   ${stream_name}  ${node_name}  ${link_name}  ${dir_name}  ${number_of_files}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}   ${node_name}
+    Start Command   tools.pl -c copydata -n ${stream_name} -o ${node_id} -l ${link_name} -d ${dir_name} -f ${number_of_files}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+Tools Set Diagnostic To Node  [Arguments]   ${stream_name}  ${node_name}  ${diag_level}
+    Set Client Configuration  timeout=60
+    ${node_id}  Tools Get Node Id  ${stream_name}  ${node_name}
+    ${stream_id}  Tools Get Stream Id  ${stream_name}
+    Start Command   tools.pl -c nodediag -n ${stream_name} -o ${node_id} -l ${diag_level}
+    ${result}=  Read Command Output
+    Should Match Regexp  ${result}  successfully
+    #Set Client Configuration  timeout=3
+
+#Documentation  Returns a stream status. Stream name should be double quoted if it contains space in the name.
+Tools Get Stream Status      [Arguments]   ${stream_name}
+    Start Command  tools.pl -c monitorstreams | grep -w ${stream_name} | awk '{print $NF}'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+#Documentation  Returns a node status. Stream name and node name should be double quoted if it contains space in the name.
+Tools Get Node Status      [Arguments]   ${stream_name}  ${node_name}
+    Start Command  tools.pl -c monitorstream -n ${stream_name} | grep -w ${node_name} | awk '{print $NF}'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+Tools Check Node Status Is   [Arguments]   ${stream_name}  ${node_name}  ${wanted_status}
+    ${status}  Tools Get Node Status   ${stream_name}  ${node_name}
+    Should Match Regexp  ${status}   (?i)${wanted_status}
+
+Tools Wait Until Node Is  [Arguments]  ${stream_name}  ${node_name}  ${wanted_status}  ${timeout}
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Tools Check Node Status Is   ${stream_name}  ${node_name}    ${wanted_status}
+
+#Documentation  Get only latest version from stream, removing '-' and ',' char in front. Stream name should be double quoted if it contains space in the name.
+Tools Get Stream Latest Version     [Arguments]  ${stream_name}
+    Start Command   tools.pl -c browsestreams | grep -w ${stream_name} | head -1 | sed -e 's/ (.*)//' | awk '{print $(NF-1)}' | sed -e 's/.*,//g' -e 's/.*-//g'
+    ${result}=  Read Command Output
+    [Return]  ${result}
+
+Setup Groovy File For Node  [Arguments]  ${node_name}  ${stream_name}  ${parameter}  ${testcase}  ${file}  ${robotDataDirectory}
+    Login To Test Host
+    Start And Check Command  mkdir -p ${AUTO_EL_INST_DIR}/SystemTest
+    Start And Check Command  mkdir -p ${AUTO_EL_INST_DIR}/SystemTest/Common_BL
+    Start And Check Command  rm -f ${AUTO_EL_INST_DIR}/SystemTest/Common_BL/${file}
+    Put File  ${ROBOT_PATH}/testcases/online_engine_tests/${testcase}/testdata/${file}  ${AUTO_EL_INST_DIR}/SystemTest/Common_BL/
+    Close Connection
+    Set Node Parameters  ${stream_name}  ${node_name}  ${parameter}  ${AUTO_EL_INST_DIR}/SystemTest/Common_BL/${file}  ${robotDataDirectory}
+
+Check Diagnostics Have No Rows Containing  [Arguments]  ${path}  ${searching_text}  ${filename}=${empty}
+    Start Command   cat ${path}/${filename}*.log | grep "${searching_text}" | wc -l
+    ${command_result}=  Read Command Output
+    Should Match  ${command_result.strip()}  0
+
+Check Diagnostics Have Rows Containing  [Arguments]  ${path}   ${searching_text}  ${expected_count}  ${filename}=${empty}  
+    Start Command   cat ${path}/${filename}*.log | grep "${searching_text}" | wc -l
+    ${command_result}=  Read Command Output
+    Should Match  ${command_result.strip()}  ${expected_count.strip()}
+
+
+Check Stream Log Have No Rows Containing  [Arguments]  ${stream_name}  ${message}
+    Login To Test Host
+    Set Client Configuration  timeout=1 minute
+    File Should Not Contain  ${STREAM_LOG_PATH}/*${stream_name}*/log/*.log  ${message}
+    Close Connection
+
+Check Stream Log Have Rows Containing  [Arguments]  ${stream_name}  ${message}
+    Login To Test Host
+    Set Client Configuration  timeout=1 minute
+        File Should Contain  ${STREAM_LOG_PATH}/*${stream_name}*/log/*.log  ${message}
+    Close Connection
+
+Check Node Config Have Rows Containing  [Arguments]  ${stream_name}  ${node_name}  ${message}
+    Login To Test Host
+    Set Client Configuration  timeout=1 minute
+    Write   cat $TEST_HOME/status/streams/${stream_name}/nodes/${node_name}/control/1/config  | grep ${message} | wc -l
+    ${command_result}=  Read Until Prompt
+    Should Not Start With  ${command_result}  0
+    Close Connection
+
+Clean Env
+    #Take Screenshot  screenshot_after_failure.jpg
+    Close All Browsers
+    Clean Seagull Processes
+
+Change Stream's Library Or Configuration Version Numbers  [Arguments]    ${streamname}  ${library_or_configuration_name}
+    Start Command  ${AUTO_EL_INST_DIR}/SystemTest/change_version_numbers_in_stream.xml.sh ${streamname} ${library_or_configuration_name}
+
+Wait Until Disk Space Size Is   [Arguments]  ${timeout}    ${wanted_disk_size}   ${disk}
+    Login To Test Host
+    Wait Until Keyword Succeeds  ${timeout}   ${CHECK_INTERVAL}    Check If Disk Space Size Is   ${wanted_disk_size}    ${disk}
+    Close Connection
+
+Check If Disk Space Size Is  [Arguments]  ${wanted_disk_size}  ${disk}
+    ${disk_size}  Execute Command  df |grep ${disk} |awk '{print $4}'
+    #${evaluate_result}  Evaluate  ${disk_size} == ${wanted_disk_size}
+    #Should Match Regexp  ${evaluate_result}   True
+    #Should Match Regexp  ${disk_size}  ${wanted_disk_size}
+    Should Match Regexp  ${wanted_disk_size}  ${disk_size}
+
+Start EL
+    Login To Test Host
+    Set Client Configuration  timeout=60
+
+    Write  cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  . ./.profile
+    Read Until Prompt
+
+    Write  ctl_control -fv start
+    Read Until Regexp  (TEST_UI|TEST_ui)
+    Read Until Prompt
+
+    Write  ctl_control -f status
+    ${result}=  Read Until Prompt
+    # Note at this point Lookup Server not not yet be installed/configured
+    Should Contain  ${result}  [TimesTen] Component status RUNNING
+    Should Contain  ${result}  [TEST] Component status RUNNING
+    Should Contain  ${result}  [TEST_ui] Component status RUNNING
+    Close Connection
+
+Stop EL
+    Login To Test Host
+    Set Client Configuration  timeout=60
+
+    Write  cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+
+    Write  . ./.profile
+    Read Until Prompt
+
+    Write  ctl_control -fv stop
+    Read Until Regexp  TimesTen
+    Read Until Prompt
+
+    Write  ctl_control -f status
+    ${result}=  Read Until Prompt
+    # Note at this point Lookup Server might not yet be installed/configured
+    Should Contain  ${result}  [TimesTen] Component status STOPPED
+    Should Contain  ${result}  [TEST] Component status STOPPED
+    Should Contain  ${result}  [TEST_ui] Component status STOPPED
+
+    Close Connection
+
+Calculate File Average  [Arguments]  ${source_file}  ${target_file}  ${extra_divide}=1
+    #1. Count number of lines from source_file
+    #2. Add the source_file line values together
+    #3. Calculate average and push the result in to the target file
+    # Argument ${extra_divide} can be used if the file average needs to further divided
+
+    #1.
+    Write  cat ${source_file} |wc -l
+    ${number_of_lines}=  Read Until Prompt
+    ${match}  ${number_of_lines}=  Should Match Regexp  ${number_of_lines}  (\\d+)
+
+    #2.
+    Write  awk '{s+=$0} END {print s}' ${source_file} > ${target_file}.sum
+    Read Until Prompt
+    Write  echo `cat ${target_file}.sum`
+    ${sum}=  Read Until Prompt
+    ${match}  ${sum}=  Should Match Regexp  ${sum}  (\\d+)
+    Write  rm -f ${target_file}.sum
+
+    #3.
+    Run Keyword If      '${number_of_lines}'=='0'  Log  Writing 0 to ${target_file}  WARN
+    Run Keyword If      '${number_of_lines}'=='0'  Write  echo "0" 1> ${target_file}
+
+    ${average}=  Run Keyword Unless  '${number_of_lines}'=='0'  Evaluate  ${sum}/${number_of_lines}/${extra_divide}
+    #Run Keyword Unless               '${number_of_lines}'=='0'  Log  Writing ${average} to ${target_file}  WARN
+    Run Keyword Unless               '${number_of_lines}'=='0'  Write  echo "${average}" 1> ${target_file}
+
+Check If Command Exit Is Zero
+    Write  echo $?
+    ${command_result}=  Read Until Prompt
+    Should Start With  ${command_result}  0
+
+Get CM Package Folder
+    Log  Get CM Package List and concat with ":"  WARN
+    # Newer tar package directory comes last
+    Start command  cd ${PRI_BASE_DIR} && ls -d $PWD/* | grep ^$PWD/tar_package_c
+    #Start command  cd ${AUTO_EL_INST_DIR}/.. && ls -d -r $PWD/* | grep ^$PWD/tar_package_c
+    ${result}=  Read Command Output
+    ${result}  Replace String  ${result}  \n   :
+    [Return]   ${result}
+
+Get CM Version
+	Start Command  cd $TEST_HOME/internal && grep VERSION_TEXT el_version_info | grep -v Charge | cut -f1 -d\=
+	#Start Command  cd $TEST_HOME/internal && versiontxt=$(grep VERSION_TEXT el_version_info | grep -v Charge | cut -f1 -d'=') | echo $versiontxt
+	#&& echo ${versiontxt%%=*}
+	#Start Command  cd $TEST_HOME/internal && grep VERSION_TEXT el_version_info | grep -v Charge | awk '{print substr($0,0,15)}'
+    ${CM_VERSION_LABLE}=  Read Command Output
+	Run Keyword If  '${CM_VERSION_LABLE}'=='CM_VERSION_TEXT'  Start Command  cd $TEST_HOME/internal && grep VERSION_TEXT el_version_info | grep -v Charge | awk '{ print $3 }' | tr -d '.'
+	Run Keyword If  '${CM_VERSION_LABLE}'=='EL_VERSION_TEXT'  Start Command  cd $TEST_HOME/internal && grep VERSION_TEXT el_version_info | grep -v Charge | awk '{ print $2 }' | tr -d '.'
+    ${CM_VERSION}=  Read Command Output
+    ## Following line to append zero if the lenght is less than 3
+    ${VERSION_LENGTH}  Get Length  ${CM_VERSION.strip()}
+    ${CM_VERSION}=  Set Variable If  ${VERSION_LENGTH}==2  ${CM_VERSION}0   ${CM_VERSION}
+    [Return]  ${CM_VERSION}
+
+
+Cleanup Smoke_stream data
+	Write  ttdestroy Smoke6DS
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/Smoke_stream/nodes/*/input/*/*
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/Smoke_stream/nodes/*/output/*/*
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/Smoke_stream/nodes/*/storage/*/*
+    Read Until Prompt
+
+Cleanup Stream data  [Arguments]  ${stream_name}
+	Write  rm -f $TEST_HOME/status/streams/${stream_name}/nodes/*/input/*/*
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/${stream_name}/nodes/*/output/*/*
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/${stream_name}/nodes/*/storage/*/*
+    Read Until Prompt
+    Write  rm -f $TEST_HOME/status/streams/${stream_name}/nodes/*/discarded/*
+    Read Until Prompt
+    Write  rm -rf $TEST_HOME/status/streams/${stream_name}/nodes/*/rejected/*/*
+    Read Until Prompt

@@ -1,0 +1,10 @@
+---
+# handlers file for TEST-httpd
+
+- name: "Restart firewall service"
+  systemd:
+    name: 'firewalld'
+    state: 'restarted'
+  become: true
+  become_method: sudo
+  listen: "Restart firewall service"

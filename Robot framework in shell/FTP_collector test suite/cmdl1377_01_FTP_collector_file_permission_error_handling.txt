@@ -1,0 +1,193 @@
+*** Settings ***
+
+Documentation  Test for FTP Collector File Permission Error Handling
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+
+Default Tags  Regression  Risk_High
+
+Suite Setup			Prepare Enviroment
+Suite Teardown		Cleanup Testing Environment
+# Suite Teardown       SeleniumLibrary.Close All Browsers
+
+*** Variables ***
+${SV_LATEST_STREAM_VERSION_LINK}  xpath=//tr[2]/td[1]/a[text()='View']
+@{collector_list}    Col1   Col2   Col3   Col4   Col5   Col6
+@{collector_dir}    col1   col2   col3   col4   col5   col6
+${robotDataDirectory}   	cmdl_1377_01_ftp_collector
+${robotDataDirectory_temp}	cmdl_1377_01_ftp_collector_temp
+
+*** Keywords ***
+Prepare Enviroment        
+
+    el_host.Login To Test Host
+    Write   mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}
+    Read Until Prompt    
+    el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/Collector_stream.tar  ${SMOKE_STREAM_DIR}/
+    el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/scripts/hide_java_collector_app.sh    ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}/
+    el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/scripts/unhide_java_collector_app.sh    ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}/   
+    Set Client Configuration  timeout=5 minutes
+    
+    # Move Java-based collector & distributor APP to a temporary directory
+    Log  Hiding Java-based EL_APP_FTP packages  WARN
+    Write    cd ${NODE_PACKAGES_DIR} && sh /${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}/hide_java_collector_app.sh && cd -
+    Read Until Prompt
+
+        
+    FOR    ${directory}    IN    @{collector_dir}
+       Write   rm -rf ${AUTO_EL_INST_DIR}/${directory}
+       Read Until Prompt
+    END
+	
+    ## Creating input directory
+    FOR    ${directory}    IN    @{collector_dir}
+       Write   mkdir ${AUTO_EL_INST_DIR}/${directory}
+       Read Until Prompt
+    END
+	
+    Write  mkdir ${AUTO_EL_INST_DIR}/commonDir ${AUTO_EL_INST_DIR}/movedDir
+    Read Until Prompt
+    
+    Write   cd ${SMOKE_STREAM_DIR}
+    Read Until Prompt 
+    
+    ## Cleaning up existing directories
+    Write   rm -rf collector_packages collector_config
+    Read Until Prompt
+    
+    Write   tar xvf Collector_stream.tar
+    Read Until Prompt
+
+    Write  cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  cd ${SMOKE_STREAM_DIR}/collector_config
+    Read Until Prompt
+    
+    Write  ./install_collectors_stream.ksh -v ${NODE_PACKAGES_DIR} -h ${AUTO_EL_INST_NAME} -u ${GTAF_SSH_USER} -p ${GTAF_SSH_PASS}    
+    Wait Until Keyword Succeeds  180   5   el.Wait Until Stream Installation Complete   Done
+
+
+Cleanup Testing Environment
+    Log  Stop and delete Collectors Stream  WARN
+    el.Stop Stream   Collector_stream
+    el.Wait Until Stream Is  Collector_stream  5 minute  Stopped
+    el.Hide Stream   Collector_stream  ${robotDataDirectory}
+        el.Delete Stream   Collector_stream  ${robotDataDirectory}
+    
+    Log  Cleanup deleted stream  WARN
+    Write  cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  tools.pl -c cleanupdeletedstreams
+    Read Until Prompt
+
+    Log   Acknowledge Notifications  WARN
+    Acknowledge Messages  ${robotDataDirectory}
+
+    # Unhide Java-based collector & distributor APP from a temporary directory
+    Log  Unhiding Java-based EL_APP_FTP packages  WARN
+    Write   cd ${NODE_PACKAGES_DIR} && sh ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}/unhide_java_collector_app.sh && cd -; done
+    Read Until Prompt
+    
+    Write  rm -rf ${AUTO_EL_INST_DIR}/robot_automation/${robotDataDirectory_temp}
+    Read Until Prompt
+    Write  rm -rf ${SMOKE_STREAM_DIR}/collector_*
+    Read Until Prompt
+    Write  rm -rf ${SMOKE_STREAM_DIR}/Collector_stream.tar
+    Read Until Prompt
+    Write  rm -rf ${AUTO_EL_INST_DIR}/col1 ${AUTO_EL_INST_DIR}/col2 ${AUTO_EL_INST_DIR}/col3 ${AUTO_EL_INST_DIR}/col4 ${AUTO_EL_INST_DIR}/col5 ${AUTO_EL_INST_DIR}/col6 ${AUTO_EL_INST_DIR}/commonDir ${AUTO_EL_INST_DIR}/movedDir
+    Read Until Prompt
+    Close Connection
+
+*** Test Cases ***
+
+Pump In Input File
+    el.Start Latest Stream   Collector_stream
+    el.Wait Until Stream Is  Collector_stream  5 minute  Running
+    el.Stop Stream   Collector_stream
+    el.Wait Until Stream Is  Collector_stream  5 minute  Stopped
+    
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col1/TT1.txt
+    Read Until Prompt 
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col2/TT2.txt
+    Read Until Prompt 
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col3/TT3.txt
+    Read Until Prompt
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col4/TT4.txt
+    Read Until Prompt 
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col5/TT5.txt
+    Read Until Prompt 
+    Write  cp ${SMOKE_STREAM_DIR}/data/sample/TT100XXX.txt ${AUTO_EL_INST_DIR}/col6/TT6.txt
+    Read Until Prompt 
+
+Change Permission to 550
+    FOR    ${directory}    IN    @{collector_dir}
+       Write   chmod 550 ${AUTO_EL_INST_DIR}/${directory}
+       Read Until Prompt
+	END
+	
+Verify Node Status, Output Directory, Temp Directory, Source Directory        
+	${stream_latest_version}=     Tools Get Stream Latest Version     Collector_stream
+	Write   tools.pl -c startstream -n Collector_stream -v ${stream_latest_version}
+	Read Until Regexp   Command successfully executed    
+ 	Read Until Prompt
+    
+    FOR    ${collector}    IN    @{collector_list}
+       #check node status
+       el.Wait Until Node Is   Collector_stream  ${collector}  5 minute  Failed
+       #check node output directory
+       Start Command  cd ${AUTO_EL_INST_DIR}/base/status/streams/Collector_stream/nodes/${collector}/output/COLLECTED_0_* && ls | wc -l
+       ${result}=  Read Command Output       
+       ${match}=  Run Keyword  Should Match  ${result}  *0*
+       #check node temp directory
+       Start Command  cd ${AUTO_EL_INST_DIR}/base/status/streams/Collector_stream/nodes/${collector}/temp/1 && ls | wc -l      
+       ${result}=  Read Command Output       
+       ${match}=  Run Keyword  Should Match  ${result}  *0*
+    END
+    
+    #check source directory
+    FOR    ${directory}    IN    @{collector_dir}
+       Start Command  cd ${AUTO_EL_INST_DIR}/${directory} && ls | wc -l 
+       ${result}=  Read Command Output       
+       ${match}=  Run Keyword  Should Match  ${result}  *1*
+	END
+	
+    #check commonDir directory
+    Start Command  cd ${AUTO_EL_INST_DIR}/commonDir && ls | wc -l 
+    ${result}=  Read Command Output       
+        ${match}=  Run Keyword  Should Match  ${result}  *0*
+    
+    #check movedDir directory
+    Start Command  cd ${AUTO_EL_INST_DIR}/movedDir && ls | wc -l
+    ${result}=  Read Command Output       
+    ${match}=  Run Keyword  Should Match  ${result}  *0*
+    
+
+Change Permission to 750
+    FOR    ${directory}    IN    @{collector_dir}
+       Write   chmod 750 ${AUTO_EL_INST_DIR}/${directory}
+       Read Until Prompt
+	END
+	
+Resume Collector Stream and Verify Node Status, Output Directory, Source Directory    
+    el.Resume Stream  Collector_stream
+    el.Wait Until Stream Is  Collector_stream  5 minute  Running
+     
+    #check source directory
+    FOR    ${directory}    IN    @{collector_dir}
+       Start Command  cd ${AUTO_EL_INST_DIR}/${directory} && ls | wc -l
+       ${result}=  Read Command Output       
+       ${match}=  Run Keyword  Should Match  ${result}  *0*
+	END
+	
+    #check commonDir directory
+    Start Command  cd ${AUTO_EL_INST_DIR}/commonDir && ls | wc -l
+    ${result}=  Read Command Output       
+        ${match}=  Run Keyword  Should Match  ${result}  *6*
+    
+    #check movedDir directory
+    Start Command  cd ${AUTO_EL_INST_DIR}/movedDir && ls | wc -l
+    ${result}=  Read Command Output       
+        ${match}=  Run Keyword  Should Match  ${result}  *3*
+

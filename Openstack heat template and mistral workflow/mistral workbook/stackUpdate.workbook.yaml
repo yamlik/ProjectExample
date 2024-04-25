@@ -1,0 +1,101 @@
+---
+version: '2.0'
+name: stack_update
+workflows:
+
+########################################
+################# MAIN #################
+########################################
+  stack_update_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the ha_starting flow.") %>
+    tasks:
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+
+  stack_update_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the stack_update_processing flow.") %>
+    tasks:
+
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - stack_update
+
+      stack_update:
+        workflow: cbam_main_action
+        input:
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          expectedNfvModel: <% $.vnfInventory.nfvModel %>
+          expectedModel: <% $.expectedModel %>
+          operationType: <% $.operationType %>
+          originalResourceModel: <% $.originalResourceModel %>
+        publish:
+          vnfInventory: <% task(stack_update).result.vnfInventory %>
+        publish-on-error:
+          vnfInventory: <% task(stack_update).result.vnfInventory %>
+          error_message: <% task(stack_update).result.error_message.error_message %>
+        on-success:
+          - finalize
+
+      finalize:
+        action: std.javascript
+        join: all
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize).result %>

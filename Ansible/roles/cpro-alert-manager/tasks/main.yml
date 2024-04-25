@@ -1,0 +1,48 @@
+---
+- name: "Replace alertmanager.yml with configured webhook ip & port"
+  lineinfile:
+    path: /etc/alertmanager/alertmanager.yml
+    regexp: "^  - url: 'http"
+    line: "  - url: 'http://{{ webhook4fluentd_listening_ip }}:{{ webhook4fluentd_listening_port }}'"
+  become: true
+  become_method: sudo
+
+# Enable alert manager UI port  
+- name: "Allow Alert Manager UI port"
+  firewalld:
+    zone: public
+    port: "{{ alert_manager_http_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: yes        
+  become: yes
+  become_method: sudo
+
+- name: "Reload firewalld service"
+  systemd:
+    name: firewalld
+    state: reloaded
+  become: yes
+  become_method: sudo 
+
+- name: "Configure alertmanager.service from template"
+  template:
+    src: alertmanager.service.j2
+    dest: "/etc/systemd/system/alertmanager.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+
+- name: "Enable and start alertmanager service"
+  systemd:
+    name: alertmanager
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  become: yes
+  become_method: sudo
+
+...

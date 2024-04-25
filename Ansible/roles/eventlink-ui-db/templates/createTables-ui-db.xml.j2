@@ -1,0 +1,475 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="TEST (generated)" id="1503997416712-20">
+        <createSequence sequenceName="gui_audit_trail_seq"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-21">
+        <createSequence sequenceName="gui_task_queue_seq"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-22">
+        <createSequence sequenceName="gui_users_used_passwords_seq"/>
+    </changeSet>
+
+    <changeSet author="TEST (generated)" id="1508764895676-23">
+        <createSequence sequenceName="el_sticky_noteid_seq"/>
+    </changeSet>
+
+<!-- Not sure if this tables are needed to be consulted with the team. The block starts here  -->	
+    <changeSet author="TEST (generated)" id="1503997416712-96">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="el_sticky_notes">
+            <column name="noteid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="text" type="TEXT"/>
+            <column name="modificationusername" type="VARCHAR(255)"/>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE"/>
+            <column name="creationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE"/>
+            <column name="creationusername" type="VARCHAR(255)"/>
+            <column name="objectid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="objecttype" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="objectname" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-98">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="el_stream_group_membership">
+            <column name="membershipid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="groupid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="streamid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-99">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="el_stream_groups">
+            <column name="groupid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="modificationtime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="root (generated)" id="1504007060492-117">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="el_work_stream_grp_membership">
+            <column name="membershipid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="groupid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="streamid" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>    
+<!-- End of the block  -->	
+	
+	
+    <changeSet author="TEST (generated)" id="1503997416712-121">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_audit_trail">
+            <column autoIncrement="true" name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="gui_audit_trail_pk"/>
+            </column>
+            <column name="userid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moduleid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="classid" type="VARCHAR(32)"/>
+            <column name="typeid" type="VARCHAR(32)"/>
+            <column name="messageid" type="VARCHAR(32)"/>
+            <column defaultValueComputed="('now'::text)::timestamp(0) without time zone" name="recorded" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-122">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_module_config">
+            <column name="moduleid" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-123">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_module_groups">
+            <column name="groupid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moduleid" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="NULL::character varying" name="external_link" type="VARCHAR(256)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-124">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_module_user_access">
+            <column name="userid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moduleid" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(2048)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-125">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_module_user_prefs">
+            <column name="userid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moduleid" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-126">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_modules">
+            <column name="id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-127">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_sessions">
+            <column name="sess_file" type="VARCHAR(80)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expire_time" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(32)"/>
+            <column name="sess_status" type="SMALLINT"/>
+            <column name="login_time" type="BIGINT"/>
+            <column name="logout_time" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-128">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_sessions_hist">
+            <column name="sess_file" type="VARCHAR(80)"/>
+            <column name="user_id" type="VARCHAR(32)"/>
+            <column name="sess_status" type="SMALLINT"/>
+            <column name="login_time" type="BIGINT"/>
+            <column name="logout_time" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-129">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_task_queue">
+            <column autoIncrement="true" name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="gui_task_queue_pk"/>
+            </column>
+            <column name="userid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sessionid" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="objectname" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="objecttype" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recorded" type="TIMESTAMP(6) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(15)"/>
+            <column name="filename" type="VARCHAR(100)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-130">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_user_session_setting">
+            <column name="id" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_session_lifetime" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_session_allow" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-131">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_users">
+            <column name="id" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="passwd" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="locked" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(128)"/>
+            <column name="phone" type="VARCHAR(64)"/>
+            <column name="passwd_expires" type="TIMESTAMP(22) WITHOUT TIME ZONE"/>
+            <column defaultValueNumeric="0" name="failed_logins" type="SMALLINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-132">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="gui_users_used_passwords">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="userid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="passwd" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="changetime" type="TIMESTAMP(22) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-133">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="lookup_companies">
+            <column name="companyid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="displayorder" type="INT"/>
+            <column name="description" type="VARCHAR(128)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-134">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="lookup_fields">
+            <column name="companyid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="groupid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="screenid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="columnname" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="width" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="length" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="displayorder" type="INT"/>
+            <column name="description" type="VARCHAR(128)"/>
+            <column defaultValue="string" name="type" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="typeattributes" type="VARCHAR(512)"/>
+            <column defaultValue="RW" name="changeability" type="CHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="obligatorytype" type="CHAR(1)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-135">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="lookup_groups">
+            <column name="companyid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="groupid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="displayorder" type="INT"/>
+            <column name="description" type="VARCHAR(128)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-136">
+        <createTable tablespace="{{ db_el_tablespace }}" tableName="lookup_screens">
+            <column name="companyid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="groupid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="screenid" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tablename" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="displayorder" type="INT"/>
+            <column name="description" type="VARCHAR(128)"/>
+        </createTable>
+    </changeSet>	
+
+    <changeSet author="TEST (generated)" id="1503997416712-148">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="moduleid, parameter" constraintName="gui_module_config_pk" tableName="gui_module_config"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-149">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="groupid, moduleid" constraintName="gui_module_groups_pk" tableName="gui_module_groups"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-150">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="userid, moduleid, parameter" constraintName="gui_module_user_access_pk" tableName="gui_module_user_access"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-151">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="userid, moduleid, parameter" constraintName="gui_module_user_prefs_pk" tableName="gui_module_user_prefs"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-152">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="id" constraintName="gui_modules_pk" tableName="gui_modules"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-153">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="sess_file" constraintName="gui_sessions_pk" tableName="gui_sessions"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-154">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="id" constraintName="gui_user_sessions_set_pk" tableName="gui_user_session_setting"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-155">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="id" constraintName="gui_users_pk" tableName="gui_users"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-156">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="companyid" constraintName="lookup_companies_pk" tableName="lookup_companies"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-157">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="companyid, groupid, screenid, columnname" constraintName="lookup_fields_pk" tableName="lookup_fields"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-158">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="companyid, groupid" constraintName="lookup_groups_pk" tableName="lookup_groups"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-159">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="companyid, groupid, screenid" constraintName="lookup_screens_pk" tableName="lookup_screens"/>
+    </changeSet>
+    
+	<!-- Not sure if this tables are needed to be consulted with the team. The block starts here  -->	
+    <changeSet author="TEST (generated)" id="1503997416712-228">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="noteid" constraintName="pk_el_sticky_notes" tableName="el_sticky_notes"/>
+    </changeSet>
+	    <changeSet author="TEST (generated)" id="1503997416712-230">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="membershipid" constraintName="pk_el_stream_group_membership" tableName="el_stream_group_membership"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-231">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="groupid" constraintName="pk_el_stream_groups" tableName="el_stream_groups"/>
+    </changeSet>
+		
+    <changeSet author="TEST (generated)" id="1503997416712-249">
+        <addPrimaryKey tablespace="{{ db_el_tablespace_index }}" columnNames="membershipid" constraintName="pk_el_work_stream_grp_member" tableName="el_work_stream_grp_membership"/>
+    </changeSet>	
+    <changeSet author="TEST (generated)" id="1503997416712-263">
+        <addUniqueConstraint columnNames="objectid, objecttype" constraintName="uq_el_sticky_notes" tableName="el_sticky_notes"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-349">
+        <addForeignKeyConstraint baseColumnNames="groupid" baseTableName="el_stream_group_membership" constraintName="fk1_el_stream_group_membership" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="groupid" referencedTableName="el_stream_groups"/>
+    </changeSet>	
+	<changeSet author="TEST (generated)" id="1503997416712-362">
+        <addForeignKeyConstraint baseColumnNames="groupid" baseTableName="el_work_stream_grp_membership" constraintName="fk1_el_work_stream_grp_member" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="groupid" referencedTableName="el_stream_groups"/>
+    </changeSet>
+	<!-- Block ends here  -->
+	
+    <changeSet author="TEST (generated)" id="1503997416712-264">
+        <createIndex tablespace="{{ db_el_tablespace_index }}" indexName="gui_sessions_hist_sessid" tableName="gui_sessions_hist">
+            <column name="sess_file"/>
+        </createIndex>
+    </changeSet>	
+    <changeSet author="TEST (generated)" id="1503997416712-381">
+        <addForeignKeyConstraint baseColumnNames="moduleid" baseTableName="gui_module_config" constraintName="gui_modconfig_moduleid_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="gui_modules"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-382">
+        <addForeignKeyConstraint baseColumnNames="moduleid" baseTableName="gui_module_groups" constraintName="gui_module_groups_moduleid_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="gui_modules"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-383">
+        <addForeignKeyConstraint baseColumnNames="moduleid" baseTableName="gui_module_user_access" constraintName="gui_moduleaccess_moduleid_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="gui_modules"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-384">
+        <addForeignKeyConstraint baseColumnNames="userid" baseTableName="gui_module_user_access" constraintName="gui_moduleaccess_userid_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="gui_users"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-385">
+        <addForeignKeyConstraint baseColumnNames="moduleid" baseTableName="gui_module_user_prefs" constraintName="gui_modusrprefs_moduleid_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="gui_modules"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-386">
+        <addForeignKeyConstraint baseColumnNames="companyid,groupid,screenid" baseTableName="lookup_fields" constraintName="lookup_fields_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="companyid,groupid,screenid" referencedTableName="lookup_screens"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-387">
+        <addForeignKeyConstraint baseColumnNames="companyid" baseTableName="lookup_groups" constraintName="lookup_groups_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="companyid" referencedTableName="lookup_companies"/>
+    </changeSet>
+    <changeSet author="TEST (generated)" id="1503997416712-388">
+        <addForeignKeyConstraint baseColumnNames="companyid,groupid" baseTableName="lookup_screens" constraintName="lookup_screens_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="companyid,groupid" referencedTableName="lookup_groups"/>
+    </changeSet>
+	
+    <changeSet author="TEST (generated)" id="1503997416712-389">
+        <createView fullDefinition="false" viewName="el_v_nemo_all_nodes">SELECT CASE WHEN (s.activeversionid = 0) THEN 'N'::text ELSE 'Y'::text END AS monitored, sg.groupid, sg.name AS groupname, s.streamid, n.streamversionid, s.name AS streamname, n.nodeid, n.nodeversionid, n.name AS nodename, CASE WHEN (n.nodetype ~~ 'C_______________'::text) THEN 'C'::text ELSE 'D'::text END AS nodetype, COALESCE(nl.status, 'UNKNOWN'::character varying) AS nodestatus, pxsd.filecontent AS paramxsd, pxml.filecontent AS paramxml, txsd.filecontent AS transferxsd, COALESCE(pfile.paramfile, txml.filecontent) AS transferxml, cxml.filecontent AS customparamxml, sxml.filecontent AS transferxsl FROM ((((((((((((el_nodes n JOIN el_stream_versions sv ON ((sv.streamversionid = n.streamversionid))) JOIN el_v_process_streams s ON ((s.streamid = sv.streamid))) LEFT JOIN el_node_log nl ON ((nl.nodeid = n.nodeid))) LEFT JOIN el_stream_group_membership sgm ON ((sgm.streamid = s.streamid))) LEFT JOIN el_stream_groups sg ON ((sg.groupid = sgm.groupid))) LEFT JOIN el_application_files pxsd ON (((pxsd.appversionid = n.appversionid) AND ((pxsd.filename)::text = 'paramdescription.xsd'::text)))) LEFT JOIN el_application_files pxml ON (((pxml.appversionid = n.appversionid) AND ((pxml.filename)::text = 'paramdescription.xml'::text)))) LEFT JOIN el_application_files txsd ON (((txsd.appversionid = n.appversionid) AND ((txsd.filename)::text = 'transferconfigurations.xsd'::text)))) LEFT JOIN el_configuration_files txml ON (((txml.cfgversionid = n.cfgversionid) AND ((txml.filename)::text = 'transferconfigurations.xml'::text)))) LEFT JOIN el_configuration_files cxml ON (((cxml.cfgversionid = n.cfgversionid) AND ((cxml.filename)::text = 'customdescription.xml'::text)))) LEFT JOIN el_application_files sxml ON (((sxml.appversionid = n.appversionid) AND ((sxml.filename)::text = 'transferconfigurations.xsl'::text)))) LEFT JOIN el_node_param_file pfile ON ((pfile.nodeid = n.nodeid))) WHERE ((((n.nodetype ~~ 'C_______________'::text) OR (n.nodetype ~~ '____D___________'::text)) AND (n.nodeflags ~~ '%M%'::text)) AND ((n.streamversionid = s.activeversionid) OR ((s.activeversionid = 0) AND (n.streamversionid = s.latestversionid)))) ORDER BY s.streamid, n.nodeversionid DESC;</createView>
+    </changeSet>
+
+    <changeSet author="TEST (generated)" id="1503997416712-390-ELHKI-6367">
+            <createView fullDefinition="false" replaceIfExists="true" viewName="el_v_nemo_all_nodes">SELECT CASE WHEN s.activeversionid = 0 THEN 'N'::text             ELSE 'Y'::text         END AS monitored,      sg.groupid, sg.name AS groupname, s.streamid, n.streamversionid,      s.name AS streamname, n.nodeid, n.nodeversionid, n.name AS nodename,          CASE             WHEN n.nodetype ~~ 'C_______________'::text THEN 'C'::text             ELSE 'D'::text         END AS nodetype,      COALESCE(nl.status, 'UNKNOWN'::character varying) AS nodestatus,      pxsd.filecontent AS paramxsd, pxml.filecontent AS paramxml,      txsd.filecontent AS transferxsd,      COALESCE(pfile.paramfile, txml.filecontent) AS transferxml,      cxml.filecontent AS customparamxml, sxml.filecontent AS transferxsl    FROM el_nodes n    JOIN el_stream_versions sv ON sv.streamversionid = n.streamversionid    JOIN el_v_process_streams s ON s.streamid = sv.streamid    LEFT JOIN el_node_log nl ON nl.nodeid = n.nodeid    LEFT JOIN el_stream_group_membership sgm ON sgm.streamid = s.streamid    LEFT JOIN el_stream_groups sg ON sg.groupid = sgm.groupid    LEFT JOIN el_application_files pxsd ON pxsd.appversionid = n.appversionid AND pxsd.filename::text = 'paramdescription.xsd'::text    LEFT JOIN el_application_files pxml ON pxml.appversionid = n.appversionid AND pxml.filename::text = 'paramdescription.xml'::text    LEFT JOIN el_application_files txsd ON txsd.appversionid = n.appversionid AND txsd.filename::text = 'transferconfigurations.xsd'::text    LEFT JOIN el_configuration_files txml ON txml.cfgversionid = n.cfgversionid AND txml.filename::text = 'transferconfigurations.xml'::text    LEFT JOIN el_configuration_files cxml ON cxml.cfgversionid = n.cfgversionid AND cxml.filename::text = 'customdescription.xml'::text    LEFT JOIN el_application_files sxml ON sxml.appversionid = n.appversionid AND sxml.filename::text = 'transferconfigurations.xsl'::text    LEFT JOIN el_node_param_file pfile ON pfile.nodeid = n.nodeid AND pfile.nodeversionid = n.nodeversionid   WHERE (n.nodetype ~~ 'C_______________'::text OR n.nodetype ~~ '____D___________'::text) AND n.nodeflags ~~ '%M%'::text AND (n.streamversionid = s.activeversionid OR s.activeversionid = 0 AND n.streamversionid = s.latestversionid)   ORDER BY s.streamid, n.nodeversionid DESC;</createView>
+        </changeSet>
+	
+    <!-- Next changest will insert the data into the already created tables -->
+    <changeSet author="TEST (generated)" id="1503997416712-390-{{ random_number.stdout }}">
+            <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+                  <sqlCheck expectedResult="0">SELECT COUNT(moduleid) FROM gui_module_config WHERE moduleid='TEST' AND parameter='db_id'</sqlCheck>
+            </preConditions>
+            <sqlFile endDelimiter="\nGO" path="./insert_gui_modules_config.sql" relativeToChangelogFile="true"/>
+    </changeSet>
+    
+    <changeSet author="TEST (generated)" id="1503997416712-391-{{ random_number.stdout }}">
+        <preConditions onFail="WARN">
+              <sqlCheck expectedResult="1">SELECT COUNT(moduleid) FROM gui_module_config WHERE moduleid='TEST' AND parameter='db_id'</sqlCheck>
+        </preConditions>
+        <sqlFile endDelimiter="\nGO" path="./update_gui_modules_config.sql" relativeToChangelogFile="true"/>
+    </changeSet>
+	
+</databaseChangeLog>

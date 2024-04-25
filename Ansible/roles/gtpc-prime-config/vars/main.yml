@@ -1,0 +1,22 @@
+---
+# Collector specific values - to support multiple GTP Prime collectors in a single processing host
+gtp_prime_collector:
+  service_name: "{{ gtp_prime_service_name }}{{ collector_index }}"
+  base_directory: "{{ gtp_prime_install_directory }}/{{ gtp_prime_service_name }}{{ collector_index }}"
+  ipv4_address: "{{ gtp_prime_collectorIp4Address }}"
+  ipv6_address: "{{ gtp_prime_collectorIp6Address }}"
+  port: "{{ gtp_prime_collectorPort|int + collector_index|int }}"
+  name: "gtpc-v4-{{ gtp_prime_collectorIp4Address }}-v6-{{ gtp_prime_collectorIp6Address }}-port-{{ gtp_prime_collectorPort|int + collector_index|int }}"
+#  target_gsn_dir: "\"{{ gtp_prime_install_directory }}{{ collector_index }}\""
+  target_gsn_dir: "null"
+#  target_download_dir: "\"{{ gtp_prime_install_directory }}{{ collector_index }}/download\""
+  target_download_dir: "null"
+  target_throughput_log_dir: "\"{{ gtp_prime_throughput_log_dir }}\""
+  gtp_signalling_port: "{{ gtp_prime_collectorPort|int + collector_index|int }}"
+  gsn_list: "{{ gtp_prime_gsnList }}"
+  gtp_collector_list: "{{ gtp_prime_gtpCollectorList }}"
+
+gtp_prime_maxNumberOfGsn: "{{ vnf_context_data.stack_params.cbam.extensions.gtp_prime_max_gsn }}"
+gtp_prime_collector_instance: "{{ vnf_context_data.stack_params.cbam.extensions.gtp_prime_instance }}"
+gtp_prime_collectorPort: "{{ vnf_context_data.stack_params.cbam.extensions.gtp_prime_min_port }}"
+...

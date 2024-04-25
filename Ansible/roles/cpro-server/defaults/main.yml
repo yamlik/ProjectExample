@@ -1,0 +1,15 @@
+---
+
+# allow external access to this component ports.
+allow_external_access: False
+
+app_metrics_scrape_interval: 900s
+app_metrics_scrape_timeout: 15s
+system_metrics_scrape_interval: 60s
+system_metrics_scrape_timeout: 15s
+
+prometheus_storage_retention_time: 1d
+
+prometheus_storage_path: /prometheus
+prometheus_cert_dir: /opt/TEST/prometheus/tls
+...

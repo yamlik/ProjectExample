@@ -1,0 +1,27 @@
+---
+- name: Verify postgresql group has two hosts
+  fail:
+    msg: postgresql group must contain exactly two hosts
+  when: groups['vdu-db']|length != 2
+
+# Set up keepalived plugin
+- name:
+  file:
+    name: /opt/vrrp
+    state: directory
+
+- name: Copy db-failover script
+  template:
+    src: db-failover.py.j2
+    owner: root
+    group: root
+    dest: /opt/vrrp/db-failover.py
+    mode: 0700
+
+- name: Copy HA plugins.json
+  copy:
+    src: plugins.json
+    owner: root
+    group: root
+    dest: /etc/ha/plugins.json
+    mode: 0700

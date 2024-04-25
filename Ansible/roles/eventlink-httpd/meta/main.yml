@@ -1,0 +1,17 @@
+galaxy_info:
+  author: TEST Corporation
+  description: TEST httpd Ansible role
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags: []
+
+dependencies: []

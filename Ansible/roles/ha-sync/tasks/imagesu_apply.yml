@@ -1,0 +1,4 @@
+- name: restore files from backup
+  include: ha-sync/restore.yml
+
+- include: ha-sync/scaleout.yml

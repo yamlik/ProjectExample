@@ -1,0 +1,77 @@
+---
+- name: Generate SSL certificate
+  shell: openssl genrsa -out {{product_install_dir_TEST_ui}}/devtool.key 2048
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+
+- name: Generate SSL certificate
+  shell: echo -e '\n\n\nTEST\n\n\n\n\n\n' | openssl req -new -key {{product_install_dir_TEST_ui}}/devtool.key -out {{product_install_dir_TEST_ui}}/devtool.csr
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  
+- name: Generate SSL certificate
+  shell: openssl x509 -req -days 3650 -in {{product_install_dir_TEST_ui}}/devtool.csr -signkey {{product_install_dir_TEST_ui}}/devtool.key -out {{product_install_dir_TEST_ui}}/devtool.crt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+
+- name: Generate SSL certificate
+  shell: openssl pkcs12 -export -in devtool.crt -inkey devtool.key -out devtool.p12 -name devtool -CAfile ca.crt -caname root -password pass:changeit
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  
+- name: Create and import into keystore
+  shell: keytool -importkeystore -deststorepass changeit -destkeypass changeit -destkeystore devtool.keystore -srckeystore devtool.p12 -srcstoretype PKCS12 -srcstorepass changeit -alias devtool -noprompt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  
+# tasks file for TEST-ui
+- name: "Replace tomcat server.xml."
+  template:
+    src: devtool-server.xml.j2
+    dest: "{{ server_xml_file_location }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644
+  notify: "Restart devtool tomcat service"
+
+- name: Obtain auth token for admin cli
+  shell: expect -c "set echo \"-noecho\"; set timeout 20s; spawn -noecho /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8665/auth --realm master --user admin --password {{ kc_admin_password }}; expect timeout { exit 1 } eof { exit 0 }"
+  retries: 3
+  delay: 1
+  register: result
+  until: result.rc == 0
+  become: true
+  become_method: sudo
+
+
+- name: Get 'devtool' client id from Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh get clients -r TEST -q clientId=devtool -c --format csv --noquotes -F id
+  become: true
+  become_method: sudo
+  register: client_id
+  failed_when: client_id.stdout == ""
+
+
+- name: Export 'devtool' client info from Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh get clients/{{ client_id.stdout }} -r TEST > /tmp/devtool_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Change 'http' to 'https'
+  shell: sed -i s/http:/https:/g /tmp/devtool_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Update 'devtool' client info in Keycloak
+  shell: sh /opt/keycloak/bin/kcadm.sh update clients/{{ client_id.stdout }} -r TEST -f /tmp/devtool_client.json
+  become: true
+  become_method: sudo
+
+
+- name: Remove the auth token
+  shell: rm /root/.keycloak/kcadm.config
+  become: true
+  become_method: sudo
+

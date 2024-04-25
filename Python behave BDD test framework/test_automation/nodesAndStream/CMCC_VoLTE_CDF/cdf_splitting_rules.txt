@@ -1,0 +1,16 @@
+# send records from host "ibcf..." to link VALID_IBCF;
+# note: ">>" means "starts with"
+#(Origin-Host >> "ibcf") => pass:"VALID_IBCF"
+
+# send records from host "tas..." to link VALID_TAS;
+# note: ">>" means "starts with"
+#(Origin-Host >> "tas") => pass:"VALID_TAS"
+
+# send IBCF records to link VALID_IBCF
+(Service-Information.IMS-Information.Node-Functionality == "7") => pass:"VALID_IBCF"
+
+# send TAS records to link VALID_TAS
+(Service-Information.IMS-Information.Node-Functionality == "6") => pass:"VALID_TAS"
+
+# send all remaining records to link VALID_ALL
+default_action => pass:"VALID_ALL"

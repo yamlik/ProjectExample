@@ -1,0 +1,2 @@
+- name: restore files
+  script: restore.py

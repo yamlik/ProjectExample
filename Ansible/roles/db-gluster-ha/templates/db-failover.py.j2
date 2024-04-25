@@ -1,0 +1,138 @@
+#!/usr/bin/python
+
+import os
+import sys
+import time
+import thread
+import os.path
+import argparse
+from os import listdir
+from shutil import copy2
+from datetime import datetime
+from subprocess import Popen, PIPE
+from os.path import isfile, join
+
+NOTIFY='notify'
+CHECK='check'
+
+OK = 1
+FAIL = 2
+TIMEOUT = 3
+el_ha_cmdb = '/opt/TEST/TEST/base/bin/el_ha_cmdb.sh'
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("type", help="The first argument to a script, defines the type of operation")
+    parser.add_argument("state", help="The second argument to a script, target state of transition")
+    return parser.parse_args()
+
+
+def is_database_running():
+    process = Popen(['ps', '-efa'], stdout=PIPE)
+    out = process.communicate()[0]
+    postgres_processes = filter(lambda x: 'postgres' in x, out.splitlines())
+    return len(postgres_processes) > 0
+
+def notify_master():
+# Try to start data mounts in loop before trying to start services
+    rc = 1
+    while rc != 0:
+{% for mount in cinder_volumes %}
+{% if loop.index == 1 %}
+        rc = Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% else %}
+        rc = rc + Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% endif %}
+        if rc != 0:
+            time.sleep(5)
+{% endfor %}
+
+        rc = Popen(['systemctl', 'start', '{{ postgresql_daemon }}']).wait()
+        if rc != 0:
+            return FAIL
+
+{% if alarm_version == '2' %}
+        if isfile(el_ha_cmdb):
+            rc = Popen([el_ha_cmdb, 'start']).wait()
+            if rc != 0:
+                return FAIL
+{% endif %}
+
+    return OK
+
+def notify_standby():
+    process = Popen(['systemctl', 'stop', '{{ postgresql_daemon }}'])
+    process.wait()
+
+{% if alarm_version == '2' %} #FMPM
+
+{% for mount in cinder_volumes %}
+{% if (mount.keep_mounted is not none) and (mount.keep_mounted) %}
+    Popen(['systemctl', 'start', '{{ mount.mount_point }}']).wait()
+{% endif %}
+{% endfor %}
+
+    if isfile(el_ha_cmdb):
+        rc = Popen([el_ha_cmdb , 'keepalive']).wait()
+        if rc != 0:
+            return FAIL
+{% endif %}
+
+# Unmount Cinder volumes
+{% for mount in cinder_volumes %}
+{% if (mount.keep_mounted is none) or (not mount.keep_mounted) %}
+    Popen(['umount', '-f', '{{ mount.mount_point }}']).wait()
+{% endif %}
+{% endfor %}
+    return OK
+
+def process_notify(args):
+    if args.state == 'STANDBY':
+        return notify_standby()
+    elif args.state == 'ACTIVE':
+        return notify_master()
+    else:
+        return OK
+
+def check_standby():
+    return OK
+
+def check_active():
+    if not is_database_running():
+        return FAIL
+    return_code = Popen(['systemctl', 'status', '{{ postgresql_daemon }}']).wait()
+    if return_code != 0:
+        return FAIL
+
+    {% if alarm_version == '2' %} #FMPM
+    return_code = Popen(['systemctl', 'status', 'mariadb']).wait()
+    if return_code != 0:
+        return FAIL
+    {% endif %}
+
+    return OK
+
+def process_check(args):
+    if args.state == 'STANDBY':
+        return check_standby()
+    elif args.state == 'ACTIVE':
+        return check_active()
+    else:
+        print 'checking ' + args.state
+        return OK
+
+def process_transition(args):
+    now = datetime.now()
+    print '%s process_transition(): %s, %s' % ( str(now), args.type, args.state,  )
+
+    if(args.type == NOTIFY):
+        return process_notify(args)
+    elif(args.type == CHECK):
+        return process_check(args)
+
+def call():
+    returncode = process_transition(parse_arguments())
+    if returncode != 1:
+        sys.exit(1)
+
+call()

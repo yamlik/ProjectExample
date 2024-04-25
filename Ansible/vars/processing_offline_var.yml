@@ -1,0 +1,86 @@
+---
+
+group_name: "{{ group_names | difference('vdu-processingOFF') | first }}"
+aspect_index: "{{ group_name.split('-')[-1]|int }}"
+node0: "{{ (aspect_index|int + 1) * 2 - 2 }}"
+node1: "{{ (aspect_index|int + 1) * 2 - 1 }}"
+admintools_protocol: "https"
+monitor_timesten: "{{ vnf_context_data.stack_params.cbam.extensions.pOFF_monitor_timesten }}"
+gtp_install_flag: false
+
+host_type: el
+processing_type: offline
+ip_groups:
+  - ha_interface: "{{ ansible_local.interfaces.devices.oam_interface }}"
+    ha_vrid: 131
+    ha_vip: "{{ processingoff_oam_vip_list[aspect_index|int].ip }}"
+    ip0: "{{ processingoff_oam_ip_list[node0|int].ip }}"
+    ip1: "{{ processingoff_oam_ip_list[node1|int].ip }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.oam_network_netmask }}"
+  - ha_interface: "{{ ansible_local.interfaces.devices.charg_interface }}"
+    ha_vrid: 132
+    ha_vip: "{{ processingoff_charg_vip_list[aspect_index|int].ip }}"
+    ip0: "{{ processingoff_charg_ip_list[node0|int].ip }}"
+    ip1: "{{ processingoff_charg_ip_list[node1|int].ip }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.charging_network_netmask }}"
+  - ha_interface: "{{ ansible_local.interfaces.devices.bill_interface }}"
+    ha_vrid: 133
+    ha_vip: "{{ processingoff_bill_vip_list[aspect_index|int].ip }}"
+    ip0: "{{ processingoff_bill_ip_list[node0|int].ip }}"
+    ip1: "{{ processingoff_bill_ip_list[node1|int].ip }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.billing_network_netmask }}"
+
+ha_mode: "active-passive"
+
+cinder_volumes:
+  - name: data
+    filesystem: xfs
+    label: data
+    opts: '-b size=4096 -L data'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingoff']['data_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/data
+    mount_point_dash: opt-TEST-TEST-data
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: storage
+    filesystem: xfs
+    label: storage
+    opts: '-b size=4096 -L storage'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingoff']['storage_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/storage
+    mount_point_dash: opt-TEST-TEST-storage
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: offline
+    filesystem: xfs
+    label: offline
+    opts: '-b size=4096 -L offline'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingoff']['offline_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/offline
+    mount_point_dash: opt-TEST-TEST-offline
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: timesten
+    filesystem: xfs
+    label: timesten
+    opts: '-b size=4096 -L timesten'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingoff']['timesten_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TimesTen/TEST_timesten/data
+    mount_point_dash: opt-TEST-TimesTen-TEST_timesten-data
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: control
+    filesystem: xfs
+    label: control
+    opts: '-b size=4096 -L control'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingoff']['control_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/control
+    mount_point_dash: opt-TEST-TEST-control
+    owner: TEST
+    group: TEST
+    mode: "0700"
+nfs_mounts:

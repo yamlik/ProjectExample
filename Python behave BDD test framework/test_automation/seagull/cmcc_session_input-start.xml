@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<scenario>
+
+<!--
+more about this file can be found here:
+http://gull.sourceforge.net/doc/diameter.html
+(search for "sar-saa.client.xml")
+-->
+
+<counter>
+    <counterdef name="HbH-counter"     init="1000"> </counterdef>
+    <counterdef name="EtE-counter"     init="2000"> </counterdef>
+    <counterdef name="session-counter" init="0"> </counterdef>
+</counter>
+
+<init>
+    <send channel="channel-1">
+        <command name="CER">
+            <avp name="Origin-Host"         value="hrh6ds09.TEST.com"> </avp>
+            <avp name="Origin-Realm"        value="TEST.com"> </avp>
+            <avp name="Host-IP-Address"     value="0x00010a0f0409"> </avp> <!-- IPV4 10.15.4.40 -->
+            <avp name="Vendor-Id"           value="11"> </avp>
+            <avp name="Product-Name"        value="HP Cx Interface"> </avp>
+            <avp name="Origin-State-Id"     value="1094807040"> </avp>
+            <avp name="Supported-Vendor-Id" value="0"> </avp>
+            <avp name="Supported-Vendor-Id" value="193"> </avp>
+            <avp name="Supported-Vendor-Id" value="1751"> </avp>
+            <avp name="Supported-Vendor-Id" value="2430"> </avp>
+            <avp name="Supported-Vendor-Id" value="10415"> </avp>
+            <avp name="Acct-Application-Id" value="3"> </avp>
+            <avp name="Vendor-Specific-Application-Id">
+                <avp name="Vendor-Id"           value="11"></avp>
+                <avp name="Auth-Application-Id" value="167772151"></avp>
+                <avp name="Acct-Application-Id" value="0"></avp>
+            </avp>
+            <avp name="Firmware-Revision" value="1"> </avp>
+        </command>
+    </send>
+
+    <receive channel="channel-1">
+        <command name="CEA">
+        </command>
+    </receive>
+</init> 
+
+<!-- Traffic -->
+<traffic>
+
+    <!-- request begin -->
+    <send channel="channel-1">
+        <action>
+            <!-- For each new call, increment the session-ID counter -->
+            <inc-counter name="HbH-counter"> </inc-counter>
+            <inc-counter name="EtE-counter"> </inc-counter>
+            <inc-counter name="session-counter"> </inc-counter>
+            <set-value name="HbH-id" 
+                       format="$(HbH-counter)"></set-value>
+            <set-value name="EtE-id" 
+                       format="$(EtE-counter)"></set-value>
+        <set-value name="Session-Id"
+                       format="STAS.ctsgroup0.1096298391;$(session-counter)"></set-value>
+        </action>
+        <command name="ACR">
+          	  <avp name="Session-Id" value="STAS.ctsgroup0-001.ilac1.ims.imst.be;52ea5f25;0000440d"></avp>
+			<avp name="Origin-Host" value="Value33.1.1"></avp>
+			<avp name="Origin-Realm" value="TEST.com"> </avp>
+		    <avp name="Destination-Realm" value="TEST.com"></avp>
+			<avp name="Accounting-Record-Number" value="0"></avp>
+			<avp name="Accounting-Record-Type" value="2"></avp>
+			<avp name="Event-Timestamp" value="3724055267"></avp>
+			<avp name="Service-Information">
+				<avp name="IMS-Information">
+					<avp name="Node-Functionality" value="6"></avp>
+					<avp name="Event-Type">
+						<avp name="SIP-Method" value="Value61"></avp>
+					</avp>
+					<avp name="Inter-Operator-Identifier">
+						<avp name="Originating-IOI" value="Value19.1"></avp>
+						<avp name="Terminating-IOI" value="Value19.2"></avp>
+					</avp>
+					<avp name="Inter-Operator-Identifier">
+						<avp name="Originating-IOI" value="Value19.3"></avp>
+						<avp name="Terminating-IOI" value="Value19.2"></avp>
+					</avp>
+					<avp name="Inter-Operator-Identifier">
+						<avp name="Originating-IOI" value="Value19.1"></avp>
+						<avp name="Terminating-IOI" value="Value19.2"></avp>
+					</avp>
+					<avp name="SDP-Session-Description" value="MySessionDescription1"></avp>
+					<avp name="SDP-Session-Description" value="MySessionDescription2"></avp>
+					<avp name="SDP-Media-Component">
+						<avp name="3GPP-Charging-ID" value="ABC123"></avp>
+						<avp name="SDP-Media-Description" value="Value29.2"></avp>
+						<avp name="SDP-Media-Description" value="Value29.2B"></avp>
+						<avp name="Media-Initiator-Flag" value="0"></avp>
+						<avp name="SDP-Media-Name" value="Value29.1.FIRST"></avp>
+						<avp name="SDP-Type" value="0"></avp>
+					</avp>
+					<avp name="SDP-Media-Component">
+						<avp name="3GPP-Charging-ID" value="ABC123"></avp>
+						<avp name="SDP-Media-Description" value="Value29.2"></avp>
+						<avp name="Media-Initiator-Flag" value="0"></avp>
+						<avp name="SDP-Media-Name" value="Value29.1.FIRST.DUP"></avp>
+						<avp name="SDP-Type" value="1"></avp>
+					</avp>
+					<avp name="Time-Stamps">
+						<avp name="SIP-Request-Timestamp" value="333333"></avp>
+						<avp name="SIP-Response-Timestamp" value="444444"></avp>
+					</avp>
+					<avp name="Access-Network-Information" value="Value1"></avp>
+					<avp name="Alternate-Charged-Party-Address" value="Value3"></avp>
+					<avp name="Called-Party-Address" value="Value6.1"></avp>
+					<avp name="Calling-Party-Address" value="tel:24.1"></avp>
+					<avp name="Calling-Party-Address" value="Value24.2"></avp>
+					<avp name="Cause-Code" value="0"></avp>
+					<avp name="IMS-Charging-Identifier" value="Value13"></avp>
+					<avp name="IMS-Visited-Network-Identifier" value="Value15"></avp>
+					<avp name="Online-Charging-Flag" value="1"></avp>
+					<avp name="Requested-Party-Address" value="tel:28"></avp>
+					<avp name="Role-Of-Node" value="0"></avp>
+					<avp name="User-Session-Id" value="Value59.1"></avp>
+				</avp>
+				<avp name="PS-Information">
+					<avp name="User-Equipment-Info">
+						<avp name="User-Equipment-Info-Type" value="0"></avp>
+						<avp name="User-Equipment-Info-Value" value="Value62.2"></avp>
+					</avp>
+				</avp>
+			</avp>
+			<avp name="CS-Location-Information">
+				<avp name="Cell-Identification" value="A1"></avp>
+				<avp name="Location-Area" value="B2"></avp>
+				<avp name="MSC-Number" value="MyMSCNumber"></avp>
+				<avp name="Service-Area-Code" value="C3"></avp>
+			</avp>
+			<avp name="Service-Interact-Info">
+				<avp name="Executed-Service" value="A1B2C3"></avp>
+			</avp>
+			<avp name="Calling-Party" value="tel:CallingParty"></avp>
+			<avp name="SDP-Media-Identifier" value="1"></avp>
+			<avp name="SNMD-Service-Type" value="D6E7F8"></avp>
+			<avp name="Service-Identity" value="109"></avp>
+			<avp name="Service-Identity" value="115"></avp>
+			<avp name="TADS-Identifier" value="1"></avp>
+		</command>
+        <action>
+            <start-timer></start-timer>
+        </action>
+    </send>
+
+    <receive channel="channel-1">
+        <action>
+            <stop-timer></stop-timer>
+        </action>
+        <command name="ACA">
+        </command>
+    </receive>
+    <!-- request end -->
+</traffic>
+</scenario>

@@ -1,0 +1,12 @@
+[Unit]
+Description={{ item.name }} drive
+DefaultDependencies=no
+
+[Mount]
+What={{ item.device }}
+Where={{ item.mount_point }}
+Type={{ item.filesystem }}
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

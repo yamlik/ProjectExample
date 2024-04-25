@@ -1,0 +1,23 @@
+---
+# Defaults for Ganglia gmond configuration
+
+gmond_fqdn: "{{ inventory_hostname }}"
+
+gmond_udp_recv_port: 8649
+gmond_tcp_accept_port: 8649
+# Obviously the default receive port has to be the same as the send port
+gmond_udp_send_port: "{{ gmond_udp_recv_port }}" 
+
+gmond_start_timeout: 60
+
+# The receive channels can be defined here explicitly but otherwise 
+# a single channel with the default port is automatically configured
+# (as long as the default port is defined)
+
+gmond_udp_recv_channels:
+ - { port: "{{ gmond_udp_recv_port }}", family: "inet{{vnf_context_data.stack_params.cbam.extensions.ip_protocol_version.split('v')[1] }}"  }
+
+# Same thing with the tcp accept channels
+
+#gmond_tcp_accept_channels:
+# - { port: "{{ gmond_tcp_accept_port }}" }

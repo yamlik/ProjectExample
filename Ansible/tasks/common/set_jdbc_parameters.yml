@@ -1,0 +1,8 @@
+---
+- name: Set JDBC parameters when IPv6 is used
+  set_fact:
+    elui_db_jdbc_url: "jdbc:postgresql://{{ db_oam_vip|ip_wrap }}:{{ db_el_port }}/{{ db_el_name }}"
+    elui_db_url: "{{ elui_db_prefix | default('postgresql://') }}{{ db_el_host|ip_wrap }}:{{ db_el_port }}/{{ db_el_name }}"
+    at_db_url: "{{ at_db_prefix | default('postgresql://') }}{{db_oam_vip|ip_wrap }}:{{ at_db_port }}/{{ at_db_name }}"
+    vi_db_url: "{{ vi_db_prefix | default('postgresql://') }}{{ vi_db_host|ip_wrap }}:{{ vi_db_port }}/{{ vi_db_name }}"
+...

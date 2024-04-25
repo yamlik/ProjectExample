@@ -1,0 +1,88 @@
+---
+- name: "Create nfs mountpoint user group"
+  group:
+    name: "{{ item.group }}"
+    gid: "{{ item.gid }}"
+    state: present
+  with_items: "{{ nfs_users }}"
+
+- name: "Create nfs mountpoint users"
+  user:
+    name: "{{ item.name }}"
+    group: "{{ item.group }}"
+    createhome: no
+    uid: "{{ item.uid }}"
+  with_items: "{{ nfs_users }}"
+
+- name: Check and install nfs packages
+  yum:
+    name: "{{ item }}"
+    state: "installed"
+  with_items:
+   - 'nfs-utils'
+
+- name: Copy /etc/exports
+  template:
+    src: "exports.j2"
+    dest: "/etc/exports"
+    owner: "root"
+    group: "root"
+    mode: "755"
+
+- name: Copy nfs sysconfig
+  template:
+    src: "sysconf-nfs.j2"
+    dest: "/etc/sysconfig/nfs"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Create mountable dir
+  file:
+    path: "{{ item.export_dir }}"
+    state: "directory"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ nfs_mounts }}"
+
+- name: Reserve ports for EL services
+  shell: echo 35000-35001 > /proc/sys/net/ipv4/ip_local_reserved_ports
+
+- name: Allow firewalld nfs services
+  firewalld:
+    zone: public
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "nfs"
+    - "mountd"
+    - "rpc-bind"
+
+- name: Allow firewalld nfs ports
+  firewalld:
+    zone: public
+    port: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "35000/tcp"
+    - "35000/udp"
+    - "35001/tcp"
+    - "35001/udp"
+
+- name: Start the nfs services
+  service:
+    name: "{{ item }}"
+    state: "restarted"
+    enabled: "yes"
+  with_items:
+   - nfs-config
+   - nfs-server
+  when:
+   - inventory_hostname == ha_master
+   - ((reconfigure is not defined) or (reconfigure != True))
+

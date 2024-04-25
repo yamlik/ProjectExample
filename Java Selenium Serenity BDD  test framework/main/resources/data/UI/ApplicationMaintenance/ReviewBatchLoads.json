@@ -1,0 +1,11 @@
+{
+  "TC-58781": {
+    "Application": {
+      "Application Number": "TESTAUTO67001"
+    },
+    "actionDetails": {
+      "Decision Reason": "DATA ENTRY ERROR",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=CRDB Redis In-Memory Data Store
+After=network.target
+Requires=var-lib-redis.mount
+
+[Service]
+User=TEST
+Group=TEST
+LimitNOFILE=10032
+Type=notify
+ExecStart=/usr/bin/redis-server /etc/redisio/redis.conf
+ExecStop=/usr/bin/redis-cli -h {{ private_ip }} shutdown
+Restart=always
+[Install]
+WantedBy=multi-user.target

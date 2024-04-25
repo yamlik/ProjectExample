@@ -1,0 +1,144 @@
+---
+version: '2.0'
+name: rpm_update
+workflows:
+########################################
+################# MAIN #################
+########################################
+  rpm_update_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the rpm_update_starting flow.") %>
+    tasks:
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+  rpm_update_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the rpm_update_processing flow.") %>
+    tasks:
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - execute_pre_action_ansible
+
+      execute_pre_action_ansible:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/update_repo.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(execute_pre_action_ansible).result %>
+        on-success:
+          - update_operation_params
+
+      update_operation_params:
+        action: std.javascript
+        input:
+          context:
+            operationParams: <% $.operationParams %>
+            rollback: <% $.operationParams.additionalParams.rollback %>
+            serial_run: <% $.operationParams.additionalParams.serial_run %>
+          script: |
+            for (var key in $.operationParams.additionalParams) {
+              if ($.operationParams.additionalParams[key] == true && key != "rollback") {
+                $.operationParams.additionalParams[key] = ['rpm_update'];
+              } else {
+                 $.operationParams.additionalParams[key] = []
+              }
+            }
+            if ($.rollback == true) {
+              $.operationParams["additionalParams"]["ansible_extra_vars"] = ['rollback=true'];
+            } else {
+              $.operationParams["additionalParams"]["ansible_extra_vars"] = ['rollback=false'];
+            }
+            $.operationParams["additionalParams"]["serial_run"] = $.serial_run;
+            return $.operationParams
+        publish:
+          operationParams: <% task(update_operation_params).result %>
+        publish-on-error:
+          error_message: <% task(update_operation_params).result %>
+        on-success:
+          - call_run_custom_ansible
+
+      call_run_custom_ansible:
+        workflow: <% $.stackParams.cbam.vnfId + '.mistral-workbooks_runCustomAnsible.workbook.run_custom_ansible_processing' %>
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+        publish-on-error:
+          error_message: <% task(call_run_custom_ansible).result.error_message %>
+        on-success:
+          - finalize
+
+      finalize:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize).result %>

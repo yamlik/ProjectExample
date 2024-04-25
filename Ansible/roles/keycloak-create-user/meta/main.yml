@@ -1,0 +1,15 @@
+galaxy_info:
+  author: TEST Corporation
+  description: Creates regular user in Keycloak and assigns available roles to user
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags: []

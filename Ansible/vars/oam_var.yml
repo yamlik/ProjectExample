@@ -1,0 +1,73 @@
+---
+host_type: em
+ip_groups:
+  - ha_interface: "{{ ansible_local.interfaces.devices.oam_interface }}"
+    ha_vrid: 81
+    ha_vip: "{{ oam_oam_vip }}"
+    ip0: "{{ oam_oam_0 }}"
+    ip1: "{{ oam_oam_1 }}"
+    netmask: "{{ vnf_context_data.stack_params.cbam.extensions.oam_network_netmask }}"
+  - ha_interface: "{{ ansible_local.interfaces.devices.internal_interface }}"
+    ha_vrid: 82
+    ha_vip: "{{ vnf_context_data['resource_model']['resources']['oam_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['allowed_address_pairs'][0]['ip_address'] }}"
+    ip0: "{{ vnf_context_data['resource_model']['resources']['oam_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address'] }}"
+    ip1: "{{ vnf_context_data['resource_model']['resources']['oam_aspect_group']['resources']['0']['resources']['server2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address'] }}"
+    netmask: "24"
+
+ha_master: "{{ groups['vdu-oam'][0] }}"
+
+cinder_volumes:
+  - name: event_management
+    filesystem: xfs
+    label: eventm
+    opts: '-b size=4096 -L eventm'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['oam']['em_mount_id'][0:20] }}"
+    mount_point: /opt/event-management/install/eventmanagement-engine/logs
+    mount_point_dash: "opt-event\x2dmanagement-install-eventmanagement\x2dengine-logs"
+    owner: eventm
+    group: TEST
+    mode: "0770"
+  - name: appdata
+    filesystem: xfs
+    label: appdata
+    opts: '-b size=4096 -L appdata'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['oam']['nfs_mount_id'][0:20] }}"
+    mount_point: /appdata
+    mount_point_dash: "appdata"
+    owner: root
+    group: root
+    mode: "0755"
+  - name: httpd
+    filesystem: xfs
+    label: httpd
+    opts: '-b size=4096 -L httpd'
+    device: "/dev/disk/by-id/virtio-{{ vnf_context_data['resource_model']['resources']['oam_aspect_group']['resources']['0']['resources']['data_volume_3']['attributes']['id'][0:20] }}"
+    mount_point: /var/www/html
+    mount_point_dash: "var-www-html"
+    owner: apache
+    group: apache
+    mode: "0775"
+nfs_mounts:
+#  - name: prometheus
+#    export_dir: /appdata/prometheus
+#    mount_point: /appdata/prometheus
+#    owner: root
+#    group: root
+#    mode: "0700"
+#  - name: grafana
+#    export_dir: /appdata/grafana/data
+#    mount_point: /appdata/grafana/data
+#    owner: grafana
+#    group: grafana
+#    mode: "0700"
+#  - name: 3gppxml
+#    export_dir: /appdata/3gppxml/meas
+#    mount_point: /appdata/3gppxml/meas
+#    owner: root
+#    group: root
+#    mode: "0700"
+nfs_users:
+#  - name: grafana
+#    uid: 1009
+#    group: grafana
+#    gid: 1009

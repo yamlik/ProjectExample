@@ -1,0 +1,29 @@
+{% if crmq_enable_ssl is not defined or crmq_enable_ssl == false %}
+listeners.tcp.default = {{ crmq_tcp_port }}
+{% endif %}
+
+tcp_listen_options.backlog = {{ crmq_tcp_backlog }}
+tcp_listen_options.nodelay = {{ crmq_tcp_nodelay }}
+tcp_listen_options.exit_on_close = {{ crmq_tcp_exit_on_close }}
+tcp_listen_options.sndbuf = {{ crmq_tcp_sndbuf }}
+tcp_listen_options.recbuf = {{ crmq_tcp_recbuf }}
+loopback_users.guest = {{ crmq_loopback_users_guest }}
+num_acceptors.tcp = {{ crmq_num_acceptors_tcp }}
+log.file.level = {{ crmq_log_level }}
+heartbeat = {{ crmq_heartbeat_seconds }}
+
+{% if crmq_enable_ssl is defined and crmq_enable_ssl == true %}
+listeners.tcp = none
+listeners.ssl.default = {{ crmq_tcp_ssl_port }}
+ssl_options.verify = {{ crmq_ssl_verify_option }}
+ssl_options.fail_if_no_peer_cert = {{ crmq_ssl_fail_if_no_peer_cert }}
+ssl_options.cacertfile = {{ crmq_cert_dir }}/rabbitmq_ca.crt
+ssl_options.certfile = {{ crmq_cert_dir }}/rabbitmq_server.crt
+ssl_options.keyfile = {{ crmq_cert_dir }}/rabbitmq_server.key
+ssl_options.password = mypassphrase
+management.ssl.port = {{ crmq_admin_ssl_port }}
+management.ssl.cacertfile = /etc/rabbitmq/ssl/rabbitmq_ca.crt
+management.ssl.certfile = /etc/rabbitmq/ssl/rabbitmq_server.crt
+management.ssl.keyfile = /etc/rabbitmq/ssl/rabbitmq_server.key
+ssl_options.versions.1 = tlsv1.2
+{% endif %}

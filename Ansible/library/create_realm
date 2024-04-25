@@ -1,0 +1,171 @@
+#!/bin/bash
+
+DOCUMENTATION='''
+---
+module: create_realm
+short_description: Creates a realm in Keycloak using the Admin CLI command line tool
+description:
+  - Configures the Admin Cli command line tool.
+  - Sends the given realm representation to the realms endpoint.
+  - Returns the effective realm representation.
+version_added: "2.4"
+author: "TEST A&A, Team NPC <I_AA_DO_RD_SO_NPC@internal.TEST.com>"
+options:
+  keycloak_server:
+    description:
+      - URL of Keycloak authentication server.
+      - Must contain scheme and FQDN, complemented with port and context path.
+      - Port is required if server is not running on default port (80 for http and 443 for https).
+      - Context path is required, if Keycloak server is not listening on web application root.
+      - Example U(https://id.TEST.com:8666/auth).
+    required: true
+  admin_user:
+    description:
+      - Administrator of the master realm.
+    required: true
+  admin_password:
+    description:
+      - Password of master realm administrator.
+    required: true
+  realm_representation:
+    description:
+      - A file containing a RealmRepresentation instance in JSON format.
+      - The file must exist on the target host.
+      - See U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_realmrepresentation) for a full list of options.
+    required: true
+  truststore:
+    description:
+      - A truststore file in JKS format that contains Keycloak server certificate.
+      - Typically the keystore of the Keycloak server.
+    default: null
+  truststore_password:
+    description:
+      - Password to access the truststore file.
+    default: null
+notes:
+  - This module must be run as keycloak user or with sudo privileges.
+  - Parameters I(truststore) and I(truststore_password) are required when I(keycloak_server) uses https scheme.
+  - Parameters I(truststore) and I(truststore_password) are required together.
+requirements:
+  - Keycloak Admin CLI command line tool
+  - jq
+'''
+
+EXAMPLES='''
+- name: "Create Foo realm"
+  create_realm:
+    keycloak_server: "https://id.TEST.com:8666/auth"
+    admin_user: "Administrator"
+    admin_password: "guiadmin"
+    realm_representation: "/opt/TEST/foo-realm.json"
+    truststore: "/opt/keycloak/security/ssl/keycloak-keystore.jks"
+    truststore_password: "keycloakPass"
+  become: true
+  become_method: sudo
+
+- name: "Create Bar realm via HTTP"
+  create_realm:
+    keycloak_server: "http://id.TEST.com:8665/auth"
+    admin_user: "admin"
+    admin_password: "admin"
+    realm_representation: "/opt/TEST/bar-realm.json"
+  become: true
+  become_method: sudo
+'''
+
+RETURN = '''
+realm:
+  description: The effective RealmRepresentation, see U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_realmrepresentation) for a full list of suboptions.
+  returned: success
+  type: complex
+'''
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "Variable ${variable_name} is not defined"
+  done
+}
+
+function validate_json {
+  for file in "$@"
+  do
+    [ ! -f "${file}" ] && fail "File ${file} does not exist!"
+    jq . ${file} >/dev/null 2>&1 || fail "File ${file} did not contain valid JSON!"
+  done
+}
+
+function log {
+  line=$(tr -d '"' <<<$*)
+  log_lines+=("${line}")
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'."
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "ERROR: $1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+  exit 1
+}
+
+log_lines=()
+failed=false
+changed=false
+
+# Default parameters
+admin_cli="/opt/keycloak/bin/kcadm.sh"
+
+keycloak_server=
+admin_user=
+admin_password=
+realm_representation=
+truststore=
+truststore_password=
+
+source "$1"
+
+log_variables keycloak_server admin_user realm_representation
+check_variables keycloak_server admin_user admin_password realm_representation
+validate_json ${realm_representation}
+
+realm_name=$(jq -rM '.realm' ${realm_representation}) || fail "Couldn't retrieve realm name from realm representation!"
+check_variables realm_name
+log_variables realm_name
+
+# Configure truststore
+if [ -n "${truststore}" ] && [ -n "${truststore_password}" ]; then
+  ${admin_cli} config truststore --trustpass "${truststore_password}" ${truststore}
+fi
+
+# Login
+${admin_cli} config credentials --server "${keycloak_server}" --realm "master" --user "${admin_user}" --password "${admin_password}" >/dev/null 2>&1 || fail "Could not login to Keycloak with given credentials!"
+
+# Check if realm exists
+if ${admin_cli} get realms/${realm_name} >/dev/null 2>&1; then
+  log "Realm ${realm_name} already exists."
+  if ${admin_cli} update realms/${realm_name} -f "${realm_representation}" >/dev/null 2>&1; then
+    log "Updated realm ${realm_name}."
+  fi
+# Create realm
+elif ${admin_cli} create realms -f "${realm_representation}" >/dev/null 2>&1; then
+  changed=true
+  log "Created realm ${realm_name}."
+else
+  fail "Failed to create realm ${realm_name}!"
+  exit 1
+fi
+
+realm_representation=$(${admin_cli} get realms/${realm_name} 2>/dev/null) || fail "Could not retrieve realm representation!"
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s", "realm": %s }' "$failed" "$changed" "${log_lines[*]}" "${realm_representation}"
+exit 0
+

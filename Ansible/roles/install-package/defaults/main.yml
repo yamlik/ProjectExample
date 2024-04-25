@@ -1,0 +1,3 @@
+---
+# Default variables for install-package
+package_state: present

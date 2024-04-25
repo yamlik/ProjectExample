@@ -1,0 +1,83 @@
+{
+  "name": "{{ ldap_storage_name }}",
+  "providerId": "ldap",
+  "providerType": "org.keycloak.storage.UserStorageProvider",
+  "parentId": "{{ realm_created.realm.id }}",
+  "config": {
+    "usersDn": [
+      "{{ ldap_users_dn }}"
+    ],
+    "userObjectClasses": [
+      "{{ ldap_user_object_classes }}"
+    ],
+    "bindDn": [
+      "{{ ldap_bind_dn }}"
+    ],
+    "bindCredential": [
+      "{{ ldap_bind_credentials }}"
+    ],
+    "usernameLDAPAttribute": [
+      "{{ ldap_username_ldap_attribute }}"
+    ],
+    "rdnLDAPAttribute": [
+      "{{ ldap_rdn_ldap_attribute | default(ldap_username_ldap_attribute) }}"
+    ],
+    "vendor": [
+      "{{ ldap_vendor }}"
+    ],
+    "uuidLDAPAttribute": [
+      "{{ ldap_uuid_ldap_attribute }}"
+    ],
+    "connectionUrl": [
+      "{{ ldap_connection_url }}"
+    ],
+    "connectionPooling": [
+      "{{ ldap_connection_pooling | default('true') }}"
+    ],
+    "pagination": [
+      "{{ ldap_pagination | default('true') }}"
+    ],
+    "cachePolicy": [
+      "{{ ldap_cache_policy | default('NO_CACHE') }}"
+    ],
+    "useKerberosForPasswordAuthentication": [
+      "{{ ldap_use_kerberos_for_password_authentication | default('false') }}"
+    ],
+    "importEnabled": [
+      "{{ ldap_import_enabled | default('true') }}"
+    ],
+    "allowKerberosAuthentication": [
+      "{{ ldap_allow_kerberos_authentication | default('false') }}"
+    ],
+    "syncRegistrations": [
+      "{{ ldap_sync_registrations | default('false') }}"
+    ],
+    "fullSyncPeriod": [
+      "{{ ldap_full_sync_period | default('-1') }}"
+    ],
+    "changedSyncPeriod": [
+      "{{ ldap_changed_sync_period | default('-1') }}"
+    ],
+    "authType": [
+      "{{ ldap_auth_type | default('simple') }}"
+    ],
+    "debug": [
+      "{{ ldap_debug | default('false') }}"
+    ],
+    "searchScope": [
+      "{{ ldap_search_scope | default(1) }}"
+    ],
+    "useTruststoreSpi": [
+      "{{ ldap_use_truststore_spi | default('ldapsOnly') }}"
+    ],
+    "priority": [
+      "{{ ldap_priority | default(0) }}"
+    ],
+    "editMode": [
+      "{{ ldap_edit_mode | default('READ_ONLY') }}"
+    ],
+    "batchSizeForSync": [
+      "{{ ldap_batch_size | default(1000) }}"
+    ]
+  }
+}

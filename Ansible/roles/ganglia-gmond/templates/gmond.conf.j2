@@ -1,0 +1,277 @@
+/* This configuration is as close to 2.5.x default behavior as possible
+   The values closely match ./gmond/metric.h definitions in 2.5.x */
+globals {
+  daemonize = yes
+  setuid = no
+  user = nobody
+  max_udp_msg_len = 1472
+  mute = no
+  deaf = {% if secondary is defined and secondary == true %}yes
+  {% else %}no
+  {% endif %}
+  allow_extra_data = yes
+  host_dmax = 0 /*secs. By default hosts will not be removed. */
+  host_tmax = 20 /*secs */
+  cleanup_threshold = 300 /*secs */
+  gexec = no
+  # By default gmond will use reverse DNS resolution when displaying your hostname
+  # Uncommeting following value will override that value.
+  # override_hostname = "mywebserver.domain.com"
+  # If you are not using multicast this value should be set to something other than 0.
+  # Otherwise if you restart aggregator gmond you will get empty graphs. 60 seconds is reasonable
+  send_metadata_interval = 30 /*secs */
+{% if ansible_local.disks.ui is defined %}
+#  override_hostname = {{ gmond_override_hostname | default(gmond_fqdn) }}
+{% else %}
+  override_hostname = {{ gmond_override_hostname | default(gmond_fqdn) }}
+{% endif %}
+}
+
+/*
+ * The cluster attributes specified will be used as part of the <CLUSTER>
+ * tag that will wrap all hosts collected by this instance.
+ */
+cluster {
+  name = "cluster1"
+  owner = "owner1"
+  latlong = "unspecified"
+  url = "unspecified"
+}
+
+/* The host section describes attributes of the host, like the location */
+host {
+  location = "unspecified"
+}
+
+/* Now using multiple channels for gmond */
+{% if gmond_udp_send_channels is defined %}
+{% for send in gmond_udp_send_channels %}
+udp_send_channel {
+  host = {{ send.host }}
+  port = {{ send.port }}
+  ttl = 1
+{% if send.mcast_join is defined %}
+  mcast_join = {{ send.mcast_join }}
+{% endif %}
+}
+{% endfor %}
+{% else %}
+{% for ganglia_primary_host in ganglia_primary_hosts %}
+udp_send_channel {
+  host = {{ ganglia_primary_host }}
+  port = {{ gmond_udp_send_port }}
+  ttl = 1
+}
+{% endfor %}
+{% endif %}
+/* Don't send to UI VIP
+udp_send_channel {
+  host = {{ ui_oam_vip }}
+  port = {{ gmond_udp_send_port }}
+  ttl = 1
+}
+*/
+{% if gmond_udp_recv_channels is defined %}
+{% for recv in gmond_udp_recv_channels %}
+udp_recv_channel {
+{% if recv.mcast_join is defined %}
+  mcast_join = {{ recv.mcast_join }}
+{% endif %}
+{% if recv.port is defined %}
+  port = {{ recv.port }}
+{% endif %}
+{% if recv.bind is defined %}
+  bind =  {{ recv.bind }}
+{% endif %}
+  retry_bind = {{ recv.retry_bind | default('false') }}
+{% if recv.buffer is defined %}
+  buffer = {{ recv.buffer }}
+{% endif %}
+{% if recv.family is defined %}
+  family = {{ recv.family }}
+{% endif %}
+}
+{% endfor %}
+{% elif secondary is not defined or secondary != true %}
+udp_recv_channel {
+  port = {{ gmond_udp_recv_port }}
+}
+{% endif %}
+
+{% if gmond_tcp_accept_channels is defined %}
+{% for accept in gmond_tcp_accept_channels %}
+tcp_accept_channel {
+{% if accept.port is defined %}
+  port = {{ accept.port }}
+{% endif %}
+{% if accept.family is defined %}
+  family = {{ accept.family }}
+{% endif %}
+  gzip_output = {{ accept.gzip_output | default('no') }}
+  interface = "{{ ansible_local.interfaces.devices.oam_interface }}"
+}
+{% endfor %}
+{% elif secondary is not defined or secondary != true %}
+tcp_accept_channel {
+  port = {{ gmond_tcp_accept_port }}
+  gzip_output = 'no'
+  interface = "{{ ansible_local.interfaces.devices.oam_interface }}"
+}
+{% endif %}
+
+/* Each metrics module that is referenced by gmond must be specified and
+   loaded. If the module has been statically linked with gmond, it does
+   not require a load path. However all dynamically loadable modules must
+   include a load path. */
+modules {
+  module {
+    name = "core_metrics"
+  }
+  module {
+    name = "cpu_module"
+    path = "modcpu.so"
+  }
+  module {
+    name = "disk_module"
+    path = "moddisk.so"
+  }
+  module {
+    name = "load_module"
+    path = "modload.so"
+  }
+  module {
+    name = "mem_module"
+    path = "modmem.so"
+  }
+  module {
+    name = "net_module"
+    path = "modnet.so"
+  }
+  module {
+    name = "proc_module"
+    path = "modproc.so"
+  }
+  module {
+    name = "sys_module"
+    path = "modsys.so"
+  }
+}
+
+/* The old internal 2.5.x metric array has been replaced by the following
+   collection_group directives.  What follows is the default behavior for
+   collecting and sending metrics that is as close to 2.5.x behavior as
+   possible. */
+
+/* This collection group will cause a heartbeat (or beacon) to be sent every
+   20 seconds.  In the heartbeat is the GMOND_STARTED data which expresses
+   the age of the running gmond. */
+collection_group {
+  collect_once = yes
+  time_threshold = 20
+  metric {
+    name = "heartbeat"
+  }
+}
+
+/* This collection group will send general info about this host every
+   1200 secs.
+   This information doesn't change between reboots and is only collected
+   once. */
+collection_group {
+  collect_once = yes
+  time_threshold = {{ gmond_time_treshold | default(20) }}
+  metric {
+    name = "cpu_num"
+    title = "CPU Count"
+  }
+  metric {
+    name = "cpu_speed"
+    title = "CPU Speed"
+  }
+  metric {
+    name = "mem_total"
+    title = "Memory Total"
+  }
+  /* Should this be here? Swap can be added/removed between reboots. */
+  metric {
+    name = "swap_total"
+    title = "Swap Space Total"
+  }
+  metric {
+    name = "boottime"
+    title = "Last Boot Time"
+  }
+  metric {
+    name = "machine_type"
+    title = "Machine Type"
+  }
+  metric {
+    name = "os_name"
+    title = "Operating System"
+  }
+  metric {
+    name = "os_release"
+    title = "Operating System Release"
+  }
+  metric {
+    name = "location"
+    title = "Location"
+  }
+}
+
+/* This collection group will send the status of gexecd for this host
+   every 300 secs.*/
+/* Unlike 2.5.x the default behavior is to report gexecd OFF. */
+collection_group {
+  collect_once = yes
+  time_threshold = 300
+  metric {
+    name = "gexec"
+    title = "Gexec Status"
+  }
+}
+
+/* This collection group will collect:
+   CPU USER
+   CPU SYSTEM
+   BYTES_IN
+   BYTES_OUT
+ */
+collection_group {
+  collect_every = {{ gmond_polling_interval | default(1) }}
+  time_threshold = {{ gmond_time_treshold | default(20) }}
+  /* CPU status */
+  metric {
+    name = "cpu_user"
+    value_threshold = "0"
+    title = "CPU User"
+  }
+  metric {
+    name = "cpu_system"
+    value_threshold = "0"
+    title = "CPU System"
+  }
+    metric {
+    name = "cpu_nice"
+    value_threshold = "0"
+    title = "CPU Nice"
+  }
+  metric {
+    name = "bytes_out"
+    value_threshold = "0"
+    title = "Bytes Sent"
+  }
+  metric {
+    name = "bytes_in"
+    value_threshold = "0"
+    title = "Bytes Received"
+  }
+  metric {
+    name = "mem_free"
+    value_threshold = "0"
+    title = "Memory Free"
+  }
+}
+
+include ("/etc/ganglia/conf.d/*.conf")
+

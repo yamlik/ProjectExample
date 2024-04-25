@@ -1,0 +1,12 @@
+---
+# Database settings for Keycloak
+kc_db_host: db.service.consul
+kc_db_port: "{{ postgresql_server_port }}"
+kc_db_name: keycloak
+kc_db_password_attribute: ds_pass
+kc_db_info: "{{ (kc_preferred_ip_version == '4') | ternary('postgresql:{{ kc_db_name }}:{{ kc_db_host }}:{{ kc_db_port }}:{{ kc_db_user }}:{{ kc_db_password_attribute }}','postgresql:{{ kc_db_name }}:[{{ kc_db_host }}]:{{ kc_db_port }}:{{ kc_db_user }}:{{ kc_db_password_attribute }}') }}"
+kc_db_user_role_attrs: CREATEDB,LOGIN
+kc_db_encoding: ""
+kc_db_lc_collate: ""
+kc_db_lc_ctype: ""
+kc_db_tablespace: ""

@@ -1,0 +1,187 @@
+#!/bin/bash
+
+DOCUMENTATION='''
+---
+module: create_component
+short_description: Creates a component in Keycloak using the Admin CLI command line tool
+description:
+  - Configures the Admin Cli command line tool.
+  - Sends the given client component representation to components endpoint.
+version_added: "2.4"
+author: "TEST A&A, Team NPC <I_AA_DO_RD_SO_NPC@internal.TEST.com>"
+options:
+  keycloak_server:
+    description:
+      - URL of Keycloak authentication server.
+      - Must contain scheme and FQDN, complemented with port and context path.
+      - Port is required if server is not running on default port (80 for http and 443 for https).
+      - Context path is required, if Keycloak server is not listening on web application root.
+      - Example U(https://id.TEST.com:8666/auth).
+    required: true
+  realm:
+    description:
+      - Name of the realm where the client template will be created.
+    required: true
+  realm_admin_user:
+    description:
+      - Administrator of the given I(realm).
+    required: true
+  realm_admin_password:
+    description:
+      - Password of the administrator.
+    required: true
+  component:
+    description:
+      - A file containing a ComponentRepresentation in JSON format.
+      - The file must exist on target host.
+      - See U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_componentrepresentation) for a full list of options.
+    required: true
+  truststore:
+    description:
+      - A truststore file in JKS format that contains Keycloak server certificate.
+      - Typically the keystore of the Keycloak server.
+    default: null
+  truststore_password:
+    description:
+      - Password to access the truststore file.
+    default: null
+notes:
+  - This module must be run as keycloak user or with sudo privileges.
+  - Parameters I(truststore) and I(truststore_password) are required when I(keycloak_server) uses https scheme.
+  - Parameters I(truststore) and I(truststore_password) are required together.
+requirements:
+  - Keycloak Admin CLI command line tool
+  - jq
+'''
+
+EXAMPLES='''
+- name: "Create group mappings"
+  create_component:
+    keycloak_server: "https://id.TEST.com:8666/auth"
+    realm: foo
+    realm_admin_user: fooAdmin
+    realm_admin_password: fooAdminPass
+    component: "/opt/TEST/ldap-group-mappings-component.json"
+    truststore: "/opt/keycloak/security/ssl/keycloak-keystore.jks"
+    truststore_password: keycloakPass
+  become: true
+  become_method: sudo
+'''
+
+RETURN='''
+component:
+  description: The effective ComponentRepresentation in Keycloak, see U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_componentrepresentation) for a full list of options.
+  returned: success
+  type: complex
+'''
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "Variable ${variable_name} is not defined"
+  done
+}
+
+function validate_json {
+  for file in "$@"
+  do
+    [ ! -f "${file}" ] && fail "File ${file} does not exist!"
+    jq . ${file} >/dev/null 2>&1 || fail "File ${file} did not contain valid JSON!"
+  done
+}
+
+function log {
+  line=$(tr -d '"' <<<$*)
+  log_lines+=("${line}")
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'."
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "ERROR: $1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+  exit 1
+}
+
+function get_component_id {
+  local component_name="$1"
+  local query=".[] | select(.name == \"${component_name}\") | .id"
+  ${admin_cli} get components | jq ${JQ_OPTS} "${query}"
+} 2>/dev/null
+
+log_lines=()
+failed=false
+changed=false
+
+JQ_OPTS='-rM'
+
+# Default parameters
+admin_cli="/opt/keycloak/bin/kcadm.sh"
+
+keycloak_server=
+realm=
+realm_admin_user=
+realm_admin_password=
+component=
+truststore=
+truststore_password=
+
+source "$1"
+
+log_variables keycloak_server realm realm_admin_user component
+check_variables keycloak_server realm realm_admin_user realm_admin_password component
+validate_json ${component}
+
+component_name=$(jq ${JQ_OPTS} '.name' ${component}) || fail "Couldn't retrieve component name from component representation!"
+check_variables component_name
+log_variables component_name
+
+# Configure truststore
+if [ -n "${truststore}" ] && [ -n "${truststore_password}" ]; then
+  ${admin_cli} config truststore --trustpass "${truststore_password}" ${truststore}
+fi
+
+# Login
+${admin_cli} config credentials --server "${keycloak_server}" --realm "${realm}" --user "${realm_admin_user}" --password "${realm_admin_password}" >/dev/null 2>&1 || fail "Could not login to Keycloak with given credentials!"
+
+# Replace parentId with realm id if parentId is realm name
+parent_id=$(jq ${JQ_OPTS} '.parentId' ${component} 2>/dev/null)
+if [ -z "${parent_id}" ] || [ "${parent_id}" = "${realm}" ]; then
+  parent_id=$(${admin_cli} get realms/${realm} 2>/dev/null | jq ${JQ_OPTS} '.id' 2>/dev/null) && [ -n "${parent_id}" ] || fail "Could not obtain realm id for realm ${realm}"
+  component_json=$(jq ${JQ_OPTS} ".parentId = \"${parent_id}\"" ${component} 2>/dev/null)
+else
+  component_json=$(jq ${JQ_OPTS} "." ${component} 2>/dev/null)
+fi
+log_variables parent_id
+
+# Check if component exists
+if component_id=$(get_component_id "${component_name}") && [ -n "${component_id}" ]; then
+  log "Component ${component_name} already exists."
+  if ${admin_cli} update components/${component_id} -b "${component_json}" >/dev/null 2>&1; then
+    log "Updated component ${component_name}."
+  fi
+# Create component
+elif ${admin_cli} create components -b "${component_json}" >/dev/null 2>&1; then
+  changed=true
+  log "Created component ${component_name}."
+else
+  fail "Failed to create component ${component_name}!"
+fi
+
+if [ -z "${component_id}" ]; then
+  component_id=$(get_component_id "${component_name}") && [ -n "${component_id}" ] || fail "Could not retrieve component id!"
+fi
+log_variables component_id
+component_representation=$(${admin_cli} get components/${component_id}) || fail "Could not retrieve component representation!"
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s", "component": %s }' "$failed" "$changed" "${log_lines[*]}" "${component_representation}"
+exit 0

@@ -1,0 +1,65 @@
+---
+- assert:
+    that:
+      - "admintools_fqdn is defined"
+      - "admintools_client_local_conf is defined"
+
+- name: "Copy temporary SSL Certificate file"
+  register: certificate_copied
+  when: kc_ssl_certificate_file is defined
+  copy:
+    src: "{{ kc_ssl_certificate_file }}"
+    dest: "/var/tmp/keycloak-certificate.tmp"
+    owner: TEST
+    group: TEST
+    mode: 0644
+
+- name: "Install python packages"
+  register: packages_installed
+  pip:
+    name: "{{ item }}"
+    umask: "0022"
+    state: present
+  become: true
+  become_method: sudo
+  with_items:
+    - "tzlocal"
+    - "requests"
+
+- name: "Ensure previous versions are cleaned"
+  when: packages_installed|success
+  register: version_info_cleaned
+  versioninfo:
+    adapter_config: "{{ lookup('file', admintools_client_local_conf) }}"
+    rest_api_endpoint: "{{ admintools_fqdn }}"  
+    rest_api_protocol: "{{ admintools_protocol | default('http') }}"
+    rest_api_port: "{{ admintools_port | default('45080') }}"
+    hostname: "{{ host_fqdn | default(inventory_hostname) }}"
+    state: absent
+    verify_ssl: False
+    timeout: "{{ vi_crud_wait_timeout }}"
+  until: version_info_cleaned is not failed
+  retries: 3
+  delay: 60
+
+- name: "Send version information"
+  when: packages_installed|success
+  register: version_info_sent
+  versioninfo:
+    adapter_config: "{{ lookup('file', admintools_client_local_conf) }}"
+    rest_api_endpoint: "{{ admintools_fqdn }}"  
+    rest_api_protocol: "{{ admintools_protocol | default('http') }}"
+    rest_api_port: "{{ admintools_port | default('45080') }}"
+    hostname: "{{ host_fqdn | default(inventory_hostname) }}"
+    verify_ssl: False
+    timeout: "{{ vi_crud_wait_timeout }}"
+  until: version_info_sent is not failed
+  retries: 3
+  delay: 60
+
+- name: "Remove temporary SSL Certificate file"
+  register: certificate_removed
+  when: certificate_copied|skipped == false
+  file:
+    path: "{{ certificate_copied.path | default(certificate_copied.dest) }}"
+    state: absent

@@ -1,0 +1,156 @@
+# Automatically generated playbook from a template in ansible/templates/configure_scaled_processingOFF.yaml.j2
+---
+- name: "Prepare playbook for {{ scaled_group }} nodes."
+  hosts: {{ scaled_group }}{% raw %}
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  become_method: sudo
+  remote_user: TEST
+  vars_files:
+    - vars/global_var.yml
+  gather_facts: yes
+  tasks:
+    - include: tasks/common/relate_fqdn_to_floating_ip.yml
+    - include: tasks/common/generic_tasks.yml
+    - include: tasks/common/update_etc_hosts.yml
+
+- name: Fetch keycloak certificate from UI node
+  hosts: ui-vip
+  remote_user: TEST
+  vars:
+    ansible_dir: /tmp/ansible_tmp
+  vars_files:
+    - roles/keycloak/defaults/main.yml
+  tasks:
+    - include: tasks/common/fetch_keycloak_cert.yml
+
+- name: Do preparations to get correct keycloak cert to new nodes
+  hosts: localhost
+  become: no
+  tasks:
+    - include: tasks/common/template_keycloak_json.yml
+
+- name: Copy prometheus CA key back to docker container
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  roles:
+    - { role: cpro-copy-ca-private }
+
+{% endraw %}
+- name: "Main play for {{ scaled_group}} nodes."
+  hosts: {{ scaled_group }}{% raw %}
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars:
+    group_name: "{{ group_names | difference(['vdu-processingOFF']) | first }}"
+    group_index: "{{ group_name.split('-')[-1] }}"
+    ha_master: "{{ groups[group_name][0] }}"
+    first_node: "{{ groups['vdu-processingOFF-0'][0] }}"
+    reconfigure: False
+  vars_files:
+    - vars/global_var.yml
+    - vars/processing_offline_var.yml
+    - vars/alarm_var.yml
+  gather_facts: "{{ vnf_gather_facts }}"
+  pre_tasks:
+    - name: Verify that TEST is stopped
+      systemd:
+        name: el-node-manager
+        state: stopped
+  post_tasks:
+    - include: tasks/processing/offline_post_tasks.yml
+
+    - name: Start keepalived to enable HA on default ACTIVE
+      systemd:
+        name: keepalived
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+      when: inventory_hostname == ha_master
+
+    - pause: seconds=35
+
+    - name: Start keepalived to enable HA on STANDBY
+      systemd:
+        name: keepalived
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+      when: inventory_hostname != ha_master
+
+    - name: Update tools.pl to https
+      shell: sed -i s/http:/https:/g /opt/TEST/TEST/.mds.rc
+
+    - include: cert_cleanup.yaml
+
+  roles:
+    - { role: user-and-access-management }
+    - { role: ntp }
+    - { role: dns }
+    - { role: configure-logrotate }
+    - { role: ha, hookFunction: deploy }
+    - { role: el-ha, hookFunction: mount-volumes, preserve_data: True }
+    - { role: el-ha, hookFunction: deploy, preserve_data: True }     # Mounts glusterfs volumes installs el keepalived plugin
+    - { role: el-db }
+    - { role: el-node-manager }
+    - { role: el-xml-audit-plugin }
+    - { role: el-systemtools, ansible_dir: /tmp/ansible_tmp }
+    - { role: el-crypto, when: activate_crypto }
+    - { role: lookup-server-mdsrc }
+    - {
+        role: lookup-server-add-server,
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name }}-OFF-{{ group_index }}",
+        lookup_server_port: "{{ vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_port }}",
+        lookup_server_host: "{{ hostvars[inventory_hostname].fqdn_host }}",
+        lookup_server_ip: "{{ processingoff_oam_vip_list[group_index|int].ip }}",
+        when: vnf_context_data.stack_params.cbam.extensions.offline_lookup_server_name != ""
+      }
+    - { role: docker-engine-install }
+    - { role: el-node-exporter }
+    - { role: cpro-tls, operation: "scale" }
+    - { role: el-fluentd, operation: "scale" }
+    - { role: el-processing-state }
+
+- name: Main play to update prometheus scrape targets in vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+    - vars/alarm_var.yml
+  vars:
+    dr_server_lists: ""
+    dr_proc_server_lists: ""
+    post_scaling: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cpro-server }
+
+- name: Configure all vdu nodes with new SSH keys
+  hosts: vdu-db:vdu-cgf:vdu-ui:vdu-processingOFF:vdu-processingON:vdu-oam:vdu-crdb
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  become: true
+  vars_files:
+    - vars/global_var.yml
+  pre_tasks:
+    - name: Fetch public key to Ansible container
+      fetch: 
+        src: ~TEST/.ssh/id_rsa.pub
+        dest: "{{ inventory_dir }}/public_keys/id_rsa-{{ inventory_hostname }}.pub"
+        flat: yes
+      register: download_result
+      until: download_result | success
+      retries: 3
+      delay: 1
+  roles:
+    - { role: bootstrap-servers }
+
+{% endraw %}

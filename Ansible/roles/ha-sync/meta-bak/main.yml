@@ -1,0 +1,3 @@
+dependencies:
+  - {role: sdc, when: hookFunction=='deploy' or hookFunction=='imagesu_apply' or hookFunction=='rpmsu_apply' or hookFunction=='scaleout'}
+  - {role: ha, when: hookFunction=='deploy' or hookFunction=='imagesu_apply' or hookFunction=='rpmsu_apply' or hookFunction=='scaleout'}

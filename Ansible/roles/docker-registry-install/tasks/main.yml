@@ -1,0 +1,97 @@
+---
+
+- assert:
+    that:
+      - "docker_registry_ip is defined"
+      - "docker_registry_port is defined"
+      - "docker_registry_path is defined"
+
+- name: "Updating docker-distribution path"
+  register: path_updated
+  replace:
+    dest: /etc/docker-distribution/registry/config.yml
+    regexp: 'rootdirectory:.+'
+    replace: 'rootdirectory: {{ docker_registry_path }}'
+  become: true
+  become_method: sudo
+
+- name: "Updating docker-distribution address"
+  when: path_updated|success
+  register: address_updated
+  replace:
+    dest: /etc/docker-distribution/registry/config.yml
+    regexp: 'addr:.+'
+    replace: 'addr: {{ docker_registry_ip }}:{{ docker_registry_port }}'
+  become: true
+  become_method: sudo
+
+- name: "Updating docker-distribution delete"
+  when: address_updated|success
+  register: delete_updated
+  blockinfile:
+    dest: /etc/docker-distribution/registry/config.yml
+    insertafter: "storage:"
+    block: |2
+          delete:
+              enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR docker-registry"
+  become: true
+  become_method: sudo
+
+- name: "Open ports for docker-distribution"
+  when: delete_updated|success
+  register: firewalld_ports_opened
+  firewalld:
+    zone: "public"
+    port: "{{ docker_registry_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+
+- name: "Start docker-distribution service"
+  when: firewalld_ports_opened|success
+  register: docker_distribution_started
+  service:
+    name: "docker-distribution"
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo
+
+- name: "Start crond service"
+  when: docker_distribution_started|success
+  register: crond_started
+  service:
+    name: "crond"
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo
+
+- name: "Create CRON job"
+  when: crond_started|success
+  cron:
+    name: "Clear docker distribution images"
+    user: "root"
+    hour: 0
+    minute: 0
+    job: "/bin/registry garbage-collect /etc/docker-distribution/registry/config.yml 2>&1"
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: "Get all UI hosts IP."
+  set_fact:
+    ui_hosts_ip: "{{ ui_intnet_0 }},{{ ui_intnet_1 }}"
+
+- name: "Add/Update docker-registry section of RC file with provided details."
+  blockinfile:
+    block: |
+      docker_registry_hostname: "{{ ui_hosts_ip }}"
+      docker_registry_port: {{ docker_registry_port }}
+    dest: "{{ rcfile }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR docker-registry"
+  become: true
+  become_method: sudo

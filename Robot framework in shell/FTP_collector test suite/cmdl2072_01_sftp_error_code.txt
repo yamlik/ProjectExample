@@ -1,0 +1,112 @@
+*** Settings ***
+
+Documentation  Test for sftp collector error code handling
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+
+
+Default Tags  Regression  CM650EB1  Risk_High
+
+
+*** Variables ***
+${result}
+${match}
+${pid}
+
+*** Keywords ***
+
+        
+*** Test Cases ***
+
+Prepare Enviroment
+        Login To Test Host
+        
+        el.Executing Stop Stream  Smoke_stream  abort  600
+        
+        el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/cmdl2072_data.tar  ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/bin/
+        Write   cd ${AUTO_EL_INST_DIR}
+        Read Until Prompt
+        Write   cd ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/bin
+        Read Until Prompt
+	Write   tar xf cmdl2072_data.tar
+	Read Until Prompt
+        Write   export PATH=$PWD:$TEST_HOME/lib:$PATH; export PERL5LIB=$PWD:$PERL5LIB; export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH; export LIBPATH=$PWD:$LIBPATH
+        Read Until Prompt
+	Write	mkdir audit_bk output_0 output_1
+	Read Until Prompt
+	Write	mv ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/audit/1/* audit_bk
+	Read Until Prompt
+	Write	mv ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_0*/* output_0
+	Read Until Prompt
+	Write	mv ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_1*/* output_1
+	Read Until Prompt
+
+CMDL-2072_01 Negative Return Code
+	Write   touch ${SMOKE_STREAM_DIR}/data/input2/testinputfile.txt
+	Read Until Prompt
+        Write   mv default_ruleset.pm default_ruleset.pm.bk
+        Read Until Prompt
+        Write   mv default_ruleset_negative.pm default_ruleset.pm
+        Read Until Prompt
+        Write   perl_node -c ../control/1/config
+        ${result}=  Read Until Prompt
+        ${match}=  Run Keyword  Should Match  ${result}  *-31*
+        ${match}=  Run Keyword  Should Not Match  ${result}  *sv_setpvn*
+        Write   rm -f default_ruleset.pm
+        Read Until Prompt
+        Write   mv default_ruleset.pm.bk default_ruleset.pm
+        Read Until Prompt
+       
+CMDL-2072_02 Zero Return Code
+	Write	rm -f ${SMOKE_STREAM_DIR}/data/input2/testinputfile.txt
+	Read Until Prompt
+	Write	touch ${SMOKE_STREAM_DIR}/data/input2/testinputfile.txt
+	Read Until Prompt
+	Write	rm -f ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/audit/1/*
+	Read Until Prompt
+	Write	mv default_ruleset.pm default_ruleset.pm.bk
+	Read Until Prompt
+	Write	mv default_ruleset_zero_byte.pm default_ruleset.pm
+	Read Until Prompt
+	Write	perl_node -c ../control/1/config -d
+	Read Until Prompt
+	Write	cat ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/control/1/pidfile
+	${pid}=	Read Until Prompt
+	Sleep	10
+	Start Command	ls -la ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_0*/ | awk '{print $5}' | grep ^0
+	${result}=	Read Command Output
+	${match}=	Run Keyword  Should Match Regexp  ${result}  ^0
+	# Newer version smoke stream doesnt have copylink
+	#Write	ls -la ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_1*/ | awk '{print $5}' | grep ^0
+	#${result}=	Read Until Prompt
+	#${match}=	Run Keyword  Should Match Regexp  ${result}  ^0
+	Write	mv default_ruleset.pm.bk default_ruleset.pm
+	Read Until Prompt
+	Write	kill -9 ${pid}
+	Read Until Prompt
+
+#CMDL-2072_03 Positive Return Code will be tested in CMDL-2122 double free
+
+Cleanup Testing Environment
+	Write   cd ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/bin
+	Read Until Prompt
+        Write   rm -f ../audit/1/* cmdl2072_data.tar default_ruleset_negative.pm default_ruleset_positive.pm default_ruleset_zero_byte.pm
+	Read Until Prompt
+	Write	rm -f ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/audit/1/*
+	Read Until Prompt
+	Write	rm -f ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_0*/*
+	Read Until Prompt
+	Write	rm -f ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_1*/*
+	Read Until Prompt
+	Write	mv audit_bk/* ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/audit/1/
+	Read Until Prompt
+	Write	mv output_0/* ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_0*/
+	Read Until Prompt
+	Write	mv output_1/* ${AUTO_EL_INST_DIR}/base/status/streams/Smoke_stream/nodes/Collector2/output/COLLECTED_1*/
+	Read Until Prompt
+	Write	rm -rf audit_bk output_0 output_1
+	Read Until Prompt
+        Close Connection
+

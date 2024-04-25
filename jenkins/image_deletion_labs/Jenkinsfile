@@ -1,0 +1,164 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    options {
+      timeout(time: 600, unit: 'MINUTES')
+      buildDiscarder(logRotator(daysToKeepStr: '30',  artifactDaysToKeepStr: '30'))
+      //disableConcurrentBuilds()
+      timestamps()
+    }
+
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl..com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+    triggers {
+        parameterizedCron('''
+            ## Centos
+            25 18 * * * %image_suffix=-mediation-2100-processing-centos-7.8;labs_to_check=CB0930-openrc-v3.sh
+            26 18 * * * %image_suffix=-mediation-2100-crdb-centos-7.8;labs_to_check=CB0930-openrc-v3.sh
+            27 18 * * * %image_suffix=-mediation-2100-UI-centos-7.8;labs_to_check=CB0930-openrc-v3.sh
+            28 18 * * * %image_suffix=-mediation-2100-DB-centos-7.8;labs_to_check=CB0930-openrc-v3.sh
+            29 18 * * * %image_suffix=-mediation-2100-oam-centos-7.8;labs_to_check=CB0930-openrc-v3.sh
+            ## Rhel Image
+            29 19 * * * %image_suffix=-mediation-2100-processing-rhel-7.8;labs_to_check=CB0930-openrc-v3.sh
+            30 19 * * * %image_suffix=-mediation-2100-crdb-rhel-7.8;labs_to_check=CB0930-openrc-v3.sh
+            31 19 * * * %image_suffix=-mediation-2100-UI-rhel-7.8;labs_to_check=CB0930-openrc-v3.sh
+            32 19 * * * %image_suffix=-mediation-2100-DB-rhel-7.8;labs_to_check=CB0930-openrc-v3.sh
+            33 19 * * * %image_suffix=-mediation-2100-oam-rhel-7.8;labs_to_check=CB0930-openrc-v3.sh
+            ## Clean up base image in build lab
+            20 17 * * * %image_suffix=appos-20.05-0_centos_20200525_210531-clog.snapshot_crdb;labs_to_check=v8603_DI_DR-openrc.sh
+            21 17 * * * %image_suffix=appos-20.05-0_centos_20200525_210531-clog.snapshot_db;labs_to_check=v8603_DI_DR-openrc.sh
+            22 17 * * * %image_suffix=appos-20.05-0_centos_20200525_210531-clog.snapshot_processing;labs_to_check=v8603_DI_DR-openrc.sh
+            23 17 * * * %image_suffix=appos-20.05-0_centos_20200525_210531-clog.snapshot_ui;labs_to_check=v8603_DI_DR-openrc.sh
+            24 17 * * * %image_suffix=appos-20.05-0_centos_20200525_210531-clog.snapshot_content;labs_to_check=v8603_DI_DR-openrc.sh
+            25 17 * * * %image_suffix=oame-20.05-2_centos_20200710_015221-clog.snapshot_-;labs_to_check=v8603_DI_DR-openrc.sh
+            26 17 * * * %image_suffix=-mediation-2100-processing-centos-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+            27 17 * * * %image_suffix=-mediation-2100-UI-centos-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+            28 17 * * * %image_suffix=-mediation-2100-DB-centos-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+            20 19 * * * %image_suffix=appos-20.05-0_rhel_20200525_021311-clog.snapshot_crdb;labs_to_check=v8603_DI_DR-openrc.sh
+            21 19 * * * %image_suffix=appos-20.05-0_rhel_20200525_021311-clog.snapshot_db;labs_to_check=v8603_DI_DR-openrc.sh
+            22 19 * * * %image_suffix=appos-20.05-0_rhel_20200525_021311-clog.snapshot_processing;labs_to_check=v8603_DI_DR-openrc.sh
+            23 19 * * * %image_suffix=appos-20.05-0_rhel_20200525_021311-clog.snapshot_ui;labs_to_check=v8603_DI_DR-openrc.sh
+            24 19 * * * %image_suffix=appos-20.05-0_rhel_20200525_021311-clog.snapshot_content;labs_to_check=v8603_DI_DR-openrc.sh
+            25 19 * * * %image_suffix=oame-20.05-2_rhel_20200712_205636-clog.snapshot_-;labs_to_check=v8603_DI_DR-openrc.sh
+            26 19 * * * %image_suffix=-mediation-2100-processing-rhel-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+            27 19 * * * %image_suffix=-mediation-2100-UI-rhel-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+            28 19 * * * %image_suffix=-mediation-2100-DB-rhel-7.8;labs_to_check=v8603_DI_DR-openrc.sh
+
+
+        ''')
+    }
+    parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'feature-TM_DR-3659', description: 'Git Branch to build on.', trim: true)
+        string(name: 'image_suffix', defaultValue: '-mediation-2100-processing-centos-7.8', description: 'The image suffix to be checked',trim: true)
+        string(name: 'labs_to_check', 
+               defaultValue: '', 
+               description: 'The lab(s) for the images to be checked. (For eg, CB0930-openrc-v3.sh)', 
+               trim: true
+              )
+        choice(name: 'Invoke_Parameters', 
+               choices: "No\nYes", 
+               description: "Do you wish to do a dry run to grab parameters?"
+              )
+    }
+
+    stages {
+      stage("Parameterizing") {
+          steps {
+              script {
+                  currentBuild.description = "Image Suffix: ${params.image_suffix}"
+                  if ("${params.Invoke_Parameters}" == "Yes") {
+                      currentBuild.result = 'SUCCESS'
+                      error('DRY RUN COMPLETED. JOB PARAMETERIZED.')
+                  }
+              }
+          }
+      }
+
+      stage("Clean Up Packages") {
+        when {
+              environment name: 'Invoke_Parameters', value: 'No'
+        }
+        steps{
+          script{
+            sh """
+              check_and_delete()
+              {
+                temp_out=output.temp
+                count=1
+
+                echo "Checking image : ${params.image_suffix}"
+                
+                openstack image list --sort created_at:desc | grep -e "${params.image_suffix}" | grep -v grep | tr -d '|' > \$temp_out
+                cat \$temp_out
+                total_images=\$(wc -l < \$temp_out)
+                echo "Total images : \$total_images"
+
+                if [ \$total_images -gt "5" ]; then
+
+                  tail -n +6 \$temp_out | while read -r line
+                  do
+                    trim_line=(\$(echo \$line | xargs))
+                    echo "\$count : Removing \${trim_line[@]}"
+                    echo "ID : \${trim_line[0]}"
+                    echo "Name : \${trim_line[1]}"
+                    echo ""
+                    openstack image delete \${trim_line[0]}
+                    count=\$((count+1))
+                  done
+                else
+                  echo "Skip due to images less than or equal to 5"
+                fi
+
+                rm \$temp_out
+              }
+
+              source /env/bin/activate
+
+              cd $WORKSPACE/internal/jenkins/pipelines/image_deletion_labs/files/rc/
+
+              if [ -z ${params.labs_to_check} ]; then
+                failed_count=0
+
+                lab_count=\$(ls -l *.sh | wc -l )
+
+                for f in *.sh; do
+
+                  rc_file=\$(echo \"\$f\" | rev | cut -d'/' -f 1 | rev)
+                  echo "Processing \$rc_file file..";
+                  . ./\$f
+                  check_and_delete
+                done
+
+              else
+                rc_file=${params.labs_to_check}
+
+                if [ -f \$rc_file ]; then
+                  echo "Processing \$rc_file file..";
+
+                  . ./\$rc_file
+                  check_and_delete
+
+                else
+                  echo "\$rc_file NOT FOUND!"
+                  exit 1
+                fi
+              fi
+            """
+          }
+        }
+      }
+    }    
+} 

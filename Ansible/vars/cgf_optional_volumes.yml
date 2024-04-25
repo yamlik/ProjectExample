@@ -1,0 +1,11 @@
+timesten_volume:
+  - name: timesten
+    filesystem: xfs
+    label: timesten
+    opts: '-b size=4096 -L timesten'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['cgf']['timesten_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TimesTen/TEST_timesten/data
+    mount_point_dash: opt-TEST-TimesTen-TEST_timesten-data
+    owner: TEST
+    group: TEST
+    mode: "0700"

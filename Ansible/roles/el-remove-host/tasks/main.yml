@@ -1,0 +1,115 @@
+---
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - instance_host_name
+
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "instance_host_name", value: "{{ instance_host_name }}" }
+
+- name: Copy decommisioning scripts
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0555
+    force: yes
+  with_items:
+    - { src: "unmonitor_stream_and_remove_host.sh.j2", dest: "{{ TEST_home }}/bin/unmonitor_stream_and_remove_host.sh" }
+    - { src: "unmonitor_online_stream_and_remove_host.sh.j2", dest: "{{ TEST_home }}/bin/unmonitor_online_stream_and_remove_host.sh" }
+    - { src: "stop_all_streams_in_host.sh.j2", dest: "{{ TEST_home }}/bin/stop_all_streams_in_host.sh" }
+    - { src: "stop_all_online_streams_in_host.sh.j2", dest: "{{ TEST_home }}/bin/stop_all_online_streams_in_host.sh" }
+
+# Stop GTP prime collector(s)
+- name: Stop all GTP Prime collectors
+  systemd:
+    name: "{{ gtp_prime_service_name }}{{ collector_index }}"
+    state: stopped
+  become: true
+  become_method: sudo
+  with_sequence: start=0 count="{{ gtp_prime_collector_instance }}" stride=1
+  loop_control:
+    loop_var: collector_index
+  when: gtp_prime_collector_instance > 0 and gtp_install_flag
+
+# Stop all online streams
+- name: Stop all online streams
+  shell: "{{ TEST_home }}/bin/stop_all_online_streams_in_host.sh"
+
+- name: Get current processing state
+  command: "cat {{ state_file }}"
+  register: current_state
+  when: not force_mode and operation == "scale-in"
+
+- debug: msg="Current processing state is {{ current_state.stdout }}"
+  when: not force_mode and operation == "scale-in"
+
+# Wait until the processing state is idle
+- name: Wait until the processing state is "idle" or "stopped"
+  wait_for:
+    path: "{{ state_file }}"
+    search_regex: idle
+    timeout: "{{ wait_timeout }}"
+  when:
+    - force_mode == false
+    - operation == "scale-in"
+    - current_state.stdout != "idle"
+    - current_state.stdout != "stopped"
+
+- name: Get current processing state
+  command: "cat {{ state_file }}"
+  register: current_state
+  when: not force_mode and operation == "scale-in"
+
+- debug: msg="Current processing state is {{ current_state.stdout }}"
+  when: not force_mode and operation == "scale-in"
+
+# Todo: Consider to be able to handle case like TxE is stopped
+- name: Unmonitor all online streams and remove the TxE host
+  shell: "{{ TEST_home }}/bin/unmonitor_online_stream_and_remove_host.sh"
+
+
+# Stop all offline streams in the processing host
+- name: Stop all offline streams in the TEST host
+  shell: "{{ TEST_home }}/bin/stop_all_streams_in_host.sh"
+
+
+- name: Get current processing state
+  command: "cat {{ state_file }}"
+  register: current_state
+  when: not force_mode and operation == "scale-in"
+
+- debug: msg="Current processing state is {{ current_state.stdout }}"
+  when: not force_mode and operation == "scale-in"
+
+# Wait until the processing state is stopped
+- name: Wait until the processing state is "stopped"
+  wait_for:
+    path: "{{ state_file }}"
+    search_regex: stopped
+  when: not force_mode and operation == "scale-in"
+
+- name: Get current processing state
+  command: "cat {{ state_file }}"
+  register: current_state
+  when: not force_mode and operation == "scale-in"
+
+- debug: msg="Current processing state is {{ current_state.stdout }}"
+  when: not force_mode and operation == "scale-in"
+
+# Execute template script
+- name: Unmonitor all streams and remove the TEST host
+  shell: "{{ TEST_home }}/bin/unmonitor_stream_and_remove_host.sh"
+
+
+...

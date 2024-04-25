@@ -1,0 +1,22 @@
+[Unit]
+Description={{ gtp_prime_collector.service_name }} service
+After=syslog.target network.target opt-gtpc.mount
+Requires=opt-gtpc.mount
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/{{ gtp_prime_collector.service_name }}
+Type=forking
+User={{ gtp_prime_owner_id }}
+Group={{ gtp_prime_owner_group }}
+WorkingDirectory={{ gtp_prime_collector.base_directory }}
+ExecStart={{ gtp_prime_collector.base_directory }}/bin/gtpc_control start
+ExecStop={{ gtp_prime_collector.base_directory }}/bin/gtpc_control stop
+
+Restart=on-failure
+TimeoutStartSec=200
+TimeoutSec=300
+TimeoutStopSec=15
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,69 @@
+---
+{% raw %}
+- name: Remove scaled node hostname when scaling down CGF pair
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  max_fail_percentage: 50
+  vars_files:
+    - vars/cgf_var.yml
+  tasks:
+    - name: call el-remove-host role for first CGF node
+      include_role:
+        name: el-remove-host
+      vars:
+        scaled_in_group: "vdu-cgf-{{ outer_item }}"
+        instance_host_name: "{{ hostvars[groups[scaled_in_group][0]]['fqdn_host'] }}"
+        txe_host: "{{ hostvars[groups[scaled_in_group][0]]['inventory_hostname'] }}"
+      with_sequence: start="{{ vnf_context_data.nfv_model.aspects.cgfAspect.count - vnf_context_data.operation_params.numberOfSteps }}" end="{{ vnf_context_data.nfv_model.aspects.cgfAspect.count - 1 }}"
+      loop_control:
+        loop_var: outer_item
+      run_once: true
+
+    - name: call el-remove-host role for second CGF node
+      include_role:
+        name: el-remove-host
+      vars:
+        scaled_in_group: "vdu-cgf-{{ outer_item }}"
+        instance_host_name: "{{ hostvars[groups[scaled_in_group][1]]['fqdn_host'] }}"
+        txe_host: "{{ hostvars[groups[scaled_in_group][1]]['inventory_hostname'] }}"
+      with_sequence: start="{{ vnf_context_data.nfv_model.aspects.cgfAspect.count - vnf_context_data.operation_params.numberOfSteps }}" end="{{ vnf_context_data.nfv_model.aspects.cgfAspect.count - 1 }}"
+      loop_control:
+        loop_var: outer_item
+      run_once: true
+
+- name: Remove lookup server (if needed) when scaling down cgf pair
+  hosts: {% endraw %}"{{ scaled_hosts }}"{% raw %}
+  gather_facts: no
+  vars:
+    group_name: "{{ hostvars[inventory_hostname].group_names | difference(['vdu-cgf']) | first }}"
+  tasks:
+    - set_fact:
+        lookup_server_port: 51260
+        lookup_server_name: "{{ vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_name }}-CGF-{{ group_name.split('-')[-1] }}"
+      when: vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_name != ""
+
+    - name: call lookup-server-remove role when scaling down cgf pair
+      include_role:
+        name: lookup-server-remove-server
+      when: vnf_context_data.stack_params.cbam.extensions.cgf_lookup_server_name != ""
+
+- name: Main play to update prometheus scrape targets in vdu-ui nodes
+  hosts: vdu-ui
+  max_fail_percentage: "{{ vnf_fail_ratio }}"
+  serial: "{{ vnf_serial }}"
+  become: true
+  become_method: sudo
+  vars_files:
+    - vars/global_var.yml
+    - vars/ui_var.yml
+    - vars/alarm_var.yml
+  vars:
+    dr_server_lists: ""
+    dr_proc_server_lists: ""
+    post_scaling: True
+  gather_facts: "{{ vnf_gather_facts }}"
+  roles:
+    - { role: cpro-server }  
+
+{% endraw %}
+

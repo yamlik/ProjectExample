@@ -1,0 +1,50 @@
+{
+  "TC-58854_1": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58854_1",
+      "Application Date": "20/10/2021",
+      "Application Type": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58854_1CARD"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58854_1",
+      "Application Date": "20/10/2021",
+      "Application Type": "CARD"
+    },
+    "ApplicationData": {
+      "Criteria": "Application Type Is CARD",
+      "Value": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_58854_1CARD"
+    }
+  },
+  "TC-58854_2": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58854_2",
+      "Application Date": "20/10/2021",
+      "Application Type": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58854_2CARD"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58854_2",
+      "Application Date": "20/10/2021",
+      "Application Type": "CARD"
+    },
+    "ApplicationData": {
+      "Criteria": "Application Type Is CARD",
+      "Value": "CARD"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_58854_2CARD"
+    }
+  }
+}

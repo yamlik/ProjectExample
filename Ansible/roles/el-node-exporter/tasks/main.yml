@@ -1,0 +1,50 @@
+---
+
+- name: install node_exporter
+  yum:
+    name: node_exporter  
+    state: present
+  become: true
+  become_method: sudo
+  
+- name: configure node_exporter.service
+  lineinfile:
+    path: /usr/lib/systemd/system/node_exporter.service
+    state: present
+    regexp: '^ExecStart=/bin/node_exporter'
+    line: ExecStart=/bin/node_exporter --web.listen-address=:{{ node_exporter_port }}
+  become: true
+  become_method: sudo
+  
+- name: open ports for node-exporter
+  firewalld:
+    zone: public
+    port: "{{ node_exporter_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  
+- name: enable node_exporter service
+  systemd:
+    name: node_exporter
+    daemon_reload: yes
+    enabled: yes
+    state: started
+  become: true
+  become_method: sudo
+
+- set_fact:
+    fqdn_temp: "{{ hostvars[inventory_hostname]['inventory_hostname'] }}"
+
+- name: verify if node_exporter metrics can be access (GET)
+  uri:
+    url: https://{{ fqdn_temp }}:{{ node_exporter_port }}/metrics
+    method: GET
+    status_code: 200
+    validate_certs: no
+  become: true
+  become_method: sudo
+  
+...

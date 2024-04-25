@@ -1,0 +1,64 @@
+---
+host_type: el
+processing_type: online
+vnf_serial: 1
+vnf_name: "TEST_{{ vnf_context_data.stack_params.cbam.vnfId }}"
+charging_ip: "{{ ansible_local.addresses.all.charg_ip }}"
+admintools_protocol: "https"
+index_holder:  "{{groups['vdu-processingON'].index(inventory_hostname)}}"
+monitor_timesten: "{{ vnf_context_data.stack_params.cbam.extensions.pON_monitor_timesten }}"
+gtp_install_flag: "{{ vnf_context_data.stack_params.cbam.extensions.install_gtp_collector }}"
+
+cinder_volumes:
+  - name: data
+    filesystem: xfs
+    label: data
+    opts: '-b size=4096 -L data'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingon']['data_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/data
+    mount_point_dash: opt-TEST-TEST-data
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: storage
+    filesystem: xfs
+    label: storage
+    opts: '-b size=4096 -L storage'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingon']['storage_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/storage
+    mount_point_dash: opt-TEST-TEST-storage
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: offline
+    filesystem: xfs
+    label: offline
+    opts: '-b size=4096 -L offline'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingon']['offline_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/offline
+    mount_point_dash: opt-TEST-TEST-offline
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: timesten
+    filesystem: xfs
+    label: timesten
+    opts: '-b size=4096 -L timesten'
+    device: "/dev/disk/by-id/virtio-{{ ansible_local['disks']['processingon']['timesten_mount_id'][0:20] }}"
+    mount_point: /opt/TEST/TimesTen/TEST_timesten/data
+    mount_point_dash: opt-TEST-TimesTen-TEST_timesten-data
+    owner: TEST
+    group: TEST
+    mode: "0700"
+  - name: control
+    filesystem: xfs
+    label: control
+    opts: '-b size=4096 -L control'
+    device: "/dev/disk/by-id/virtio-{{ vnf_context_data['resource_model']['resources']['processingON_aspect_group']['resources'][index_holder]['resources']['data_volume_6']['attributes']['id'][0:20] }}"
+    mount_point: /opt/TEST/TEST/control
+    mount_point_dash: opt-TEST-TEST-control
+    owner: TEST
+    group: TEST
+    mode: "0700"
+nfs_mounts:
+

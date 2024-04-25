@@ -1,0 +1,118 @@
+{
+  "TC-58818": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_58818",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD",
+      "Amount/Limit": "8888"
+    },
+    "Applicant": {
+      "Id Number 1": "58818",
+      "Id Number 2": "58818PASSPORT"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "58818_dummy",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD",
+      "Amount/Limit": "8888"
+    },
+    "Applicant1": {
+      "Id Number 1": "58818",
+      "Id Number 2": "58818PASSPORT"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Type",
+      "operator": "=",
+      "value1": "CARD",
+      "value2": ""
+    },
+    "createAUser": {
+      "UserId": "tester28",
+      "UserName": "tester28",
+      "ProfileName": "tester28",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@22",
+      "ReEnterPassword": "productUnderTest@22"
+    },
+    "tester28": {
+      "password": "productUnderTest@22",
+      "database": "Default",
+      "newPassword": "productUnderTest@23"
+    }
+  },
+  "TC-55859": {
+    "createAUser1": {
+      "UserId": "user00001",
+      "UserName": "user00001",
+      "ProfileName": "Profile1",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@1",
+      "ReEnterPassword": "productUnderTest@1"
+    },
+    "createAUser2": {
+      "UserId": "user00002",
+      "UserName": "user00002",
+      "ProfileName": "Profile2",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@1",
+      "ReEnterPassword": "productUnderTest@1"
+    },
+    "user00001": {
+      "password": "productUnderTest@1",
+      "database": "Default",
+      "newPassword": "productUnderTest@2"
+    },
+    "user00002": {
+      "password": "productUnderTest@1",
+      "database": "Default",
+      "newPassword": "productUnderTest@2"
+    }
+  },
+  "TC-58882": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_58882",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD",
+      "Amount/Limit": "8888"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "Automation_58882",
+      "value2": ""
+    },
+    "createAUser": {
+      "UserId": "tester31",
+      "UserName": "tester31",
+      "ProfileName": "tester31",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "productUnderTest@22",
+      "ReEnterPassword": "productUnderTest@22"
+    },
+    "tester31": {
+      "password": "productUnderTest@22",
+      "database": "Default",
+      "newPassword": "productUnderTest@23"
+    }
+  }
+}

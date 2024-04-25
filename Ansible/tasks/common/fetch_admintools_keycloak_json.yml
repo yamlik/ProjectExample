@@ -1,0 +1,10 @@
+---
+- name: "Fetch admintools-keycloak.json to master"
+  fetch:
+    src: "{{ admintools_webapp_dir }}/WEB-INF/keycloak.json"
+    dest: "{{ admintools_client_local_conf }}"
+    flat: yes
+  become: true
+  become_method: sudo
+
+...

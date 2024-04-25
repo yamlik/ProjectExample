@@ -1,0 +1,6 @@
+---
+TEST_bin_dir: /opt/TEST/TEST/base/bin
+grafana_data_dir:  /var/lib/grafana/data
+gen3gppxml_report_location: /appdata/meas
+prometheus_storage_path: /prometheus
+...

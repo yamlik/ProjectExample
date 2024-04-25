@@ -1,0 +1,59 @@
+---
+# defaults file for keycloak-create-user
+kc_fqdn: "{{ inventory_hostname }}"
+kc_https_port: 8666
+kc_https_url: "https://{{ kc_fqdn }}:{{ kc_https_port }}/auth"
+kc_realm_name: TEST
+kc_TEST_ui_client_id: "TEST_ui"
+kc_install_dir: /opt/keycloak
+role_set: "{{ el_ui_admin_user_roles }}"
+roles_dictionary:
+  - name: "TEST administrator"
+    desc: "Access to all operations of all modules."
+    permissions:
+      - "TEST.administration"
+      - "TEST.browse"
+      - "TEST.browse_history"
+      - "TEST.delete_stream"
+      - "TEST.delete_stream_version"
+      - "TEST.host_config"
+      - "TEST.kill"
+      - "TEST.manage_notification"
+      - "TEST.modify_stream_details"
+      - "TEST.node_cfg_files"
+      - "TEST.node_param"
+      - "TEST.operate_execution"
+      - "TEST.operate_node"
+      - "TEST.operate_stream"
+      - "TEST.reprocessing_modify"
+      - "TEST.reprocessing_offline"
+      - "TEST.reprocessing_start"
+      - "TEST.workspace"
+      - "lookup_admin.administrator"
+      - "lookup_admin.operator"
+      - "lookup_admin.browser"
+  - name: "TEST operator"
+    desc: "Standard TEST operations."
+    permissions:
+      - "TEST.browse"
+      - "TEST.node_param"
+      - "TEST.node_cfg_files"
+      - "TEST.operate_execution"
+      - "TEST.operate_node"
+      - "TEST.operate_stream"
+      - "TEST.workspace"
+      - "TEST.delete_stream_version"
+      - "TEST.manage_notification"
+      - "TEST.reprocessing_offline"
+      - "TEST.reprocessing_start"
+  - name: "TEST browser"
+    desc: "View mode only."
+    permissions:
+      - "TEST.browse"
+      - "TEST.node_param"
+      - "TEST.node_cfg_files"
+      - "TEST.manage_notification"
+
+el_ui_admin_user_roles: "{{ roles_dictionary[0].permissions }}"
+
+...

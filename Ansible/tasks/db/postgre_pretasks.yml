@@ -1,0 +1,51 @@
+---
+- name: Create pg_log directory onto root disk
+  file:
+    path: /var/log/pg_log
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0700
+
+- name: Use pg_log directory on the root disk
+  lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: '#log_directory'
+    line: "log_directory = '/var/log/pg_log'"
+
+- name: Create initial directory for pg_stat_tmp
+  file:
+    path: /run/postgresql/pgsql_stat_tmp
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0700
+
+- name: Move files from /var/lib/pgsql/data/pg_log to /var/log/pg_log
+  shell: mv /var/lib/pgsql/data/pg_log/* /var/log/pg_log/.
+  ignore_errors: true
+
+- name: Set pg_stat_tmp to use RAM backed directory instead of the default
+  lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: '#stats_temp_directory'
+    line: "stats_temp_directory = '/run/postgresql/pgsql_stat_tmp'"
+
+- name: "Update postgresql max lock per transaction"
+  blockinfile:
+    block: |
+      max_locks_per_transaction = {{ postgresql_max_locks_per_transaction }}
+    dest: /var/lib/pgsql/data/postgresql.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR POSTGRESQL.CONF"
+  become: true
+  become_method: sudo
+
+- name: Ensure directory for pg_stats_tmp will be created
+  copy:
+    dest: /etc/tmpfiles.d/postgresql.conf
+    content: |
+      d /run/postgresql 0755 postgres postgres -
+      d /run/postgresql/pgsql_stat_tmp 0700 postgres postgres -
+      
+
+...

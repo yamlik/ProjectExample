@@ -1,0 +1,10 @@
+---
+# tasks file for el-db-create-database
+
+- include: variables.yml
+  static: no
+
+- include: configure.yml
+
+- include: create.yml
+  when: ((reconfigure is not defined) or (reconfigure != True) and (inventory_hostname == groups['vdu-db'][0]))

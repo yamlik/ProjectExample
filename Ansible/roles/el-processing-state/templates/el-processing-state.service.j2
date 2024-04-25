@@ -1,0 +1,13 @@
+[Unit]
+Description=Processing state check service for TEST
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/el-processing-state
+ExecStart={{ el_processing_state_install_directory }}/el-processing-state.py
+User={{ el_processing_state_user }}
+Group={{ el_processing_state_group }}
+
+[Install]
+WantedBy=multi-user.target

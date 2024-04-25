@@ -1,0 +1,8 @@
+LD_LIBRARY_PATH="{{ install_dir }}/base/lib:{{ install_dir }}/perl/5.8.9/lib/5.8.9/x86_64-linux-thread-multi/CORE:/usr/lib/jvm/jre-1.8.0/lib/amd64/server:/opt/TEST/TimesTen/packages/tt18.1.4.4.0/lib/":$LD_LIBRARY_PATH
+PERL5LIB="{{ install_dir }}/perl/5.8.9/lib/5.8.9:{{ install_dir }}/perl/5.8.9/lib/site_perl/5.8.9"
+TEST_HOME="{{ TEST_home }}"
+PATH="/bin:/usr/bin:{{ TEST_home }}/bin:/opt/TEST/TimesTen/TEST_timesten/bin":$PATH
+{% if monitor_timesten %}
+ODBCINI="{{ odbcini }}"
+{% endif %}
+TIMESTEN_HOME="/opt/TEST/TimesTen/TEST_timesten"

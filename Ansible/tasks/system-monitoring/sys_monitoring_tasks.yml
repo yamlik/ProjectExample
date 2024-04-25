@@ -1,0 +1,48 @@
+---
+- name: Verify prometheus-server is stopped
+  systemd:
+    name: prometheus-server
+    state: stopped
+
+- name: Verify grafana-server is stopped
+  systemd:
+    name: grafana-server
+    state: stopped
+
+- name: Verify gen3gppxml is stopped
+  systemd:
+    name: gen3gppxml
+    state: stopped
+
+# To ensure NFS client has same uid/gid in NFS server
+- name: "Ensure group grafana exists"
+  group:
+    name: "grafana"
+    gid: 1009
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: "Add/update user and group grafana"
+  user:
+    name: "grafana"
+    group: "grafana"
+    createhome: no
+    uid: 1009
+  become: yes
+  become_method: sudo
+
+- name: "update grafana directories with new user and group id"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "grafana"
+    group: "grafana"
+    recurse: true
+    mode: 0700
+  become: true
+  become_method: sudo
+  with_items:
+    - "/var/lib/grafana/"
+    - "/var/log/grafana/"
+    - "/etc/grafana/"

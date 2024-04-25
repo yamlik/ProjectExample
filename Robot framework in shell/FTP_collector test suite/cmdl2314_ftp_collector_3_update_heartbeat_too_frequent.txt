@@ -1,0 +1,270 @@
+*** Settings ***
+
+Documentation  Test for FTP Collector 3.0.x update heartbeats too frequent
+
+Resource    ${RESOURCE}
+Resource    ${KEYWORDS_PATH}/el_host.txt
+Resource    ${KEYWORDS_PATH}/el.txt
+
+Default Tags  Regression  CM641EB3  CM650EB3  CM650_And_Below_Only  Risk_High
+
+Suite Setup			Prepare Environment
+Suite Teardown		Suite End
+*** Variables ***
+${ROBOT_LOG_LEVEL}    INFO
+${ROBOT_DATA_DIRECTORY}    cmdl_2314
+${FTP_COLL_301_PKG_PATTERN}    EL_APP_FTP_COLLECTOR-3.0.1.el
+${FTP_COLL_NEW_PKG_PATTERN}    EL_APP_FTP_COLLECTOR-3.*.el
+${IMPORT_STREAM_TAR}    cmdl2314_stream.tar
+${IMPORT_STREAM_PKG_NAME}    cmdl2314_test_stream
+${CHANGE_SOURCE_DIRECTORY}    
+${CHANGE_TARGET_DIRECTORY}    
+
+${COMPARE_301_COUNT}
+${COMPARE_NEW_COUNT}
+
+*** Keywords ***
+
+Log Message    [Arguments]    ${message}
+    BuiltIn.Log    ${message}    ${ROBOT_LOG_LEVEL}
+
+	
+Document    Source profile, Stop and cleanup test stream, clear robot directory, transfer data file
+Prepare Environment 
+    Set Suite Variable    ${CHANGE_SOURCE_DIRECTORY}    ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}/source
+    Set Suite Variable    ${CHANGE_TARGET_DIRECTORY}    ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}/target
+
+    Log Message    Login to Test Host
+    el_host.Login To Test Host
+    Set Client Configuration  prompt= ]$
+    Write   export PS1=]$
+    Read Until Prompt    
+	
+    Log Message    Source profile
+    Write  cd ${AUTO_EL_INST_DIR}
+    Read Until Prompt
+    Write  . ./.profile
+    Read Until Prompt
+	
+    Cleanup Testing Environment
+	
+    Log Message    Creating robot directory
+    Write    mkdir -p ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}
+    Read Until Prompt
+    Write    mkdir -p ${CHANGE_SOURCE_DIRECTORY}
+    Read Until Prompt
+    Write    mkdir -p ${CHANGE_TARGET_DIRECTORY}
+    Read Until Prompt
+
+    Log Message    Transfer data file into robot directory
+    # Use absolute path here due to tar file should not check in to mercurial
+   el_host.Download Binary File  ${REPO_DATA_PATH}/testcases/FTP_collector/${IMPORT_STREAM_TAR}    ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}/${IMPORT_STREAM_TAR}
+	
+
+Document    Stop and cleanup test stream, clear robot directory
+Cleanup Testing Environment
+    Do Remove Test Stream
+    Log Message    Cleaning robot data
+    el.Delete Robot Data    ${ROBOT_DATA_DIRECTORY}
+
+	
+Document    Teardown keyword to cleanup environment
+Suite End
+    Cleanup Testing Environment
+    Log Message    Closing Connection
+    SSHLibrary.Close All Connections
+	
+
+Document    Stop and cleanup test stream
+Do Remove Test Stream
+    Log Message    Remove cmdl2314 stream
+	
+    ${stream_id}=    el_host.Tools Get Stream Id    cmdl2314
+    Log Message    StreamID found [${stream_id}]    
+    Run Keyword Unless    '${stream_id}'=='' or '${stream_id}'=='None'   Hide Test Stream    ${stream_id}
+	
+    Log Message    Cleanup Deleted Streams
+    el_host.Cleanup Deleted Streams
+
+	
+Document    Hide and delete test stream
+Hide Test Stream    [Arguments]    ${stream_id}
+    Log Message    Stop Test stream - ${stream_id}
+    # Stop stream without check the status. It might had been stopped previously
+    Start Command    . ${AUTO_EL_INST_DIR}/.profile && tools.pl -c stopstream -i ${stream_id} -t ABORT
+    Read Command Output
+    Tools Wait Until Node Is    cmdl2314    FTPCollector    STOPPED    60 sec
+	
+    Log Message    Hide Test stream - ${stream_id}
+    ${monitored_stream_status}=    Get Monitored Stream Status    cmdl2314
+    Run Keyword Unless    '${monitored_stream_status}'==''    el.Hide Stream    cmdl2314    cmdl2314_temp
+	
+    Log Message    Delete Test stream - ${stream_id}
+    el.Delete Stream    cmdl2314    cmdl2314_temp
+	
+	
+Document    Retrieve latest package name from package directory
+Get Latest FTP Collector Package Name
+    Log Message    Retrieving latest FTP Collector Package Name
+    ${cm_package_folders}=    el_host.Get CM Package Folder
+    ${cm_package_folders}    Replace String    ${cm_package_folders}    :    ${SPACE}
+	
+    Start command    ls ${cm_package_folders} | grep ${FTP_COLL_NEW_PKG_PATTERN} | tail -1
+    ${latest_package}=    Read Command Output
+	
+    Run Keyword If    '${latest_package}'=='${FTP_COLL_301_PKG_PATTERN}'    Fail Test    Fixed package not included in tar package directory. Package retrieved is [${latest_package}].
+    [Return]    ${latest_package}
+	
+
+Document    Failed the test case with message
+Fail Test    [Arguments]    ${message}
+    Fail    ${message}
+    
+	
+Document    REtrieve stream host name from nodemanager.properties
+Get Stream Host Name
+    Log Message    Retrieving Stream Host Name
+    ${result}=    Start Command    grep ^nm.host ${AUTO_EL_INST_DIR}/TEST/base/internal/manager/config/nodemanager.properties
+    ${result}=    Read Command Output
+    ${result}    String.Replace String    ${result}    nm.host=    ${EMPTY}
+    [Return]    ${result}
+	
+	
+Document    Update stream.xml and import test stream
+Update And Import Stream Xml    [Arguments]    ${version_major}    ${version_minor}    ${version_defect}    ${version_patch}
+    ${stream_hostname}=    Get Stream Host Name
+    Log Message    Stream Host Name is [${stream_hostname}]
+	
+    ${cm_version}=    Get CM Version
+    Log Message    CM Version is [${cm_version}]
+
+    ${JAVANODE_MINOR}=    Set Variable    4
+    ${JAVANODE_MINOR}=    Set Variable If    ${cm_version} < 650000    3    ${JAVANODE_MINOR}
+	
+    Log Message    Preparing stream.xml
+    Write    cd ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}
+    Read Until Prompt
+    Write    rm -rf ${IMPORT_STREAM_PKG_NAME}
+    Read Until Prompt
+    Write    tar xf ${IMPORT_STREAM_TAR}
+    Read Until Prompt
+    Write    sed -e 's/CHANGE_HOSTNAME/${stream_hostname}/g' -e 's/CHANGE_MAJOR/${version_major}/g' -e 's/CHANGE_MINOR/${version_minor}/g' -e 's/CHANGE_DEFECT/${version_defect}/g' -e 's/CHANGE_PATCH/${version_patch}/g' -e 's/CHANGE_JAVANODE/${JAVANODE_MINOR}/g' -e 's|CHANGE_SOURCE|${CHANGE_SOURCE_DIRECTORY}|g' -e 's|CHANGE_TARGET|${CHANGE_TARGET_DIRECTORY}|g' ${IMPORT_STREAM_PKG_NAME}/stream.xml > ${IMPORT_STREAM_PKG_NAME}/stream.xml.temp && mv ${IMPORT_STREAM_PKG_NAME}/stream.xml.temp ${IMPORT_STREAM_PKG_NAME}/stream.xml
+    Read Until Prompt
+    Start Command    . ${AUTO_EL_INST_DIR}/.profile && tools.pl -c import ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}/${IMPORT_STREAM_PKG_NAME} -r
+    ${result}=    Read Command Output
+    Should Match Regexp  ${result}  successfully
+
+	
+Document    Retrieve latest package name and update stream.xml and import test stream
+Update New Stream Xml    [Arguments]    ${package_name}
+    ${package_version}=    String.Replace String    ${package_name}    EL_APP_FTP_COLLECTOR-    ${EMPTY}
+    ${package_version}=    String.Replace String    ${package_version}    .el    ${EMPTY}
+    ## eg, package_version=3.0.1-PRE1 / package_version=3.0.1_PRE1
+	
+    @{version_list}=    String.Split String    ${package_version}    .
+    ${version_major}=    Set Variable    @{version_list}[0]
+    ${version_minor}=    Set Variable    @{version_list}[1]
+    ${version_defect}=    String.Replace String Using Regexp    @{version_list}[2]    (_\\w*|-\\w*)    ${EMPTY}
+	
+    @{version_patch_list}=    String.Split String    @{version_list}[2]    -
+    ${version_patch_list_size}=    BuiltIn.Get Length    ${version_patch_list}
+    ${version_patch}=    Set Variable If    '${version_patch_list_size}'>'1'    @{version_patch_list}[1]    @{version_patch_list}[0]
+    # eg, version_patch=3 / version_patch=3_PRE1
+	
+    # If version_patch successful grab value, insert underscore so that next step able to substring it
+    ${version_patch}=    Set Variable If    '@{version_list}[2]'!='${version_patch}'    _${version_patch}    ${version_patch}
+	
+    @{version_patch_list}=    String.Split String    ${version_patch}    _
+    ${version_patch_list_size}=    BuiltIn.Get Length    ${version_patch_list}
+    ${version_patch}=    Set Variable If    '${version_patch_list_size}'>'1'    @{version_patch_list}[1]    ${EMPTY}
+    # eg, version_patch=3
+	
+    Update And Import Stream Xml    ${version_major}    ${version_minor}    ${version_defect}    ${version_patch}
+	
+	
+Document    Prepare stream.xml and import test stream
+# flag_use_fixed_version - Indicate whether to search and get latest version. Possible value : 0/1
+Prepare And Import Stream Package    [Arguments]    ${flag_use_fixed_version}	
+    ${package_name}=    Run Keyword If    '${flag_use_fixed_version}'=='1'    Get Latest FTP Collector Package Name
+    ${package_name}=    Set Variable If   '${flag_use_fixed_version}'=='1'    ${package_name}    ${FTP_COLL_301_PKG_PATTERN}
+    Log Message    package_name=[${package_name}]
+    ## eg, package_name=EL_APP_FTP_COLLECTOR-3.0.1.el
+	
+    Run Keyword If    '${flag_use_fixed_version}'=='0'    Update And Import Stream Xml    3    0    1    ${EMPTY}
+    Run Keyword If    '${flag_use_fixed_version}'=='1'    Update New Stream Xml    ${package_name}
+	
+
+Document    Start cmdl2314 stream and wait until stream in RUNNING state
+Start Test Stream
+    Log Message    Start Stream - cmdl2314
+    el.Start Latest Stream    cmdl2314
+	
+	
+Document    Retrieve FTPCollector heartbeat in seconds and store to temp file
+Get Heartbeat    [Arguments]    ${check_time_in_seconds}    ${flag_use_fixed_version}
+    Log Message    Getting Heartbeat for ${check_time_in_seconds} seconds
+    Write    cd ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}
+    Read Until Prompt
+	
+    Start Command    cat ${AUTO_EL_INST_DIR}/TEST/base/status/streams/cmdl2314/nodes/FTPCollector/control/1/pidfile
+    ${pid}=    Read Command Output
+	
+    ${sleep_time}=    BuiltIn.Evaluate    ${check_time_in_seconds} + 5
+
+    Log Message    Preparing run script 
+    Write    rm -f get_heartbeat.sh && echo -e '#!/bin/env bash\n\n\nplatform=$(uname -s)\ncommand=truss\nif [[ $platform == Linux ]]; then command=strace; elif [[ $platform == HP-UX ]]; then command=/usr/local/bin/tusc; fi\n$command -o out_file -p ${pid} > /dev/null 2>&1 &\nsleep ${check_time_in_seconds}\nkill %1' > get_heartbeat.sh && chmod 755 get_heartbeat.sh
+    Read Until Prompt
+    Write    ./get_heartbeat.sh &
+    Sleep    ${sleep_time} seconds
+    Read Until Prompt
+
+    Start Command    grep heartbeat ${AUTO_EL_INST_DIR}/robot_automation/${ROBOT_DATA_DIRECTORY}/out_file | wc -l
+    ${counter}=    Read Command Output
+    Log Message    Heartbeat found = ${counter}
+
+    ${COMPARE_301_COUNT}    Set Variable If    '${flag_use_fixed_version}'=='0'    ${counter}    ${COMPARE_301_COUNT} 
+    ${COMPARE_NEW_COUNT}    Set Variable If    '${flag_use_fixed_version}'=='1'    ${counter}    ${COMPARE_301_COUNT} 
+
+    Set Suite Variable    ${COMPARE_301_COUNT}    ${COMPARE_301_COUNT}
+    Set Suite Variable    ${COMPARE_NEW_COUNT}    ${COMPARE_NEW_COUNT}
+	
+	
+Document    Retrieve CM Version to update JAVANODE package version later
+Get CM Version
+    Log Message    Getting CM Version info
+    Start Command    . ${AUTO_EL_INST_DIR}/.profile && grep CM_VERSION\= $TEST_HOME/internal/el_version_info
+    ${result}=    Read Command Output
+    ${result}    Replace String    ${result}    CM_VERSION=    ${EMPTY} 
+    [Return]    ${result}
+
+
+*** Test Cases ***
+
+
+Test Ftp Collector Heartbeat	
+    #Log Message   Import Steam with FTP Collector 3.0.1 and take the heartbeat for 10 seconds
+    #Prepare And Import Stream Package    0
+    #Start Test Stream
+    #Get Heartbeat    10    0
+    #Do Remove Test Stream
+	
+	
+    Log Message   Import Steam with FTP Collector 3.0.2 and take the heartbeat for 10 seconds
+    Prepare And Import Stream Package    1
+    Start Test Stream
+    Get Heartbeat    10    1
+    Do Remove Test Stream
+	
+    #BuiltIn.Should Be True    ${COMPARE_301_COUNT} > 0
+    BuiltIn.Should Be True    ${COMPARE_NEW_COUNT} > 0
+	
+    ## There is big different between unfixe and fixed version. eg, 2000 vs 20.
+    ## Decrease 200 counter from unfix version and it should still more then fixed version.
+    #Log Message   Compare both version heartbeat
+    #${COMPARE_301_COUNT}=    BuiltIn.Evaluate    ${COMPARE_301_COUNT} - 200
+    #BuiltIn.Should Be True    ${COMPARE_301_COUNT} > ${COMPARE_NEW_COUNT}    
+
+    # Fixed version heartbeat count should be more then 25 in 10 seconds time.
+    Log Message    Verifying heartbeat count
+    BuiltIn.Should Be True    ${COMPARE_NEW_COUNT} <= 25
+

@@ -1,0 +1,558 @@
+{
+  "TC-01": {
+    "Application": {
+      "Org": "GBK",
+      "apnumber": "Automation1",
+      "Application Type": "MIC",
+      "Application Date": "20/10/2020"
+    },
+    "Applicant": {
+      "Drivers Licence": "250"
+    }
+  },
+  "TC-35637": {
+    "Application": {
+      "Org": "{{organisation}}",
+      "Application Number": "Automation35637",
+      "Expiry Date": "20/10/2023",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD"
+    },
+    "Applicant": {
+      "Id Number 1": "35637",
+      "Id Number 2": "45345PASSPORT"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation35637CARD"
+    },
+    "verify": {
+      "Risk Level Calculated": "1",
+      "Risk Level Assigned": "2",
+      "Next Review Date Calculated": "3",
+      "Next Review Date Forced": "",
+      "Next Review Date Assigned": "4",
+      "Next Review Date Final": "",
+      "Last Review Date": "6",
+      "CAC Date": "",
+      "CAC Decision": "7",
+      "CAC Comment": "",
+      "CRC Date": "8",
+      "CRC Decision": "",
+      "CRC Comment": ""
+    }
+  },
+  "TC-48730": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_48730",
+      "Application Date": "10/02/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "DFGH345",
+      "First Name": "Smith"
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  },
+  "TC-58880_1": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation1_54397",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Phone Number": "987654321"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation1_54397MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation2_54397",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Home Phone Number": "987654321"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "07/12/2021",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Home Phone Number": "987654321"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Home Phone Number": "987654321"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation2_54397MTGE"
+    }
+  },
+  "TC-58880_2": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58880",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Company Name": "TESLA"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_54383MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58880",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Company Name": "TESLA"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Company Name": "TESLA"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Company Name": "TESLA"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Company Name": "TESLA"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Company Name": "TESLA"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_54383MTGE"
+    }
+  },
+  "TC-58883": {
+    "Cross Check Fields": {
+      "Field Name1": "Applicant.Home Address 1",
+      "Cross Check Field1": "Applicant.Home Address 1"
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_58883",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_58883MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_58883_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_58883_2MTGE"
+    }
+  },
+  "TC-12345": {
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||12345001||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|TEST1|||||||||||||||||||||||||||||||||||||||||||||||||A|TEST2|||||||||||||||||||||||||||||||||||||||||||||||||",
+      "fcwsRequest2": "{{organisation}}|{{country}}||12345002||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|TEST1|||||||||||||||||||||||||||||||||||||||||||||||||A|TEST2|||||||||||||||||||||||||||||||||||||||||||||||||"
+    }
+  },
+  "TC-58825": {
+    "Application": {
+      "Org": "{{organisation}}",
+      "Application Number": "Automation_58825",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "1234"
+    },
+    "User": {
+      "Id Number 1": "1234"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Automation1017MTGE"
+    }
+  },
+  "TC-51323": {
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||513230001||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|TEST1|||||||||||||||||||||||||||||||||||||||||||||||||A|TEST2|||||||||||||||||||||||||||||||||||||||||||||||||"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "513230001",
+      "value2": ""
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    },
+    "Application": {
+      "Application Number": "513230001"
+    }
+  },
+  "TC-52212": {
+    "createARule1": {
+      "RuleDetail": "<NewDataSet><Rules><Rules_Code>DI00001</Rules_Code><Rules_Description><![CDATA[Age < 25 and Home Address 6 is Not Empty]]></Rules_Description><Fraud_Score>10</Fraud_Score><Matches_Minimum>1</Matches_Minimum><Matches_Maximum>999</Matches_Maximum><ApplicationsAge_From>0</ApplicationsAge_From><ApplicationsAge_To>0</ApplicationsAge_To><Apply_Exclusions>0</Apply_Exclusions><Active_Flag>1</Active_Flag><Database_To_Apply>A</Database_To_Apply><MatchToItself_Flag>1</MatchToItself_Flag><NearMatching_Flag>False</NearMatching_Flag><Comments><![CDATA[]]></Comments><Rule_Group></Rule_Group><Rule_Admin_Group_Code>&#160;</Rule_Admin_Group_Code><Rules_UserId></Rules_UserId><Action></Action></Rules><RuleDefinition><Sequence_Number>1</Sequence_Number><ApplicationCategory_Number>2</ApplicationCategory_Number><ApplicationCategory_Label>Applicant</ApplicationCategory_Label><ApplicationField_Number>31</ApplicationField_Number><ApplicationField_Label>Age of Applicant (Years)</ApplicationField_Label><ApplicationField_Type>Short Integer(2)</ApplicationField_Type><Operator_Type><![CDATA[<]]></Operator_Type><Field_Flag>0</Field_Flag><Value_Flag>1</Value_Flag><DatabaseCategory_Number>0</DatabaseCategory_Number><DatabaseCategory_Label></DatabaseCategory_Label><DatabaseField_Number>0</DatabaseField_Number><DatabaseField_Label></DatabaseField_Label><DatabaseField_Type></DatabaseField_Type><Assignment_Value>25</Assignment_Value><Mandatory_Flag>0</Mandatory_Flag><Left_Bracket></Left_Bracket><Right_Bracket></Right_Bracket><Record_Id>0</Record_Id><Logical_Operator>AND</Logical_Operator><Variable_Flag>0</Variable_Flag><Reference_Table_Query></Reference_Table_Query></RuleDefinition><RuleDefinition><Sequence_Number>2</Sequence_Number><ApplicationCategory_Number>2</ApplicationCategory_Number><ApplicationCategory_Label>Applicant</ApplicationCategory_Label><ApplicationField_Number>15</ApplicationField_Number><ApplicationField_Label>Home Address 6</ApplicationField_Label><ApplicationField_Type>Text(70)</ApplicationField_Type><Operator_Type><![CDATA[IS NOT NULL]]></Operator_Type><Field_Flag>0</Field_Flag><Value_Flag>1</Value_Flag><DatabaseCategory_Number>0</DatabaseCategory_Number><DatabaseCategory_Label></DatabaseCategory_Label><DatabaseField_Number>0</DatabaseField_Number><DatabaseField_Label></DatabaseField_Label><DatabaseField_Type></DatabaseField_Type><Assignment_Value></Assignment_Value><Mandatory_Flag>0</Mandatory_Flag><Left_Bracket></Left_Bracket><Right_Bracket></Right_Bracket><Record_Id>0</Record_Id><Logical_Operator></Logical_Operator><Variable_Flag>0</Variable_Flag><Reference_Table_Query></Reference_Table_Query></RuleDefinition></NewDataSet>",
+      "ActionCode": "A"
+    },
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||522120001||||{{current_date}}|LOAN||||||||||||||||||||||||||||||||||||||A|||||||||01/08/2022||||||MELBOURNE|||||||||||||||||||||||||||||||||||"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "522120001",
+      "value2": ""
+    },
+    "valueMatchesTab": {
+      "leftColumn1": "Applicant.Age of Applicant (Years)",
+      "leftColumn2": "Applicant.Home Address 6",
+      "rightColumn1": "0 < 25",
+      "rightColumn2": "MELBOURNE IS NOT NULL",
+      "ruleDetails1": "DI00001 - Age < 25 and Home Address 6 is Not Empty"
+    }
+  },
+  "TSNT-5220": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test1_54383",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Test2_54383_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    }
+  },
+  "TC-61468": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation351901",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "07492"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test1_35190MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation351902",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "07492"
+    },
+    "VerifyApplicationValuesRuleTab": {
+      "Id Number 1": "07492"
+    },
+    "VerifyDatabaseValuesRuleTab": {
+      "Id Number 1": "07492"
+    },
+    "VerifyApplicationValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "VerifyDatabaseValuesSystemTab": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyDbValuesFullApplication": {
+      "Organisation": "{{organisation}}",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "07492"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "07492"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test2_35190MTGE"
+    }
+  },
+  "TC-48729": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "W_48729",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "ABCDEF"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "A_48729",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Id Number 1": "ABCDEF"
+    }
+  },
+  "TC-61472": {
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||61472001||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|5678RTE||||||||||||||||||||||||||||1500.00|||||||||||||||||||||",
+      "fcwsRequest2": "{{organisation}}|{{country}}||61472002||||{{current_date}}|HP||||||||||||||||||||||||||||||||||||||A|5678RTE||||||||||||||||||||||||||||6200.00|||||||||||||||||||||"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "61472002",
+      "value2": ""
+    },
+    "verifyAppValuesFullApplication": {
+      "Application Number": "61472002",
+      "Application Type": "HP"
+    },
+    "verifyDbValuesFullApplication": {
+      "Application Number": "61472002",
+      "Application Type": "HP"
+    },
+    "verifyRowColorApplication": {
+      "Organisation": "green",
+      "Country Code": "green"
+    },
+    "verifyAppValuesFullApplicant": {
+      "Id Number 1": "5678RTE",
+      "Income Increase Percentage": "313.33",
+      "Income": "6200.00"
+    },
+    "verifyDbValuesFullApplicant": {
+      "Id Number 1": "5678RTE",
+      "Income Increase Percentage": "0.00",
+      "Income": "1500.00"
+    },
+    "verifyRowColorApplicant": {
+      "Id Number 1": "blue",
+      "Income Increase Percentage": "blue"
+    }
+  },
+  "TC-61470_1": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_48730",
+      "Application Date": "10/02/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "DFGH345",
+      "First Name": "Smith"
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  },
+  "TC-61470_2": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_48730",
+      "Application Date": "10/02/2022",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Id Number 1": "DFGH345",
+      "First Name": "Smith"
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  },
+  "TESTAUTO-277": {
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "BAT01",
+      "value2": ""
+    },
+    "verifyAppValuesFullApplication": {
+      "Application Number": "BAT01",
+      "Application Type": "OD"
+    },
+    "verifyDbValuesFullApplication": {
+      "Application Number": "BAT01",
+      "Application Type": "OD"
+    }
+  },
+  "TESTAUTO-226": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "A_48730",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "A_48731",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Type",
+      "operator": "=",
+      "value1": "MTGE",
+      "value2": ""
+    },
+    "actionDetails": {
+      "Decision Reason": "COLLUSION",
+      "Nature of Fraud": "FRAUD ID/PASSPORT"
+    }
+  },
+  "TC-61476_1":{
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST_61476_1",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "SecondApplicant": {
+      "Home Address 1": "ADD1",
+      "Home Address 2": "ADD2",
+      "Home Address 3": "ADD3",
+      "Home Address 4": "ADD4",
+      "Home Address 5": "ADD5",
+      "Home Address 6": "ADD6",
+      "Home Postcode": "12345"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test_61476_1MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "TEST_61476_2",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "delete": {
+      "AppKey": "{{organisation}}{{country}}Test_61476_2MTGE"
+    },
+    "verifyApplicationCategories": "Application:Application1,Applicant:SecondApplicant",
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "=",
+      "value1": "Test_61476_2",
+      "value2": ""
+    }
+  }
+}
+
+
+

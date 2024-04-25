@@ -1,0 +1,582 @@
+---
+version: '2.0'
+name: rollback
+workflows:
+
+########################################
+################# MAIN #################
+########################################
+  rollback_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+      stackParams: <% $.stackParams %>
+      ansibleInventory: <% $.ansibleInventory %>
+      vnfInventory: <% $.vnfInventory %>
+      expectedModel: <% $.expectedModel %>
+      modifiedNfvModel: <% $.modified_nfv_model %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the rollback_starting flow.") %>
+    tasks:
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - verify_user_inputs
+
+      verify_user_inputs:
+        action: std.javascript
+        input:
+          context:
+            params: <% $.operationParams.additionalParams %>
+            resources: <% $.stackParams.cbam.resources %>
+          script: |
+
+            var snapshotParamValues = [
+              $.params.snapshot_oam,
+              $.params.snapshot_ui,
+              $.params.snapshot_db
+            ]
+
+            if (($.resources.processingON_aspect_group.count > 0) && ($.resources.processingOFF_aspect_group.count > 0)) {
+              snapshotParamValues.push($.params.snapshot_processingON)
+              snapshotParamValues.push($.params.snapshot_processingOFF)
+            } else if ($.resources.processingON_aspect_group.count > 0) {
+              snapshotParamValues.push($.params.snapshot_processingON)
+            } else if ($.resources.processingOFF_aspect_group.count > 0) {
+              snapshotParamValues.push($.params.snapshot_processingOFF)
+            }
+            
+
+              if($.resources.cgf_aspect_group.count > 0){
+                snapshotParamValues.push($.params.snapshot_cgf)              
+              }
+
+            if (hasEmptyString(snapshotParamValues)) {
+              return ('Not all needed parameters are given for snapshots.')
+            } 
+
+            //if (hasDuplicates(snapshotParamValues)) {
+            //  return ('Parameters given for snapshots include same value twice. Values needs to be unique, since every type of VM needs its own snapshot image')
+            //} 
+
+            return 'true'
+
+            // FUNCTIONS
+
+            function hasDuplicates(array) {
+              var valuesSoFar = Object.create(null);
+              for (var i = 0; i < array.length; ++i) {
+                var value = array[i];
+                if (value in valuesSoFar) {
+                  return true;
+                }
+                valuesSoFar[value] = true;
+              }
+              return false;
+            }
+
+            function hasEmptyString(array){
+              for (var i=0; i<array.length; i++){
+                if (array[i] == '') {
+                  return true;
+                }
+              }
+              return false;
+            }
+        publish: 
+          error_message:  <% task(verify_user_inputs).result %>
+        publish-on-error:
+          error_message: <% task(verify_user_inputs).result %>
+        on-error:
+          - finalize_on_error
+        on-success:
+          - update_image_ids_to_snapshots: <% task(verify_user_inputs).result = 'true' %>
+          - finalize_on_error: <% task(verify_user_inputs).result != 'true' %>
+
+      update_image_ids_to_snapshots:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.snapshot_processingON
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.processingOFF_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingOFF_aspect_group"][String(i)].processingOFF_node["0"].server.imageId = $.additional_params.snapshot_processingOFF
+              $.stack_params.cbam.resources["processingOFF_aspect_group"][String(i)].processingOFF_node["1"].server.imageId = $.additional_params.snapshot_processingOFF
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.cgf_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["cgf_aspect_group"][String(i)].cgf_node["0"].server.imageId = $.additional_params.snapshot_cgf
+              $.stack_params.cbam.resources["cgf_aspect_group"][String(i)].cgf_node["1"].server.imageId = $.additional_params.snapshot_cgf
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.oam_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["oam_aspect_group"][String(i)]["server1"].server.imageId = $.additional_params.snapshot_oam
+              $.stack_params.cbam.resources["oam_aspect_group"][String(i)]["server2"].server.imageId = $.additional_params.snapshot_oam
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.db_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["db_aspect_group"][String(i)]["server1"].server.imageId = $.additional_params.snapshot_db
+              $.stack_params.cbam.resources["db_aspect_group"][String(i)]["server2"].server.imageId = $.additional_params.snapshot_db
+            }
+
+            $.stack_params.cbam.resources["ui_aspect_group"]["0"].server.imageId = $.additional_params.snapshot_ui
+            $.stack_params.cbam.resources["ui_aspect_group"]["1"].server.imageId = $.additional_params.snapshot_ui
+
+            if ($.stack_params.cbam.resources.db_aspect_group.count > 0) {
+              $.stack_params.cbam.vdus["db"].imageId = $.additional_params.snapshot_db
+            }
+
+            if ($.stack_params.cbam.resources.oam_aspect_group.count > 0) {
+              $.stack_params.cbam.vdus["oam"].imageId = $.additional_params.snapshot_oam
+            }
+
+            if ($.stack_params.cbam.resources.processingON_aspect_group.count > 0) {
+              $.stack_params.cbam.vdus["processingON"].imageId = $.additional_params.snapshot_processingON
+            }
+
+            if ($.stack_params.cbam.resources.processingOFF_aspect_group.count > 0) {
+              $.stack_params.cbam.vdus["processingOFF"].imageId = $.additional_params.snapshot_processingOFF
+            }
+
+            if ($.stack_params.cbam.resources.cgf_aspect_group.count > 0) {
+              $.stack_params.cbam.vdus["cgf"].imageId = $.additional_params.snapshot_cgf
+            }
+            
+            $.stack_params.cbam.vdus["ui"].imageId = $.additional_params.snapshot_ui
+
+            return $.stack_params
+        publish:
+          stackParams: <% task(update_image_ids_to_snapshots).result %>
+        publish-on-error:
+          error_message: <% task(update_image_ids_to_snapshots).result %>
+        on-success:
+         - update_image_ids_to_nfvModel
+
+      update_image_ids_to_nfvModel:
+        action: std.javascript
+        input:
+          context:
+            resources: <% $.stackParams.cbam.resources %>
+            nfv_model: <% $.vnfInventory.nfvModel %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            
+            if ($.resources.db_aspect_group.count > 0) {
+              $.nfv_model.swImages.db_image.vimSoftwareImageId = $.additional_params.snapshot_db
+              $.nfv_model.extensions.vdu_db[0].active_instance = "server1"
+            }
+
+            if ($.resources.oam_aspect_group.count > 0) {
+              $.nfv_model.swImages.oam_image.vimSoftwareImageId = $.additional_params.snapshot_oam
+              $.nfv_model.extensions.vdu_oam[0].active_instance = "server1"
+            }
+
+            if ($.resources.processingON_aspect_group.count > 0) {
+              $.nfv_model.swImages.processingON_image.vimSoftwareImageId = $.additional_params.snapshot_processingON
+            }
+
+            if ($.resources.processingOFF_aspect_group.count > 0) {
+              $.nfv_model.swImages.processingOFF_image.vimSoftwareImageId = $.additional_params.snapshot_processingOFF
+              
+              for (i=0; i <  $.resources.processingOFF_aspect_group.count; i=i+1) {
+                $.nfv_model.extensions.vdu_processingOFF[i].active_instance = "server1"
+              }
+            }
+
+            if ($.resources.cgf_aspect_group.count > 0) {
+              $.nfv_model.swImages.cgf_image.vimSoftwareImageId = $.additional_params.snapshot_cgf
+            }
+
+            $.nfv_model.swImages.ui_image.vimSoftwareImageId = $.additional_params.snapshot_ui
+            
+            return $.nfv_model
+        publish:
+          modified_nfv_model: <% task(update_image_ids_to_nfvModel).result %>
+        publish-on-error:
+          error_message: <% task(update_image_ids_to_nfvModel).result %>
+        on-success:
+         - set_extra_var
+
+      set_extra_var:
+        action: cbam.evaluate_javascript
+        input:
+          javascript: javascript/set-extra-var.js
+          include: []
+          context:
+            stack_params: <% $.stackParams %>
+            nfv_model: <% $.modified_nfv_model %>
+        publish:
+          stackParams: <% task(set_extra_var).result %>
+        publish-on-error:
+          error_message: <% task(set_extra_var).result %>
+        on-success:
+          - reset_ha_status
+
+      reset_ha_status:
+        action: std.javascript
+        input:
+          context:
+            stack_params: <% $.stackParams %>
+            additional_params: <% $.operationParams.additionalParams %>
+          script: |
+            
+            for (i=0; i <  $.stack_params.cbam.resources.processingON_aspect_group.count; i=i+1) {
+              $.stack_params.cbam.resources["processingON_aspect_group"][String(i)].server.imageId = $.additional_params.snapshot_processingON
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.processingOFF_aspect_group.count; i=i+1) {
+
+              $.stack_params.cbam.resources["processing_active_list"][String(i)].active_instance = "0"
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.oam_aspect_group.count; i=i+1) {
+
+              $.stack_params.cbam.resources["oam_active_list"][String(i)].active_instance = "server1"
+            }
+
+            for (i=0; i <  $.stack_params.cbam.resources.db_aspect_group.count; i=i+1) {
+
+              $.stack_params.cbam.resources["db_active_list"][String(i)].active_instance = "server1"
+            }
+
+            return $.stack_params
+        publish:
+          stackParams: <% task(reset_ha_status).result %>
+        publish-on-error:
+          error_message: <% task(reset_ha_status).result %>
+        on-success:
+         - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - finalize_all
+
+      finalize_on_error:
+        action: std.javascript
+        input:
+          context:
+            error: <% $.error_message %>
+          script: |
+            if (typeof $.error === 'string') {
+              return $.error;
+            }
+            return JSON.stringify($.error);
+        publish-on-error:
+          error_message: <% task(finalize_on_error).result %>
+        publish:
+          error_message: <% task(finalize_on_error).result %>
+        on-complete:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+        
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+
+  rollback_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+      - stackParams
+      - ansibleInventory
+      - vnfInventory
+      - expectedModel
+      - modifiedNfvModel
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the rollback_processing flow.") %>
+    tasks:
+
+      manipulate_stack:
+        action: cbam.manipulate_stack
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          stack_params: <% $.stackParams %>
+          operation_type: <% $.operationType %>
+        publish:
+          stackId: <% task(manipulate_stack).result %>
+        publish-on-error:
+          error_message: <% task(manipulate_stack).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - wait_stack
+  
+      wait_stack:
+        action: cbam.wait_for_stack
+        input:
+          stack_id: <% $.stackId %>
+          operation_type: <% $.operationType %>
+        publish-on-error:
+          error_message: <% task(wait_stack).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_online
+
+      reconfigure_online:
+        workflow: reconfigure
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingONAspect.count )) %>
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: "vdu-processingON"
+          vdu_group: <% $.ansibleInventory['vdu-processingON'] %>
+          playname: processingon_rollback_reconfig.yml
+          count: <% $.i %>
+        publish-on-error:
+          error_message: <% task(reconfigure_online).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_oam
+
+      reconfigure_oam:
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.oamAspect.count )) %>
+        workflow: reconfigure
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: "vdu-oam"
+          vdu_group: <% $.ansibleInventory['vdu-oam'] %>
+          playname: oam_rollback_reconfig.yml
+          count: 2
+        publish-on-error:
+          error_message: <% task(reconfigure_oam).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_offline
+
+      reconfigure_offline:
+        workflow: reconfigure
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.processingOFFAspect.count )) %>
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: vdu-processingOFF-<% $.i %>
+          vdu_group: <% $.ansibleInventory['vdu-processingOFF'] %>
+          playname: processingoff_rollback_reconfig.yml
+          count: 2
+        publish-on-error:
+          error_message: <% task(reconfigure_offline).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_cgf
+
+      reconfigure_cgf:
+        workflow: reconfigure
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.cgfAspect.count )) %>
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: vdu-cgf-<% $.i %>
+          vdu_group: <% $.ansibleInventory['vdu-cgf'] %>
+          playname: cgf_rollback_reconfig.yml
+          count: 2
+        publish-on-error:
+          error_message: <% task(reconfigure_cgf).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_db
+
+      reconfigure_db:
+        workflow: reconfigure
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.dbAspect.count )) %>
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: "vdu-db"
+          vdu_group: <% $.ansibleInventory['vdu-db'] %>
+          playname: db_rollback_reconfig.yml
+          count: 2
+        publish-on-error:
+          error_message: <% task(reconfigure_db).result %>
+        on-error:
+          finalize_on_error
+        on-success:
+          - reconfigure_ui
+
+      reconfigure_ui:
+        workflow: reconfigure
+        with-items: i in <% list(range(0, $.vnfInventory.nfvModel.aspects.uiAspect.count )) %>
+        input:
+          operationParams: <% $.operationParams %>
+          operationType: <% $.operationType %>
+          vnfInventory: <% $.vnfInventory %>
+          stackParams: <% $.stackParams %>
+          ansibleInventory: <% $.ansibleInventory %>
+          inventory_group: "vdu-ui"
+          vdu_group: <% $.ansibleInventory['vdu-ui'] %>
+          playname: ui_rollback_reconfig.yml
+          count: 2
+        on-success:
+          - get_heat_resources_model
+        publish-on-error:
+          error_message: <% task(reconfigure_ui).result %>
+        on-error:
+          finalize_on_error
+
+      get_heat_resources_model:
+        action: cbam.query_heat_resources
+        input:
+          stack_id: <% $.vnfInventory.stackId %>
+        publish:
+          heatModel: <% task(get_heat_resources_model).result %>
+        on-success:
+          - add_nfv_info_to_resource_model
+        on-error:
+          finalize_on_error
+
+      add_nfv_info_to_resource_model:
+        action: cbam.add_nfv_info_to_resource_model
+        input:
+          expected_resource_model: <% $.expectedModel %>
+          resource_model: <% $.heatModel %>
+        publish:
+          vnfInventory: <% $.vnfInventory.set(resourceModel, task(add_nfv_info_to_resource_model).result) %>
+        publish-on-error:
+          error_message: <% task(add_nfv_info_to_resource_model).result %>
+        on-success:
+          - update_nfv_model
+
+      update_nfv_model:
+        action: cbam.update_vnf_inventory
+        input:
+          resource_model: <% $.vnfInventory.get(resourceModel) %>
+          nfv_model: <% $.modifiedNfvModel %>
+        publish-on-error:
+          error_message: <% task(update_nvf_model).result %>
+
+      finalize_on_error:
+        action: std.javascript
+        input:
+          context:
+            error: <% $.error_message %>
+          script: |
+            if (typeof $.error === 'string') {
+              return $.error;
+            }
+            return JSON.stringify($.error);
+        publish-on-error:
+          error_message: <% task(finalize_on_error).result %>
+        publish:
+          error_message: <% task(finalize_on_error).result %>
+        on-complete:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+
+########################################
+############# reconfigure ##############
+########################################
+  reconfigure:
+    input:
+      - operationParams
+      - operationType
+      - vnfInventory
+      - stackParams
+      - ansibleInventory
+      - inventory_group
+      - vdu_group
+      - playname
+      - count
+    output-on-error:
+      error_message: "Failure happened during reconfigure sub-flow."
+
+    tasks:
+      reconfigure_group:
+        action: cbam.run_playbook_extension
+        with-items: i in <% list(range(0, $.count )) %>
+        input:
+          action:
+            ansible: ansible/reconfig.yml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars:
+            timeout: 600
+            inventory_group: <% $.inventory_group %>
+            host: <% $.vdu_group[$.i] %>
+            host2: <% str($.i) %>
+            playname: <% $.playname %>
+            rollback: true
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(reconfigure_group).result %>

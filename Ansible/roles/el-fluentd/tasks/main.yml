@@ -1,0 +1,82 @@
+---
+- include: setup_ssl.yml
+  when: crmq_ssl_configured and fluentd_enable_ssl
+
+# Replace td-agent.conf with template file 
+- name: replace td-agent.conf with provided variables
+  template:
+    src: td-agent.conf.j2
+    dest: "/etc/td-agent/td-agent.conf"
+    mode: 0644
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+# Enable and start service td-agent
+- name: start td-agent
+  systemd:
+    name: td-agent.service
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+  register: td_restart_status
+  until: "td_restart_status is defined and td_restart_status.state is defined and td_restart_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: update 00-el-rsyslog.conf.j2 file
+  template:
+    src: 00-el-rsyslog.conf.j2
+    dest: "/etc/rsyslog.d/00-el-rsyslog.conf"
+    mode: 0644
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: update 00-el-logrotate.conf.j2 file
+  template:
+    src: 00-el-logrotate.conf.j2
+    dest: "/etc/logrotate.d/00-el-logrotate.conf"
+    mode: 0644
+    force: yes
+    backup: yes
+  become: true
+  become_method: sudo
+
+- name: update SELinux for rsyslog forward tcp port
+  seport:
+    ports: "{{ rsyslog_tcp_port }}"
+    proto: tcp
+    setype: syslogd_port_t
+    state: present
+  become: true
+  become_method: sudo
+
+- name: Restart rsyslogd
+  systemd:
+    name: rsyslog
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+  register: rsyslog_restart_status
+  until: "rsyslog_restart_status is defined and rsyslog_restart_status.state is defined and rsyslog_restart_status.state == 'started'"
+  retries: 3
+  delay: 10
+  become: true
+  become_method: sudo
+
+- name: open ports for td-agent over trusted server 
+  firewalld:
+    zone: public
+    port: "{{ td_agent_metrics_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+
+...

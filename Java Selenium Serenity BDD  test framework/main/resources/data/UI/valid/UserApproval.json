@@ -1,0 +1,19 @@
+{
+  "userid": "productUnderTestuser",
+  "username": "productUnderTestuser",
+  "password": "productUnderTest@1",
+  "database": "Default",
+  "newPassword": "productUnderTest@2",
+
+  "userid1": "automation123",
+  "username1": "automation123",
+  "password1": "Automation@123",
+  "database1": "Default",
+  "newPassword1": "productUnderTest@22",
+
+  "userid2": "automation1234",
+  "username2": "automation1234",
+  "password2": "Automation@1234",
+  "database2": "Default",
+  "newPassword2": "productUnderTest@22"
+}

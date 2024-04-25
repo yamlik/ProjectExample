@@ -1,0 +1,7 @@
+cbis: [ipv4, ipv6]
+client_id: api-client
+client_secret: {ipv4: 6c147c0f-1aa3-4be1-be73-53d7f459aae8, ipv6: 608f891f-3d7e-416e-8e3e-3c1490f7d543}
+ip: {ipv4: 'https://10.75.118.25', ipv6: 'https://10.75.204.30'}
+json_file: {ipv4: cbam.json, ipv6: ipv6_cbam.json}
+vnf_id: ipv4
+vnf_path: ../../vnf_ha/

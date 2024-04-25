@@ -1,0 +1,8 @@
+---
+# Default variables for docker-registry-install
+docker_registry_ip: #can be empty so it listen to all interfaces
+docker_registry_port: 5000
+docker_registry_path: /var/lib/registry
+
+install_dir: /opt/TEST/TEST
+rcfile: "{{ install_dir }}/.mds.rc"

@@ -1,0 +1,152 @@
+#!/bin/bash
+
+DOCUMENTATION="
+---
+module: register-apikey
+short_description: Inserts ModuleID/APIKey pairs to database
+description:
+  - Registers or updates the given ModuleID/APIKey pair to the given database.
+  - The ModuleID/APIKey pairs are looked up by web applications that provide APIKey based authentication.
+  - The pairs are inserted into 'api_keys' table.
+author: TEST Corporation
+options:
+  db_host:
+    description:
+      - Hostname of the PostgreSQL server
+    required: true
+  db_port:
+    description:
+      - Port of the PostgreSQL server
+    default: 5432
+  db_user:
+    description:
+      - User with write permissions (preferably owner) to the database
+    required: true
+  db_password:
+    description:
+      - Password for the database user
+    required: true
+  db_name:
+    description:
+      - Name of the database
+    required: true
+  module_id:
+    description:
+      - ID of a module
+      - 1 to 255 character string, that can consist letters (a-z), case-insensitive, integers (0-9), dashes (-) and underscores (_)
+    required: true
+  apikey:
+    description:
+      - APIKey to register for the module
+      - 15 to 255 hexadecimal character string, case-insensitive
+    required: true
+notes:
+  - Module ID must be 1 to 255 long string and can consist upper- and lowercase letters (a-z, A-Z), integers (0-9), dashes (-) and underscores (_). Other characters are not valid.
+  - APIKey must be 15 to 255 long hex string, e.g. ab0098cff234dd1
+"
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "ERROR: ${variable_name} is not defined"
+  done
+}
+
+function log {
+  log_lines="${log_lines}$*\n"
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'"
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "$1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+  exit 1
+}
+
+# validate <extended grep pattern> <variable name>...
+# Example: validate "^[0-9]{4,5}$" tcp_port udp_port
+function validate {
+  local valid=true
+  local extended_grep_pattern="$1"; shift
+  local variable_name
+  for variable_name in "$@"
+  do
+    grep --quiet --extended-regexp "${extended_grep_pattern}" <<< "${!variable_name}" ||
+        { log "ERROR: ${variable_name} ('${!variable_name}') does not conform to '${extended_grep_pattern}'"; valid=false; }
+  done
+  ${valid} || fail
+}
+
+log_lines=""
+failed=true
+changed=false
+
+# Default parameter values
+db_host=
+db_port=5432
+db_user=
+db_password=
+db_name=
+module_id=
+apikey=
+
+# Source parameters (possibly overwriting defaults)
+source "$1"
+log_variables db_host db_port db_user db_name
+check_variables db_host db_port db_user db_password db_name module_id apikey
+
+# Validate parameteres
+valid_module_id="^[a-zA-Z0-9_-]{1,255}$"
+valid_apikey="^[a-fA-F0-9]{15,255}$"
+validate "${valid_module_id}" module_id
+validate "${valid_apikey}" apikey
+
+# Common psql parameters
+database_params="--host ${db_host} --port ${db_port} --username ${db_user} --dbname ${db_name} --no-password"
+formatting_params="--no-align --tuples-only --field-separator=|"
+
+log "Checking if an API key already exists..."
+query="SELECT * FROM api_keys WHERE module_id='${module_id}'"
+output=$(PGPASSWORD="${db_password}" psql $database_params $formatting_params --command "${query}") ||
+    fail "ERROR: failed to execute query: '${query}'"
+
+# Parse output, for example "openam|f0237fha0"
+entry_module_id=$(cut --delimiter="|" --fields=1 <<< "$output")
+entry_apikey=$(cut --delimiter="|" --fields=2 <<< "$output")
+
+if [ "$module_id" = "$entry_module_id" ]
+then
+    log "An existing API key found for module '$module_id'"
+    if [ "$apikey" = "$entry_apikey" ]
+    then
+        log "API key unchanged: skipping"
+        failed=false
+    else
+        log "API key changed: updating"
+        query="UPDATE api_keys SET shared_key='$apikey' WHERE module_id='${module_id}';"
+        PGPASSWORD="${db_password}" psql $database_params $formatting_params --quiet \
+                  --command "${query}" || fail "ERROR: failed to update API key"
+        changed=true
+        failed=false
+    fi
+else
+    log "No existing API key for module '$module_id': inserting"
+    PGPASSWORD="${db_password}" psql $database_params $formatting_params --quiet \
+         --command "INSERT INTO api_keys VALUES ('${module_id}', '${apikey}');" ||
+        fail "ERROR: failed to insert API key"
+    changed=true
+    failed=false
+fi
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "$log_lines"
+exit 0

@@ -1,0 +1,8 @@
+\set AUTOCOMMIT on
+\set ON_ERROR_STOP on
+\set VERBOSITY terse
+\set ECHO all
+
+SELECT lookupserver_name FROM lookup_servers WHERE lookupserver_name='{{ lookup_server_name }}';
+
+\q

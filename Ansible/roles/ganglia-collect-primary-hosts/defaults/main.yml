@@ -1,0 +1,7 @@
+---
+
+# Defaults for the Ganglia primary host collector role
+ganglia_primary_hosts_group: "ganglia_primary_hosts"
+ganglia_primary_hosts: "{{ groups[ganglia_primary_hosts_group] }}"
+
+...

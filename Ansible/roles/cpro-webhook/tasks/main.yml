@@ -1,0 +1,22 @@
+---
+- name: "Configure webhook.service from template"
+  template:
+    src: webhook.service.j2
+    dest: "/etc/systemd/system/webhook.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+
+- name: "Enable and start webhook service"
+  systemd:
+    name: webhook
+    state: started
+    daemon_reload: yes
+    enabled: yes
+  become: yes
+  become_method: sudo
+
+...

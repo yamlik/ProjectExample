@@ -1,0 +1,41 @@
+---
+
+- name: Get target host index
+  set_fact:
+    target_host_idx: "{{ host.split('.')[2].split('server')[-1]|int-1 }}"
+  become: true
+  become_method: sudo
+
+- name: Get replication db-host2 IP
+  set_fact:
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server2']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    server_id: 1
+    gtid_domain_id: 1
+  become: true
+  become_method: sudo
+  when: target_host_idx|int == 0
+
+- name: Get replication db-host1 IP
+  set_fact:
+    cmdb_replication_host: "{{ vnf_context_data['resource_model']['resources']['db_aspect_group']['resources']['0']['resources']['server1']['resources']['internal_port']['attributes']['fixed_ips'][0]['ip_address']}}"
+    server_id: 2
+    gtid_domain_id: 2
+  become: true
+  become_method: sudo
+  when: target_host_idx|int == 1
+
+- debug:
+    msg: "cmdb_replication_host: {{ cmdb_replication_host }}"
+
+- name: Check if replication host mariadb service is up
+  shell: "mysql -P {{ mariadb_port }} -u {{ cmdb_replication_username }} -p{{ cmdb_replication_password }} -h {{ cmdb_replication_host }}  -e \"show master status;\" > /dev/null 2>&1"
+  become: true
+  become_method: sudo
+  register: server_ready
+  ignore_errors: True
+
+- name: Set variable replication master host status
+  set_fact:
+    cmdb_master_host_ready: "{{ (server_ready.rc == 0)|bool }}"
+  become: true
+  become_method: sudo

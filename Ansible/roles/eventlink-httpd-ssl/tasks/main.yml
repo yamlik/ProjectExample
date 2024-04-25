@@ -1,0 +1,76 @@
+---
+- name: Generate SSL certificate
+  shell: openssl genrsa -out ca.key 2048
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  #become: true
+  #become_method: sudo
+
+- name: Generate SSL certificate
+  shell: echo -e '\n\n\nTEST\n\n\n\n\n\n' | openssl req -new -key {{product_install_dir_TEST_ui}}/ca.key -out {{product_install_dir_TEST_ui}}/ca.csr
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  #become: true
+  #become_method: sudo
+
+- name: Generate SSL certificate
+  shell: openssl x509 -req -days 3650 -in {{product_install_dir_TEST_ui}}/ca.csr -signkey {{product_install_dir_TEST_ui}}/ca.key -out {{product_install_dir_TEST_ui}}/ca.crt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  #become: true
+  #become_method: sudo
+
+- name: Copy SSL certificate to server tls dir
+  shell: cp {{product_install_dir_TEST_ui}}/ca.crt /etc/pki/tls/certs/localhost.crt
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  become: true
+  become_method: sudo
+  
+- name: Copy SSL certificate to server tls dir
+  shell: cp {{product_install_dir_TEST_ui}}/ca.key /etc/pki/tls/private/localhost.key
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  become: true
+  become_method: sudo
+  
+- name: Copy SSL certificate to server tls dir
+  shell: cp {{product_install_dir_TEST_ui}}/ca.csr /etc/pki/tls/private/localhost.csr
+  args:
+    chdir: "{{product_install_dir_TEST_ui}}"
+  become: true
+  become_method: sudo
+  
+- name: "Configure ssl configuration file for httpd"
+  template:
+    src: ssl.conf.j2
+    dest: "{{ httpd_conf_dir }}/ssl.conf"
+    mode: 0644
+  become: true
+  become_method: sudo
+
+- name: "Configure proxy directives of services."
+  template:
+    src: proxy.conf.j2
+    dest: "{{ httpd_conf_dir }}/{{ item.service_name.split('/')[0] }}.conf"
+    mode: 0644
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ service_dictionary }}"
+
+- name: Disable http in httpd.conf
+  lineinfile:
+    path: "/etc/httpd/conf/httpd.conf"
+    regexp: '^Listen (.*)'
+    line: '#Listen \1'
+  become: true
+  become_method: sudo
+
+- name: "Start and enable httpd"
+  service:
+    name: 'httpd'
+    state: restarted
+    enabled: yes
+  become: true
+  become_method: sudo

@@ -1,0 +1,10 @@
+---
+user: TEST
+group: TEST
+
+install_dir: /opt/TEST/TEST
+TEST_home: /opt/TEST/TEST/base
+
+xml_audit_spool_dir: "{{ install_dir }}/flume/spool"
+
+...

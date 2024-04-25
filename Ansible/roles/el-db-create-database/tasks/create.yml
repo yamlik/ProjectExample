@@ -1,0 +1,77 @@
+---
+# tasks file for el-postgresql-create
+
+- assert:
+    that:
+      - "db_login_host is defined"
+      - "db_login_port is defined"
+      - "db_login_user is defined"
+      - "db_login_password is defined"
+      - "db_login_name is defined"
+    msg: "'PostgreSQL database login parameters not defined'"
+
+- assert:
+    that:
+      - "db_el_user is defined"
+      - "db_el_password is defined"
+      - "db_el_name is defined"
+    msg: "'TEST database parameters not defined'"
+
+- name: "Install PostgreSQL driver module"
+  pip:
+    name: psycopg2
+    state: present
+  become: true
+  become_method: sudo
+
+- name: Add VIP to loopback to avoid contacting secondary node
+  shell: ip address add {{ db_login_host }} dev lo
+
+- name: Make sure postgres is up and operational
+  shell: PGPASSWORD=elink /usr/bin/psql -p {{ postgresql_server_port }} -U elink -d TEST -c "SELECT * FROM el_hosts;" > /dev/null 2>&1
+  register: psql_result
+  retries: 5
+  delay: 10
+  until: psql_result.rc == 0
+
+- name: "Create TEST database user"
+  postgresql_user:
+    login_host: "{{ db_login_host }}"
+    port: "{{ db_login_port }}"
+    login_user: "{{ db_login_user }}"
+    login_password: "{{ db_login_password }}"
+    db: "{{ db_login_name }}"
+    name: "{{ db_el_user }}"
+    password: "{{ db_el_password }}"
+    role_attr_flags: "{{ db_el_user_role_attrs }}"
+    state: present
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+- name: "Create TEST database"
+  register: create_eldb_status
+  retries: 3
+  delay: 10
+  until: create_eldb_status | success
+  create-postgresql-database:
+    login_host: "{{ db_login_host }}"
+    port: "{{ db_login_port }}"
+    login_user: "{{ db_login_user }}"
+    login_password: "{{ db_login_password }}"
+    name: "{{ db_el_name }}"
+    owner: "{{ db_el_user }}"
+    encoding: "{{ db_el_encoding }}"
+    lc_collate: "{{ db_el_lc_collate }}"
+    lc_ctype: "{{ db_el_lc_ctype }}"
+    tablespace: ctl
+  no_log: "{{ hide_sensitive_debug_info }}"
+
+# this role has the same pass as images, UI roles need the new password...
+- name: reset pgadmin pass
+  postgresql_user:
+    name: pgadmin
+    password: "{{ db_admin_password }}"
+    port: "{{ db_login_port }}"
+  become_user: postgres
+
+- name: Remove VIP from loopback to avoid contacting secondary node
+  shell: ip address del {{ db_login_host }} dev lo

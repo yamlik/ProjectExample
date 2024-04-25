@@ -1,0 +1,81 @@
+---
+# tasks file for devtool-ui
+
+- name: "Replace service conf in sysconfig."
+  template:
+    src: tomcat@devtool.j2
+    dest: "{{ devtool_tomcat_service_path }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644
+  become: true
+  become_method: sudo
+  
+- name: "Replace tomcat server.xml."
+  template:
+    src: server.xml.j2
+    dest: "{{ server_xml_file_location }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644
+
+
+- name: "Replace devtool-settings.json file."
+  template:
+    src: devtool-settings.json.j2
+    dest: "{{ devtool_settings_file_location }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644
+
+- name: "Create devtool.proxy.conf file."
+  template:
+    src: devtool.proxy.conf.j2
+    dest: "{{ devtool_proxy_file_location }}"
+    owner: "{{ devtool_user }}"
+    group: "{{ devtool_group }}"
+    mode: 0644
+  
+- name: "Open ports for DevTool and notify for service restart."
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  become: true
+  become_method: sudo
+  with_items:
+    - "{{ devtool_ui_http_port }}"
+    - "{{ devtool_ui_ajp_port }}"
+
+- name: "Configure proxy directives of services."
+  include_role: 
+    name: TEST-httpd
+  vars:
+    service_dictionary: "{{ devtool_service_dictionary  }}"
+
+- include: ui-config.yml
+
+- name: "Configure {{ devtool_ui_package_name }} webapp to use Keycloak"
+  include_role:
+    name: configure-webapp-with-keycloak
+  vars:
+    kc_client_id: "{{ kc_client_id_devtool_ui }}"
+    kc_client_name: "{{ kc_client_name_devtool_ui }}"
+    kc_client_description: "{{ kc_client_description_devtool_ui }}"
+    kc_client_conf_file: "{{ kc_client_conf_file_devtool_ui }}"
+    product_fqdn: "{{ product_fqdn_devtool_ui }}"
+    kc_client_scope_mappings: "{{ kc_client_scope_mappings_devtool_ui }}"
+    client_local_conf: "{{ client_local_conf_devtool_ui }}"
+    product_client_roles: "{{ devtool_permission_dictionary }}"
+    certificate_alias: "{{ certificate_alias_devtool_ui }}"
+    keystore_file_name: "{{ keystore_file_name_devtool_ui }}"
+    truststore_file_name: "{{ truststore_file_name_devtool_ui }}"
+    product_install_dir: "{{ product_install_dir_devtool_ui }}"
+    product_kc_http_port: "{{ product_kc_http_port_devtool_ui }}"
+    product_kc_origins: "{{ product_kc_origins_devtool_ui }}"
+    product_redirect_uris: "{{ product_redirect_uris_devtool_ui }}"
+    product_kc_base_url: "{{ product_kc_base_url_devtool_ui }}"
+    product_kc_admin_url: "{{ product_kc_admin_url_devtool_ui }}"
+    product_service_name: "{{ product_service_name_devtool_ui }}"

@@ -1,0 +1,10 @@
+[Unit]
+Description=Sentinel for Redis
+After=network.target
+[Service]
+LimitNOFILE=10032
+User={{ user }}
+Group={{ group }}
+ExecStart=/usr/bin/redis-sentinel /etc/redisio/sentinel.conf --sentinel
+[Install]
+WantedBy=multi-user.target

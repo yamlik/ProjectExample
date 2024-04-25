@@ -1,0 +1,120 @@
+{
+  "TC-58824": {
+    "createAUser": {
+      "UserId": "U58824001",
+      "UserName": "U58824",
+      "ProfileName": "ADMINISTRATOR",
+      "InternalUser": false,
+      "Status": "A",
+      "ExpiryPasswordDuration": -1,
+      "SessionLock": "N",
+      "Password": "!Nstinct123",
+      "ReEnterPassword": "!Nstinct123"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58824001",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560037"
+    },
+    "Application2": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation58824002",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Applicant1": {
+      "Home Address 1": "test1",
+      "Home Address 2": "Test2",
+      "Home Postcode": "560037"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Number",
+      "operator": "Like",
+      "value1": "Automation58824%",
+      "value2": ""
+    },
+    "reassignDetails": {
+      "Fraud Alert Team": "Automation-U58824001"
+    }
+  },
+  "TC-51297": {
+    "fcwsRequest": {
+      "fcwsRequest1": "{{organisation}}|{{country}}||51297001||||{{current_date}}|LOAN||||||||||||||||||||||||||||||||||||||A|113456||||||||01/08/2022||||||MELBOURNE|||||||||||||||||||||||||||||||||||"
+    },
+    "searchApplication": {
+      "category": "Applicant",
+      "field": "ID Number 1",
+      "operator": "=",
+      "value1": "113456",
+      "value2": ""
+    },
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "51297001",
+      "Application Type": "LOAN"
+    },
+    "Applicant": {
+      "Id Number 1": "113456",
+      "Home Address 6": "MELBOURNE"
+    },
+    "verifyApplicationCategories": "Application:Application,Applicant:Applicant"
+  },
+  "TC-58890": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_58890",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Application1": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_58890_1",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Application2": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_58890_2",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    },
+    "Application3": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "AUTOMATION_58890_3",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "MTGE"
+    }
+  },
+  "TC-48726": {
+    "Application": {
+      "Organisation": "{{organisation}}",
+      "Application Number": "Automation_48726",
+      "Expiry Date": "20/10/2021",
+      "Application Date": "20/10/2020",
+      "Application Type": "CARD",
+      "Amount/Limit": "48726"
+    },
+    "Applicant": {
+      "Id Number 1": "48726",
+      "Id Number 2": "48726PASSPORT"
+    },
+    "searchApplication": {
+      "category": "Application",
+      "field": "Application Id",
+      "operator": "=",
+      "value1": "Automation_48726",
+      "value2": ""
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "TC-01": {
+    "channel": "C03",
+    "customerNo": "CUSTOMER00001",
+    "staffID": "STAFF00001",
+    "accountNo": "ACCOUNT00001",
+    "senderAccount": "SENDER00001",
+    "transactionType": "067"
+  }
+}

@@ -1,0 +1,30 @@
+galaxy_info:
+  author: TEST Corporation
+  description: Devtool Backend Ansible roles
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.3
+
+  platforms:
+    - name: EL
+      versions:
+        - 19.0
+
+  galaxy_tags: []
+
+dependencies:
+
+  - role: install-webapp
+    component_name: "{{ el_devtool_backend_component_name }}"
+    package_name: "{{ el_devtool_backend_package_name }}"
+    service_name: "{{ el_devtool_backend_service_name }}"
+    ports:
+      - "{{ el_devtool_backend_http_port }}"
+    wait_for_port: "{{ el_devtool_backend_http_port }}"
+    wait_for_timeout: "{{ el_devtool_backend_http_port }}"
+    wait_for_fqdn: "{{ el_devtool_backend_fqdn }}"
+    restart_webapp: false
+
+  - role: devtool-db

@@ -1,0 +1,82 @@
+#!/bin/bash
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "Variable ${variable_name} is not defined"
+  done
+}
+
+function validate_json {
+  for file in "$@"
+  do
+    [ ! -f "${file}" ] && fail "File ${file} does not exist!"
+    jq . ${file} >/dev/null 2>&1 || fail "File ${file} did not contain valid JSON!"
+  done
+}
+
+function log {
+  line=$(tr -d '"' <<<$*)
+  log_lines+=("${line}")
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'."
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "ERROR: $1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+  exit 1
+}
+
+function import_cert {
+  local cert=$1
+  local alias=$2
+  local store=$3
+  local pass=$4
+  expect <<EOF
+set timeout 30
+spawn keytool -importcert -file ${cert} -alias ${alias} -keystore ${store} -storepass {$pass}
+expect "Trust this certificate?"
+send "yes\r"
+expect eof
+catch wait result
+exit [lindex \$result 3]
+EOF
+  return $?
+} >/dev/null 2>&1
+
+log_lines=()
+failed=false
+changed=false
+
+# Default parameters
+keystore=
+storepass=
+certificate=
+certificate_alias=
+
+source "$1"
+
+log_variables keystore certificate certificate_alias
+check_variables keystore storepass certificate certificate_alias
+
+if keytool -list -keystore ${keystore} -storepass "${storepass}" -alias ${certificate_alias} >/dev/null 2>&1; then
+  log "Certificate with alias ${certificate_alias} already exists."
+elif import_cert ${certificate} ${certificate_alias} ${keystore} "${storepass}"; then
+  changed=true
+  log "Certificate ${certificate} imported with alias ${certificate_alias} successfully."
+else
+  fail "Certificate could not be imported"
+fi
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+exit 0

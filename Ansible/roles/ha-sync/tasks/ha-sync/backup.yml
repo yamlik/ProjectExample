@@ -1,0 +1,5 @@
+- name: make sure /appdata/ha-sync exists
+  file: path=/appdata/ha-sync state=directory
+
+- name: backup files
+  script: backup.py

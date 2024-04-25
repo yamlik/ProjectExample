@@ -1,0 +1,173 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    options {
+      timeout(time: 600, unit: 'MINUTES')
+      buildDiscarder(logRotator(daysToKeepStr: '30',  artifactDaysToKeepStr: '30'))
+      //disableConcurrentBuilds()
+      timestamps()
+    }
+
+    agent {
+      kubernetes {
+        label "drdo_build_${cto.devops.jenkins.Utils.getTimestamp()}"
+        inheritFrom 'k8s-build'
+        containerTemplate {
+          name 'builder'
+          image "drdo-docker-releases.repo.lab.pl..com/drdo_build:latest"
+          alwaysPullImage true
+          workingDir '/home/jenkins'
+          ttyEnabled true
+          command 'cat'
+          args ''
+        }
+      }
+    }
+    parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'jenkins-multijob-pipeline', description: 'Git Branch to build on.', trim: true)
+        // string(name: 'openstack_image', 
+        //        defaultValue: 'appos', 
+        //        description: '', 
+        //        trim: true
+        //       )
+        string(name: 'source_directory', 
+               defaultValue: 'images/DR20_6', 
+               description: 'Directory where the images are stored', 
+               trim: true
+              )
+        string(name: 'file_types', 
+               defaultValue: '.qcow2,.ova,.iso', 
+               description: 'File type to be downloaded. For example, .qcow2,.ova,.iso', 
+               trim: true
+              )
+        choice(name: 'upload_to_artifactory', 
+               choices: "Yes\nNo", 
+               description: "Select no if you do not want to publish the VM image/disk to Artifactory. Useful for debugging VMware VM image."
+              )
+        string(name: 'output_folder', 
+               defaultValue: '', 
+               description: 'This is the folder which is created in Artifactory for upload image gathering purposes. For example RC2 or 19.6-release', 
+               trim: true
+              )
+        choice(name: 'Invoke_Parameters', 
+               choices: "No\nYes", 
+               description: "Do you wish to do a dry run to grab parameters?"
+              )
+    }
+    environment {
+        OS_USER_CREDS = credentials('PL_008_OS_CREDS')
+        OS_AUTH_URL = 'https://10.75.237.4:13000/v3'
+        OS_CACERT = '/certs/vlab-os_cacert-pl-008.pem'
+        OS_USERNAME = "$OS_USER_CREDS_USR"
+        OS_PROJECT = 'v8603_DI_DR'
+        OS_INTERFACE='public'
+        OS_IDENTITY_API_VERSION='3'
+        OS_USER_DOMAIN_NAME='Default'
+        OS_PROJECT_ID = 'a1ab1d79741f46258787ccb36a21be7a'
+        OS_PROJECT_NAME = 'v8603_DI_DR'
+        OS_REGION_NAME = 'regionOne'
+        OS_PASSWORD = "$OS_USER_CREDS_PSW"
+        output_base_path = '/home/jenkins'
+        no_proxy="127.0.0.1,localhost,.noklab.net,.int.net..com,.ext.net..com,.int..com,.TEST-rdnet.com,.TEST-net.net,.inside.siemeTESTetworks.com,.access.siemeTESTetworks.com,.TEST-intra.net,.inside.TEST.com,.access.TEST.com, repo.lab.pl..com"
+        TF_VAR_USER = credentials('TF_VAR_USER')
+        VLAB_VCENTER_HOST = '10.93.138.2'
+        VLAB_VCENTER_DC = 'Finland-SLM-DC'
+        VLAB_VDC_NETWORK = 'VM Network SB'
+        VLAB_VDC_DEVOPS_DS = 'DS_1'
+        VLAB_VDC_DEVOPS_ESXI = '10.93.138.1'
+        VLAB_VDC_DEVOPS_HOST_FOLDER = 'DevOps'
+        VLAB_VDC_DEVOPS_VM_FOLDER = 'DevOps Base Images/uploaded'
+    }
+
+    stages {
+      stage("Parameterizing") {
+          steps {
+              script {
+                  sh 'printenv | sort'
+                  if ("${params.Invoke_Parameters}" == "Yes") {
+                      currentBuild.result = 'ABORTED'
+                      error('DRY RUN COMPLETED. JOB PARAMETERIZED.')
+                  }
+              }
+          }
+      }
+
+      // FIXME: Review usage of 10.75.217.187
+      stage("Download Images from VM") {
+        steps{
+          script{
+            sh """
+              mkdir /home/jenkins/download_dir
+              cd /home/jenkins/download_dir
+
+              wget --no-check-certificate --recursive --no-parent -nd -A '${params.file_types}' https://10.75.217.187/${params.source_directory}/
+
+              ls -alRt /home/jenkins/download_dir
+            """
+          }
+        }
+      }
+
+      stage("Upload Files to Artifactory"){
+        steps{
+          script {
+            withCredentials([usernamePassword(credentialsId: 'drdo-artifactory', passwordVariable: 'ARTIFACTORY_PWD', usernameVariable: 'ARTIFACTORY_USER')]) {
+              def rtServer = Artifactory.server env.ARTIFACTORY_SERVER_ID
+              rtServer.credentialsId = 'drdo-artifactory'
+
+              def buildInfo = Artifactory.newBuildInfo()
+              buildInfo.env.filter.addExclude("*CREDENTIAL*")
+              buildInfo.env.capture = true
+              buildInfo.env.collect()
+              
+              def files_to_upload = sh(script: 'ls -1 /home/jenkins/download_dir/', returnStdout: true).split()
+
+              def uploadQcow2 = ""
+              
+              files_to_upload.each { arrObj ->
+                //def output_name = arrObj['image_output_name']
+
+                echo arrObj
+
+                if (uploadQcow2 == "" || uploadQcow2 == null){
+                  uploadQcow2 = "{\"files\":[{\"pattern\": \"/home/jenkins/download_dir/${arrObj}\",\"target\": \"drdo-generic-candidates/${output_folder}/${buildInfo.number}/${arrObj}\"}"
+                } else {
+                  uploadQcow2 = uploadQcow2 + ",{\"pattern\": \"/home/jenkins/download_dir/${arrObj}\",\"target\": \"drdo-generic-candidates/${output_folder}/${buildInfo.number}/${arrObj}\"}"
+                }
+              }
+
+              uploadQcow2 = uploadQcow2 + "]}"
+
+              echo uploadQcow2
+              // def uploadQcow2 = """{
+              //   "files":[
+              //     {
+              //       "pattern": "${env.output_base_path}/qcow2/**",
+              //       "target": "drdo-generic-candidates/qcow2/${output_folder}/${buildInfo.number}"
+              //     }            
+              //   ]  
+              // } 
+              // """
+
+              rtServer.upload(uploadQcow2, buildInfo)
+              rtServer.publishBuildInfo(buildInfo)
+
+              def promotionConfig = [
+                buildName: buildInfo.name,
+                buildNumber: buildInfo.number,
+                status: 'Released',
+                targetRepo: 'drdo-generic-releases',
+                includeDependencies: false,
+                copy: true,
+                failFast: true
+              ]
+              
+              Artifactory.addInteractivePromotion server: rtServer, promotionConfig: promotionConfig, displayName: 'Promote candidates'
+              
+            }
+          }
+        }
+      }
+     }    
+
+ } 

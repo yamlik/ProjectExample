@@ -1,0 +1,15 @@
+[Unit]
+Description=TEST Lookup {{ lookup_server_name }} Service
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+User={{ user }}
+Group={{ group }}
+Type=forking
+EnvironmentFile=-/etc/sysconfig/el-lookup-{{ lookup_server_name }}
+ExecStart={{ lookup_bin_dir }}/lookup_server_startup -N {{ lookup_server_name }} -d
+ExecStop={{ lookup_bin_dir }}/lookup_server_shutdown -N {{ lookup_server_name }}
+
+[Install]
+WantedBy=multi-user.target

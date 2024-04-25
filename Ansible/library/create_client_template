@@ -1,0 +1,182 @@
+#!/bin/bash
+
+DOCUMENTATION='''
+---
+module: create_client_template
+short_description: Creates a client template in Keycloak using the Admin CLI command line tool
+description:
+  - Configures the Admin Cli command line tool.
+  - Sends the given client template representation to client-templates endpoint.
+  - Updates the given policy component.
+version_added: "2.4"
+author: "TEST A&A, Team NPC <I_AA_DO_RD_SO_NPC@internal.TEST.com>"
+options:
+  keycloak_server:
+    description:
+      - URL of Keycloak authentication server.
+      - Must contain scheme and FQDN, complemented with port and context path.
+      - Port is required if server is not running on default port (80 for http and 443 for https).
+      - Context path is required, if Keycloak server is not listening on web application root.
+      - Example U(https://id.TEST.com:8666/auth).
+    required: true
+  realm:
+    description:
+      - Name of the realm where the client template will be created.
+    required: true
+  realm_admin_user:
+    description:
+      - Administrator of the given I(realm).
+    required: true
+  realm_admin_password:
+    description:
+      - Password of the administrator.
+    required: true
+  client_template:
+    description:
+      - A file containing a ClientTemplateRepresentation in JSON format.
+      - The file must exist on the target host.
+      - See U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_clienttemplaterepresentation) for a full list of options.
+    required: true
+  policy:
+    description:
+      - A file containing a policy ComponentRepresentation in JSON format, that is to be updated.
+      - The file must exist on the target host.
+      - Typically this should whitelist the created client template as an allowed client template for registering clients.
+      - See U(http://www.keycloak.org/docs-api/3.4/rest-api/index.html#_componentrepresentation) for a full list of options.
+    required: true
+  truststore:
+    description:
+      - A truststore file in JKS format that contains Keycloak server certificate.
+      - Typically the keystore of the Keycloak server.
+    default: null
+  truststore_password:
+    description:
+      - Password to access the truststore file.
+    default: null
+notes:
+  - This module must be run as keycloak user or with sudo privileges.
+  - Parameters I(truststore) and I(truststore_password) are required when I(keycloak_server) uses https scheme.
+  - Parameters I(truststore) and I(truststore_password) are required together.
+requirements:
+  - Keycloak Admin CLI command line tool
+  - jq
+'''
+
+EXAMPLES='''
+- name: "Create Shiro client template"
+  create_client_template:
+    keycloak_server: "https://id.TEST.com:8666/auth"
+    realm: foo
+    realm_admin_user: fooAdmin
+    realm_admin_password: fooAdminPass
+    client_template: "/opt/TEST/shiro-client-template.json"
+    policy: "/opt/TEST/allowed-client-templates.json"
+    truststore: "/opt/keycloak/security/ssl/keycloak-keystore.jks"
+    truststore_password: keycloakPass
+  become: true
+  become_method: sudo
+'''
+
+function check_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    [ -z "${!variable_name}" ] && fail "Variable ${variable_name} is not defined"
+  done
+}
+
+function validate_json {
+  for file in "$@"
+  do
+    [ ! -f "${file}" ] && fail "File ${file} does not exist!"
+    jq . ${file} >/dev/null 2>&1 || fail "File ${file} did not contain valid JSON!"
+  done
+}
+
+function log {
+  line=$(tr -d '"' <<<$*)
+  log_lines+=("${line}")
+}
+
+# log_variables <variable name>...
+function log_variables {
+  local variable_name
+  for variable_name in "$@"
+  do
+    log "${variable_name}: '${!variable_name}'."
+  done
+}
+
+function fail {
+  [ -n "$1" ] && log "ERROR: $1"
+  failed=true
+  printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+  exit 1
+}
+
+log_lines=()
+failed=false
+changed=false
+
+# Default parameters
+admin_cli="/opt/keycloak/bin/kcadm.sh"
+
+keycloak_server=
+realm=
+realm_admin_user=
+realm_admin_password=
+client_template=
+policy=
+truststore=
+truststore_password=
+
+source "$1"
+
+log_variables keycloak_server realm realm_admin_user client_template policy
+check_variables keycloak_server realm realm_admin_user realm_admin_password client_template policy
+validate_json ${client_template} ${policy}
+
+template_name=$(jq -rM '.name' ${client_template}) || fail "Couldn't retrieve client template name from client template representation!"
+check_variables template_name
+log_variables template_name
+
+# Configure truststore
+if [ -n "${truststore}" ] && [ -n "${truststore_password}" ]; then
+  ${admin_cli} config truststore --trustpass "${truststore_password}" ${truststore}
+fi
+
+# Login
+${admin_cli} config credentials --server "${keycloak_server}" --realm "${realm}" --user "${realm_admin_user}" --password "${realm_admin_password}" >/dev/null 2>&1 || fail "Could not login to Keycloak with given credentials!"
+
+query=".[] | select(.name == \"${template_name}\") | .id"
+# Check if client template exists
+if template_id=$(${admin_cli} get client-templates 2>/dev/null | jq -rM "${query}" 2>/dev/null) && [ -n "${template_id}" ]; then
+  log "Client template ${template_name} already exists."
+  if ${admin_cli} update client-templates/${template_id} -f "${client_template}" >/dev/null 2>&1; then
+    log "Updated client template ${template_name}."
+  fi
+# Create client template
+elif ${admin_cli} create client-templates -f "${client_template}" >/dev/null 2>&1; then
+  changed=true
+  log "Created client template ${template_name}."
+else
+  fail "Failed to create client template ${template_name}!"
+fi
+
+policy_provider=$(jq -rM '.providerId' ${policy}) || fail "Couldn't retrieve providerId of the policy component json!"
+policy_sub_type=$(jq -rM '.subType' ${policy})
+if [ "${policy_sub_type}" != "null" ]; then
+  query=".[] | select(.providerId == \"${policy_provider}\" and .subType == \"${policy_sub_type}\") | .id"
+else
+  query="first(.[] | select(.providerId == \"${policy_provider}\")) | .id" # Without identifying subType, pick the first one
+fi
+# Update client registration policy to allow the created client template to be inherited by registering clients
+component_id=$(${admin_cli} get components 2>/dev/null | jq -rM "${query}" 2>/dev/null) || fail "Couldn't find component with providerId '${policy_provider}'!"
+if [ -n "${component_id}" ] && ${admin_cli} update components/${component_id} -f ${policy} >/dev/null 2>&1; then
+  log "Client registration policy ${policy_provider} was updated."
+else
+  fail "Couldn't update ${policy_provider} policy!"
+fi
+
+printf '{ "failed": %s, "changed": %s, "msg": "%s" }' "$failed" "$changed" "${log_lines[*]}"
+exit 0

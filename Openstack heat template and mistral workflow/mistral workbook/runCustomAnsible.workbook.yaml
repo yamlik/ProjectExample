@@ -1,0 +1,369 @@
+---
+version: '2.0'
+name: run_custom_ansible
+workflows:
+
+########################################
+################# MAIN #################
+########################################
+  run_custom_ansible_starting:
+    input:
+      - operationType
+      - operationParams
+      - operationExecution
+      - vnfInventory
+      - extensions: {}
+    output:
+      operationType: <% $.operationType %>
+      operationParams: <% $.operationParams %>
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the run_custom_ansible_starting flow.") %>
+    tasks:
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result.error_message %>
+
+  run_custom_ansible_processing:
+    input:
+      - operationType
+      - operationParams
+      - extensions: {}
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during the run_custom_ansible_processing flow.") %>
+    tasks:
+      initialize:
+        workflow: cbam_initialize
+        publish:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          originalResourceModel: <% task(initialize).result.originalResourceModel %>
+        publish-on-error:
+          operationExecution: <% task(initialize).result.operationExecution %>
+          vnfInventory: <% task(initialize).result.vnfInventory %>
+          error_message: <% task(initialize).result.error_message %>
+        on-success:
+          - generate_model_from_config
+
+      generate_model_from_config:
+        action: cbam.generate_model_from_config
+        input:
+          vnf_template: <% $.vnfInventory.vnfTemplate %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+        publish:
+          expectedModel: <% task(generate_model_from_config).result %>
+        publish-on-error:
+          error_message: <% task(generate_model_from_config).result %>
+        on-success:
+          - calculate_stack_params
+
+      calculate_stack_params:
+        action: cbam.calculate_stack_params
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+          expected_nfv_model: <% $.vnfInventory.nfvModel %>
+          expected_model: <% $.expectedModel %>
+        publish:
+          stackParams: <% task(calculate_stack_params).result %>
+        publish-on-error:
+          error_message: <% task(calculate_stack_params).result %>
+        on-success:
+          - prepare_ansible_inventory
+
+      prepare_ansible_inventory:
+        action: cbam.prepare_ansible_inventory
+        input:
+          vnf_inventory: <% $.vnfInventory %>
+        publish:
+          ansibleInventory: <% task(prepare_ansible_inventory).result %>
+        publish-on-error:
+          error_message: <% task(prepare_ansible_inventory).result %>
+        on-success:
+          - finalize_online: <% ($.operationParams.additionalParams.run_on_online_processing.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_online: <% ($.operationParams.additionalParams.run_on_online_processing.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_offline: <% ($.operationParams.additionalParams.run_on_offline_processing.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_offline: <% ($.operationParams.additionalParams.run_on_offline_processing.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_oam: <% ($.operationParams.additionalParams.run_on_oam.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_oam: <% ($.operationParams.additionalParams.run_on_oam.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_db: <% ($.operationParams.additionalParams.run_on_db.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_db: <% ($.operationParams.additionalParams.run_on_db.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_ui: <% ($.operationParams.additionalParams.run_on_ui.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_ui: <% ($.operationParams.additionalParams.run_on_ui.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_crdb: <% ($.operationParams.additionalParams.run_on_crdb.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_crdb: <% ($.operationParams.additionalParams.run_on_crdb.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_cgf: <% ($.operationParams.additionalParams.run_on_cgf.len() = 0) and ($.operationParams.additionalParams.run_on_all.len() = 0)%>
+          - execute_on_cgf: <% ($.operationParams.additionalParams.run_on_cgf.len() != 0) or ($.operationParams.additionalParams.run_on_all.len() != 0)%>
+          - finalize_all
+
+      execute_on_offline:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-processingOFF
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_offline_processing %>
+        publish-on-error:
+          error_message: <% task(execute_on_offline).result.error_message %>
+        on-success:
+          - finalize_offline
+        on-error:
+          - finalize_on_error
+
+      execute_on_online:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-processingON
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_online_processing %>
+        publish-on-error:
+          error_message: <% task(execute_on_online).result.error_message %>
+        on-success:
+          - finalize_online
+        on-error:
+          - finalize_on_error
+
+      execute_on_oam:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-oam
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_oam %>
+        publish-on-error:
+          error_message: <% task(execute_on_oam).result.error_message %>
+        on-success:
+          - finalize_oam
+        on-error:
+          - finalize_on_error
+
+      execute_on_db:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-db
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_db %>
+        publish-on-error:
+          error_message: <% task(execute_on_db).result.error_message %>
+        on-success:
+          - finalize_db
+        on-error:
+          - finalize_on_error
+
+      execute_on_ui:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-ui
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_ui %>
+        publish-on-error:
+          error_message: <% task(execute_on_ui).result.error_message %>
+        on-success:
+          - finalize_ui
+        on-error:
+          - finalize_on_error
+
+      execute_on_crdb:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-crdb
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_crdb %>
+        publish-on-error:
+          error_message: <% task(execute_on_crdb).result.error_message %>
+        on-success:
+          - finalize_crdb
+        on-error:
+          - finalize_on_error
+
+      execute_on_cgf:
+        workflow: execute_ansible_flow
+        input:
+          operationType: <% $.operationType %>
+          operationParams: <% $.operationParams %>
+          vnfInventory: <% $.vnfInventory %>
+          ansibleInventory: <% $.ansibleInventory %>
+          group: vdu-cgf
+          stackParams: <% $.stackParams %>
+          vmSpecificPlays:  <% $.operationParams.additionalParams.run_on_cgf %>
+        publish-on-error:
+          error_message: <% task(execute_on_cgf).result.error_message %>
+        on-success:
+          - finalize_cgf
+        on-error:
+          - finalize_on_error
+
+############################################
+############## FINALIZE_TASKS ##############
+# All of these are needed in order to wait #
+# for all simultaneous flows to finish     #
+# before exiting from Mistral              # 
+############################################
+
+      finalize_offline:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_online:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_oam:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_db:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_ui:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_crdb:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_cgf:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        on-success:
+          - finalize
+
+      finalize_all:
+        action: std.javascript
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize_all).result %>
+        on-success:
+          - finalize
+
+      finalize:
+        action: std.javascript
+        join: all
+        input:
+          script: |
+            return true
+        publish-on-error:
+          error_message: <% task(finalize).result %>
+
+      finalize_on_error:
+        action: std.javascript
+        join: all
+        input:
+          context:
+            error: <% $.error_message %>
+          script: |
+            return $.error
+        publish-on-error:
+          error_message: <% task(finalize_on_error).result %>
+        publish:
+          error_message: <% task(finalize_on_error).result %>
+        on-complete:
+          - fail_on_error
+
+      fail_on_error:
+        action: std.fail
+      
+#########################################
+######### EXECUTE_ANSIBLE_FLOW ########## 
+#########################################
+
+  execute_ansible_flow:
+    input:
+      - operationType
+      - operationParams
+      - ansibleInventory
+      - vnfInventory
+      - group
+      - stackParams
+      - vmSpecificPlays
+    output-on-error:
+      error_message: <% $.get(error_message, "Failure happened during execute_ansible flow.") %>
+    tasks:  
+      create_ansible_extra_vars:
+        action: std.javascript
+        input:
+          context:
+            params: <% $.operationParams.additionalParams.ansible_extra_vars %>
+            group: <% $.group %>
+            plays: <% $.operationParams.additionalParams.run_on_all %>
+            vmSpecificPlays: <% $.vmSpecificPlays %>
+          script: |
+            var extraVars = {};
+            extraVars["extraVars"] = $.params.join(' ');
+            extraVars["timeout"] = "60"
+            extraVars["group"] = $.group
+            extraVars["playbookNames"]= $.plays.concat($.vmSpecificPlays)
+            return extraVars
+        publish:
+          extraVars: <% task(create_ansible_extra_vars).result %>
+        publish-on-error:
+          error_message: <% task(create_ansible_extra_vars).result %>
+        on-success:
+          - execute_ansible
+
+      execute_ansible:
+        action: cbam.run_playbook_extension
+        input:
+          action:
+            ansible: ansible/boilerplateboilerplate.yaml
+          operation_parameters: <% $.operationParams %>
+          vnf_inventory: <% $.vnfInventory %>
+          ansible_inventory: <% $.ansibleInventory %>
+          ansible_extra_vars: <% $.extraVars %>
+          stack_params: <% $.stackParams %>
+        publish-on-error:
+          error_message: <% task(execute_ansible).result %>

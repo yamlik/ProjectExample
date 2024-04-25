@@ -1,0 +1,187 @@
+#! /usr/bin/env python
+"""
+A service which reports the TEST processing state of a processing host, by considering the following:
+1. Row count from selected TimesTen tables
+2. File count from selected directories
+3. Process count of running TEST nodes
+
+Possible states are:
+1. unknown - default
+2. processing - stream(s) are running and there are data found
+3. idle - stream(s) are running but there are no data found
+4. interrupted - all stream(s) are stopped but there are data found
+5. stopped - all stream(s) are stopped and there are no data found
+
+"""
+import os
+import sys
+import thread
+import subprocess
+import syslog
+import time
+from threading import Thread
+
+CHECK_INTERVAL = 60
+TOOLS = ['TTISQL', 'AWK', 'FIND', 'WC', 'PS', "GREP"]
+{% if monitor_timesten %}
+TT_QUERY_FILE_DIR = "{{ tt_sql_directory }}"
+TT_TABLE_DIR = "{{ tt_file_directory }}"
+{% endif %}
+DIR_LIST_FOLDER =  "{{ stream_file_directory }}"
+STATE_FILE = "/var/tmp/processing.state"
+CMD_TIMESTEN_COUNT = 0
+CMD_FILE_COUNT = 0
+
+def define_binaries():
+    for i in TOOLS:
+        stdout, returncode = execute("which %s" % i.lower())
+        if returncode  != 0:
+            syslog.syslog(syslog.LOG_ERR, "Couldn't define binary for %s. Monitor script will exit." % i.lower())
+            sys.exit(1)
+        else:
+            globals()[i] = stdout.strip()
+
+def define_check_commands():
+
+    # Count running TEST nodes
+    global CMD_NODE_COUNT
+    CMD_NODE_COUNT="%s -elf | %s '_node' | %s -v grep | %s -l" % (PS, GREP, GREP, WC)
+
+def run_count_file_command():
+    CMD_FILE_COUNT = 0
+    for files in os.listdir(DIR_LIST_FOLDER):
+        if files.endswith(".txt"):
+            command_string="readarray txt < %s; total=0; for d in ${txt[@]}; do count=$(%s ${d} -type f 2>/dev/null | %s -l); (( total = total + count )); done; echo ${total}" % (DIR_LIST_FOLDER+"/"+files, FIND, WC)
+            p = subprocess.Popen(command_string, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+            stdout, stderr = p.communicate()
+
+            CMD_FILE_COUNT += int(stdout.strip())
+            if CMD_FILE_COUNT > 0:
+               break
+    return CMD_FILE_COUNT
+
+def run_timesten_command():
+    # Count rows in selected TimesTen database tables
+    # Note
+    # 1: Requires ODBCINI to be defined
+    # 2: Must be run as the DS owner (TEST)
+
+    generate_timesten_sql()
+    CMD_TIMESTEN_COUNT = 0
+    for files in os.listdir(TT_QUERY_FILE_DIR):
+        command_string="%s -v 1 -f %s/%s %s | %s '{print $2}'" % (TTISQL, TT_QUERY_FILE_DIR, files, str(files).replace("tt_","").replace(".sql",""), AWK)
+        p = subprocess.Popen(command_string, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+        stdout, stderr = p.communicate()
+        CMD_TIMESTEN_COUNT += int(stdout.strip())
+        if CMD_TIMESTEN_COUNT > 0:
+           break
+
+    command_string="rm %s/*.sql" %(TT_QUERY_FILE_DIR)
+    p = subprocess.Popen(command_string, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+    stdout, stderr = p.communicate()
+    return CMD_TIMESTEN_COUNT
+
+def generate_timesten_sql():
+    #generate files based on content in files that place in the directory
+    #content will be the table name only
+    #each file represent one store
+    for files in os.listdir(TT_TABLE_DIR):
+        if files.startswith("tt_"):
+            sqlfile = open(TT_QUERY_FILE_DIR + "/"+ str(files).replace("tt_","") + ".sql","w")
+            sqlfile.write("select sum(c) as total from (\n")
+
+            with open(TT_TABLE_DIR+"/"+files) as fp:
+                total_line = 0
+                for line in fp:
+                    if line.strip() != "":
+                       total_line += 1
+
+            with open(TT_TABLE_DIR+"/"+files) as fp:
+                 count = 0
+                 for line in fp:
+                     count += 1
+                     if line.strip() !="":
+                         sqlfile.write("select count(1) as c from " + line.strip() + " \n ")
+                         if count != total_line:
+                            sqlfile.write("union\n")
+
+            sqlfile.write(");")
+            sqlfile.close()
+
+def execute(command):
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+    stdout, stderr = p.communicate()
+    if p.returncode != 0:
+        syslog.syslog(syslog.LOG_ERR, stderr)
+    return stdout, p.returncode
+
+def log_error(value, error):
+    syslog.syslog(syslog.LOG_ERR, "Problem converting output '%s' to integer value %s " % (value, error))
+
+def convert_value(value):
+    try:
+        value = int(value)
+    except ValueError as e:
+        try:
+            value = int(value.split(".")[0])
+        except ValueError as e:
+            log_error(value, e)
+            return 0
+    return value
+
+def update_state(state):
+    with open(STATE_FILE, 'w') as writer:
+        writer.write(state)
+    os.chmod(STATE_FILE, 0644)
+
+def monitor():
+    # Default state
+    update_state("unknown")
+
+    #attempt = 0
+    while 'eternity':
+    #while attempt < 3:
+        # Count rows in selected TimesTen database tables
+{% if monitor_timesten %}
+        tt_count = convert_value(run_timesten_command())
+        syslog.syslog(syslog.LOG_ERR, "TT_Record: "+ str(tt_count))
+{% endif %}
+
+        # Count files in input, output (backup?) directories
+        file_count = convert_value(run_count_file_command())
+        syslog.syslog(syslog.LOG_ERR, "File_Count: "+ str(file_count))
+
+        # Count running TEST nodes
+        stdout, returncode = execute(CMD_NODE_COUNT)
+        node_count = convert_value(stdout)
+        syslog.syslog(syslog.LOG_ERR, "Node_Count: "+ str(node_count))
+
+        if node_count > 0:
+{% if monitor_timesten %}
+            if tt_count > 0 or file_count > 0:
+                update_state("processing")
+            else:
+                update_state("idle")
+        else:
+            if tt_count > 0 or file_count > 0:
+                update_state("interrupted")
+            else:
+                update_state("stopped")
+{% else %}
+            if file_count > 0:
+                update_state("processing")
+            else:
+                update_state("idle")
+        else:
+            if file_count > 0:
+                update_state("interrupted")
+            else:
+                update_state("stopped")
+{% endif %}
+
+        time.sleep(CHECK_INTERVAL)
+
+define_binaries()
+define_check_commands()
+t1 = Thread(target=monitor, args=())
+t1.start()

@@ -1,0 +1,15 @@
+[Unit]
+Description=webhook instance
+Documentation=https://prometheus.io/docs/
+Wants=network-online.target
+After=network-online.target
+After=network.target
+
+[Service]
+User={{ user }}
+Type=simple
+Restart=on-failure
+ExecStart=/usr/local/bin/webhook4fluentd {{ webhook4fluentd_listening_port }} {{ td_agent_tcp_port }}
+ 
+[Install]
+WantedBy=multi-user.target

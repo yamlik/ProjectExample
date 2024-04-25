@@ -1,0 +1,269 @@
+---
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable not defined
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items:
+    - host_address
+    - timezone
+    - fqdn_host
+    - record_dir
+    - control_dir
+    - storage_dir
+    - offline_dir
+    - nodes_dir
+    - streams_dir
+  tags: 
+    - install    
+    
+
+# Validate mandatory variables
+# Script aborted without any rollback needed.
+- name: fail when variable is empty
+  fail: msg="Variable '{{ item.name }}' should not be empty"
+  when: ( item.value is none ) or ( item.value == "" )
+  with_items:
+    - { name: "host_address", value: "{{ host_address }}" }
+    - { name: "timezone", value: "{{ timezone }}" }
+    - { name: "fqdn_host", value: "{{ fqdn_host }}" }
+    - { name: "record_dir", value: "{{ record_dir }}" }
+    - { name: "control_dir", value: "{{ control_dir }}" }
+    - { name: "storage_dir", value: "{{ storage_dir }}" }    
+    - { name: "offline_dir", value: "{{ offline_dir }}" }    
+    - { name: "streams_dir", value: "{{ streams_dir }}" }    
+    - { name: "nodes_dir", value: "{{ nodes_dir }}" }    
+  tags: 
+    - install    
+    
+
+# Replace nodemanager.properties with template file 
+- name: update nmhost in nodemanager properties
+  template:
+    src: nodemanager.properties.j2
+    dest: "{{ install_dir }}/etc/node-manager/nodemanager.properties"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0444
+    force: yes
+    backup: yes
+  tags: 
+    - install    
+    
+    
+# Replace setup_nm.sh script with template file 
+- name: replace setup_nm.sh script with provided variables
+  template:
+    src: setup_nm.sh.j2
+    dest: "{{ TEST_home }}/bin/setup_nm.sh"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0554
+    force: yes
+  tags: 
+    - install    
+    
+# Replace el-node-manager with template file 
+- name: update el-node-manager
+  template:
+    src: el-node-manager.j2
+    dest: "/etc/sysconfig/el-node-manager"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0544
+    force: yes
+  become: true
+  become_method: sudo
+  tags: 
+    - install    
+
+- name: Create directory for Postgresql DB connection check script
+  file:
+    path: /var/lib/scripts
+    state: directory
+    mode: 0755
+  become: yes
+  become_method: sudo
+  tags:
+    - install
+
+- name: Template Postgresql DB connection check script to /var/lib/scripts
+  template:
+    src: db_conn.sh.j2
+    owner: root
+    group: root
+    dest: /var/lib/scripts/db_conn.sh
+    mode: 0777
+  become: yes
+  become_method: sudo
+  tags:
+    - install
+ 
+# Replace el-timesten service file
+- name: update el-timesten.service
+  template:
+    src: el-timesten.service.j2
+    dest: "/etc/systemd/system/el-timesten.service"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+  tags:
+    - install
+
+# Replace el-node-manager.service with template file 
+- name: update el-node-manager.service
+  template:
+    src: el-node-manager.service.j2
+    dest: "/etc/systemd/system/el-node-manager.service"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+  become: true
+  become_method: sudo
+  tags: 
+    - install    
+    
+# Replace nmremote.config with template file 
+- name: update nm remote config file
+  template:
+    src: nmremote.config.j2
+    dest: "{{ install_dir }}/etc/node-manager/nmremote.config"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0600
+    force: yes
+  tags: 
+    - install    
+
+# Replace nmremote.access with template file 
+- name: update nm remote access file
+  template:
+    src: nmremote.access.j2
+    dest: "{{ install_dir }}/etc/node-manager/nmremote.access"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0600
+    force: yes
+  tags: 
+    - install    
+
+# Make sure directories exists
+- name: create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: 0755
+  with_items:
+    - "{{ record_dir }}"
+    - "{{ control_dir }}"
+    - "{{ offline_dir }}"
+    - "{{ storage_dir }}"
+    - "{{ nodes_dir }}"
+    - "{{ streams_dir }}"
+  tags: 
+    - install    
+    
+- name: Make sure postgres is up and operational
+  shell: PGPASSWORD='{{ db_el_password }}' /usr/bin/psql -p {{ postgresql_server_port }} -U elink -d TEST -h {{ db_oam_vip }}  -c "SELECT * FROM el_hosts;" > /dev/null 2>&1
+  register: psql_result
+  retries: 5
+  delay: 5
+  until: psql_result.rc == 0
+
+# Execute the setup_nm.sh script, with all the parameters required.
+# Note that any failure when executing the script will not caused any 
+- name: execute setup_nm.sh script
+  shell: "{{ TEST_home }}/bin/setup_nm.sh"
+  register: script_result
+  tags: 
+    - install    
+
+  
+# Fail the execution if script executed with error, but not duplicate ID
+- name: fail when script has error
+  fail: msg="Error found when executing script"
+  when: |
+   ( script_result.stderr is defined ) 
+   and ( "error:" in item | lower )
+   and ( "duplicate key value violates unique constraint" not in item | lower )
+  with_items: "{{ script_result.stderr.split('\n') }}"
+  tags: 
+    - install    
+
+- name: Reserve ports for EL services
+  shell: echo {{ portserver_range_min }}-{{ portserver_range_max }},{{ portserver_port }},{{ oriserver_port }},{{ jmx_port }} > /proc/sys/net/ipv4/ip_local_reserved_ports
+
+# Open firewall open base on configured port number
+- name: open ports for el-node-manager
+  firewalld:
+    zone: public
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  with_items:
+    - "{{ portserver_port }}"
+    - "{{ oriserver_port }}"
+    - "{{ jmx_port }}"
+  when: script_result | success
+  become: true
+  become_method: sudo
+  tags: 
+    - install   
+
+# Open firewall open base on configured port number
+- name: open port range for el-node-manager
+  firewalld:
+    zone: public
+    port: "{{ portserver_range_min }}-{{ portserver_range_max }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: script_result | success
+  become: true
+  become_method: sudo
+  tags:
+    - install    
+    
+- name: start & enable el-node-manager and timesten service on online processing nodes
+  systemd:
+    name: "{{ item }}"
+    daemon_reload: yes
+    enabled: yes
+    state: started
+  with_items:
+   - el-timesten
+   - el-node-manager
+  become: true
+  become_method: sudo
+  tags: 
+    - install
+  when: (ha_mode is not defined) or (ha_mode != "active-passive")
+  
+- name: stop and disable el-node-manager service on STANDBY offline processing node
+  systemd:
+    name: el-node-manager
+    daemon_reload: yes
+    enabled: no
+    state: stopped
+  become: true
+  become_method: sudo
+  tags: 
+    - install
+  when: ((reconfigure is defined) and (reconfigure == True)) and ((ha_mode is defined) or (ha_mode == "active-passive"))
+
+- name: "Handle hibernate-commons-annotations version lock"
+  shell: "yum versionlock hibernate-commons-annotations"
+  become: true
+  become_method: sudo
+  tags: 
+    - install
+
+...

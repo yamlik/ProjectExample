@@ -1,0 +1,32 @@
+galaxy_info:
+  author: TEST Corporation
+  description: Devtool UI Ansible roles
+  company: TEST Corporation
+
+  license: Commercial
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: EL
+      versions:
+        - 18.6
+
+  galaxy_tags: []
+
+dependencies:
+
+  - role: devtool-ui-install
+  - role: update-link-solution-config
+    component_name: "TEST Development Tool"
+    menu_items:
+      - label: "Devtool"
+        tooltip: "TEST Mediation Development Tool"
+        url: "http://{{ devtool_ui_fqdn }}:{{ httpd_listening_port }}/devtool"
+        permissions:
+          - "devtool.read"
+          - "TEST.browse"
+        state: present
+        openNewTab: "yes"
+    add_solution_config_entry: "{{ devtool_add_solution_config_entry }}"
+    link_solution_config: "{{ devtool_deploy_solution_config }}"

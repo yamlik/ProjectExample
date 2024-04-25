@@ -1,0 +1,217 @@
+{% raw %}groups:
+- name: nchf-node
+  rules:
+  - alert: NCHFNRFHeartbeatFailure
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="update",status=""}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to update heartbeat to NRF Server service URL {{$labels.endpoint}}
+      text: Failed to update heartbeat to NRF Server service URL {{$labels.endpoint}}
+      id: 11478
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to update heartbeat to NRF Server"
+      description: "FailedNRFHeartbeatUpdate"
+  - alert: NCHFNRFHeartbeatFailureStatus500
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="update",status="500 INTERNAL_SERVER_ERROR"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to update heartbeat to NRF Server due to NRF server error (HTTP return status 500) service URL {{$labels.endpoint}}
+      text: Failed to update heartbeat to NRF Server due to NRF server error (HTTP return status 500) service URL {{$labels.endpoint}}
+      id: 11479
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to update heartbeat to NRF Server due to NRF server error (HTTP return status 500)"
+      description: "FailedNRFHeartbeatUpdateStatus500"
+  - alert: NCHFNRFHeartbeatFailureStatus400
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="update",status="400 BAD_REQUEST"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to update heartbeat to NRF Server due to node program error (HTTP return status 400) service URL {{$labels.endpoint}}
+      text: Failed to update heartbeat to NRF Server due to node program error (HTTP return status 400) service URL {{$labels.endpoint}}
+      id: 11480
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to update heartbeat to NRF Server due to node program error (HTTP return status 400)"
+      description: "FailedNRFHeartbeatUpdateStatus400"
+  - alert: NCHFNRFReregistrationFailure
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="re-registration",status=""}[1m]) >= 1
+    labels:
+      severity: CRIT
+      name: Failed to re-register to NRF Server service URL {{$labels.endpoint}}
+      text: Failed to re-register to NRF Server service URL {{$labels.endpoint}}
+      id: 11481
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to re-register to NRF Server"
+      description: "FailedNRFReregistration"
+  - alert: NCHFNRFReregistrationFailureStatus500
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="re-registration",status="500 INTERNAL_SERVER_ERROR"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to re-register to NRF Server due to NRF server error (HTTP return status 500) service URL {{$labels.endpoint}}
+      text: Failed to re-register to NRF Server due to NRF server error (HTTP return status 500) service URL {{$labels.endpoint}}
+      id: 11482
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to re-register to NRF Server due to NRF server error (HTTP return status 500)"
+      description: "FailedNRFReregistrationStatus500"
+  - alert: NCHFNRFReregistrationFailureStatus400
+    expr: increase(nchf_nrf_heartbeat_failure_total{operation="re-registration",status="400 BAD_REQUEST"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to re-register to NRF Server due to node program error (HTTP return status 400) service URL {{$labels.endpoint}}
+      text: Failed to re-register to NRF Server due to node program error (HTTP return status 400) service URL {{$labels.endpoint}}
+      id: 11483
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 306
+      key:
+    annotations:
+      summary: "Failed to re-register to NRF Server due to node program error (HTTP return status 400)"
+      description: "FailedNRFReregistrationStatus400"
+  - alert: NCHFRedisAddListFailure
+    expr: increase(nchf_redis_failure_total{operation="addList"}[1m]) >= 1
+    for: 1m
+    labels:
+      severity: CRIT
+      name: Failed to add value to the list stored in Redis Server URL {{$labels.endpoint}}
+      text: Failed to add value to the list stored in Redis Server URL {{$labels.endpoint}}
+      id: 11484
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 151
+      key:
+    annotations:
+      summary: "Failed to add value to the list stored in Redis Server"
+      description: "FailedRedisAddList"
+  - alert: NCHFRedisGetListSizeFailure
+    expr: increase(nchf_redis_failure_total{operation="listSize"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to get size of list stored in Redis Server URL {{$labels.endpoint}}
+      text: Failed to get size of list stored in Redis Server URL {{$labels.endpoint}}
+      id: 11485
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 151
+      key:
+    annotations:
+      summary: "Failed to get size of list stored in Redis Server"
+      description: "FailedRedisGetListSize"
+  - alert: NCHFRedisGetMemoryInfoFailure
+    expr: increase(nchf_redis_failure_total{operation="memoryInfo"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to get the used memory of Redis Server URL {{$labels.endpoint}}
+      text: Failed to get the used memory of Redis Server URL {{$labels.endpoint}}
+      id: 11486
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 151
+      key:
+    annotations:
+      summary: "Failed to get the used memory of Redis Server"
+      description: "FailedRedisGetMemoryInfo"
+  - alert: NCHFRedisChargingDataJsonFailure
+    expr: increase(nchf_redis_failure_total{operation="chargingDataJsonParsing"}[1m]) >= 1
+    labels:
+      severity: MAJOR
+      name: Failed to parse Charging Data Json URL {{$labels.endpoint}} 
+      text: Failed to parse Charging Data Json URL {{$labels.endpoint}} 
+      id: 11487
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 153
+      key:
+    annotations:
+      summary: "Failed to parse Charging Data Json for saving to Redis"
+      description: "FailedRedisChargingDataJsonParsing"
+  - alert: NCHFRedisStorageWriteFailure
+    expr: increase(nchf_redis_failure_total{operation="storageWrite"}[1m]) >= 1
+    for: 1m
+    labels:
+      severity: CRIT
+      name: Failed to save input record to Redis Server URL {{$labels.endpoint}}
+      text: Failed to save input record to Redis Server URL {{$labels.endpoint}}
+      id: 11488
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 151
+      key:
+    annotations:
+      summary: "Failed to save input record to Redis Server"
+      description: "FailedRedisStorageWrite"
+  - alert: NCHFClientConnectionClosed
+    expr: increase(nchf_client_connection_closed_total[1m]) >= 1
+    labels:
+      severity: MINOR
+      name: Cancel signal from client closing connection to NCHF
+      text: Cancel signal from client closing connection to NCHF
+      id: 11489
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 2
+      probableCause: 305
+      key:
+    annotations:
+      summary: "Cancel signal from client closing connection to NCHF"
+      description: "NCHFClientConnectionClosed"
+  - alert: RequestWithStatus500Major
+    expr: increase(http_server_requests_seconds_count{uri="/nchf-convergedcharging/v2/chargingdata",status="500"}[1m]) >= 5
+    for: 1m
+    labels:
+      severity: MAJOR
+      name: Incoming HTTP requests encounter node program error (HTTP return status 500)
+      text: Incoming HTTP requests encounter node program error (HTTP return status 500)
+      id: 11490
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 153
+      key:
+    annotations:
+      summary: "Incoming HTTP requests encounter node program error (HTTP return status 500)"
+      description: "FailedNCHFRequestStatus500"
+  - alert: RequestWithStatus400Major
+    expr: increase(http_server_requests_seconds_count{uri="/nchf-convergedcharging/v2/chargingdata",status="400"}[1m]) >= 5
+    for: 1m
+    labels:
+      severity: MAJOR
+      name: Incoming HTTP requests encounter client or data error (HTTP return status 400)
+      text: Incoming HTTP requests encounter client or data error (HTTP return status 400)
+      id: 11491
+      source: CPRO
+      host: "{{$labels.instance}}"
+      eventType: 10
+      probableCause: 153
+      key:
+    annotations:
+      summary: "Incoming HTTP requests encounter client or data error (HTTP return status 400)"
+      description: "FailedNCHFRequestStatus400"{% endraw %}

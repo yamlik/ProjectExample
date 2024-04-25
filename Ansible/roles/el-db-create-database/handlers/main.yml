@@ -1,0 +1,9 @@
+---
+
+- name: "Restart postgresql"
+  systemd:
+    name: "{{ postgresql_daemon }}"
+    state: 'restarted'
+  become: true
+  become_method: sudo
+  listen: "Restart postgresql service"

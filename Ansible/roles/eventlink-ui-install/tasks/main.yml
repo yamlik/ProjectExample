@@ -1,0 +1,22 @@
+---
+# tasks file for TEST-ui rpm installation
+
+- name: "Install {{ TEST_ui_package_name }}."
+  register: el_ui_installed
+  package:
+    name={{ TEST_ui_package_name }}
+    state="{{ package_state | default('present') }}"
+  become: true
+  become_method: sudo
+  
+- name: "Check if crypto is installed"
+  stat:
+    path: "{{ el_crypto_path }}"
+  register: crypto_installed
+
+- name: "Create el-crypto link"
+  file:
+    src: "{{ el_crypto_path }}"
+    dest: "{{ el_crypto_link_path }}"
+    state: link
+  when: crypto_installed.stat.exists 

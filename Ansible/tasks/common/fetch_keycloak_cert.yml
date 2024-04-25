@@ -1,0 +1,17 @@
+---
+- name: "Fetch SSL Certificate to master"
+  fetch:
+    src: "{{ kc_install_dir }}/{{ kc_certificate_name }}.pem"
+    dest: "{{ kc_ssl_certificate_file }}"
+    flat: yes
+  become: true
+  become_method: sudo
+
+- name: "Fetch .nds.rc file to get the keycloak_client_secret value."
+  fetch:
+    src: /opt/TEST/TEST/.mds.rc
+    dest: "{{ ansible_dir }}/.mds.rc"
+    flat: yes
+  become: true
+  become_method: sudo
+...

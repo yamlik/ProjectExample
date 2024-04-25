@@ -1,0 +1,23 @@
+{
+  "name": "{{ kc_client_template_name }}",
+  "description": "{{ kc_client_template_description }}",
+  "protocol": "{{ kc_client_template_protocol }}",
+  "protocolMappers": [
+    {
+      "name": "{{ kc_client_template_groups_claim_name }}",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-group-membership-mapper",
+      "consentRequired": false,
+      "config": {
+        "full.path": "false",
+        "usermodel.realmRoleMapping.rolePrefix": "",
+        "multivalued": "",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "{{ kc_client_template_groups_claim_name }}",
+        "jsonType.label": ""
+      }
+    }
+  ]
+}

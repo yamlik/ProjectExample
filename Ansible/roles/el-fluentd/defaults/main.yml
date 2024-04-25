@@ -1,0 +1,25 @@
+---
+amq_host: localhost
+amq_port: 5671
+amq_heartbeat_seconds: 180
+td_agent_metrics_expiration: 4500
+td_agent_audit_interval: 300
+alarm_version: 0
+
+td_agent_metrics_port: 24231
+rsyslog_tcp_port: 8514
+rsyslog_alarm_log: /var/log/el-alarm-counter.log
+
+td_agent_tcp_port: 8515
+
+logrotate_rotate: 7
+logrotate_size: 100M
+
+installing_ui: false
+fluentd_enable_ssl: true
+fluentd_cert_dir: /etc/td-agent/ssl
+crmq_cert_dir: /etc/rabbitmq/ssl
+crmq_ssl_configured: true
+ca_key_backup_dir: /opt/TEST/certs/el-fluentd
+operation: ""
+...
